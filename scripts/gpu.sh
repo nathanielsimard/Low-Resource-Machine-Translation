@@ -5,7 +5,7 @@
 #SBATCH --mem=16000M
 
 module load python/3.7
-source /project/cq-training-1/project1/teams/team10/env/bin/activate
+source /project/cq-training-1/project2/teams/team10/env/bin/activate
 
 # Sleep for 5 hours
 sleep 18000
