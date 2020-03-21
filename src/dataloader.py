@@ -14,6 +14,8 @@ class Dataloader:
         file_name_target: str,
         vocab_size: int,
         cache_dir=".cache",
+        encoder_input=None,
+        encoder_target=None,
     ):
         """Create dataset for translation.
 
@@ -27,20 +29,28 @@ class Dataloader:
         self.file_name_target = file_name_target
         self.vocab_size = vocab_size
         self.cache_dir = cache_dir
+        self.encoder_input = encoder_input
+        self.encoder_target = encoder_target
+
+        self.corpus_input = read_file(file_name_input)
+        self.corpus_target = read_file(file_name_target)
+
+        if self.encoder_input is None:
+            self.encoder_input = self._create_cached_encoder(
+                file_name_input, self.corpus_input
+            )
+
+        if self.encoder_target is None:
+            self.encoder_target = self._create_cached_encoder(
+                file_name_target, self.corpus_target
+            )
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
-        corpus_input = read_file(self.file_name_input)
-        corpus_target = read_file(self.file_name_target)
-
-        encoder_input = self._create_cached_encoder(self.file_name_input, corpus_input)
-        encoder_target = self._create_cached_encoder(
-            self.file_name_target, corpus_target
-        )
 
         def gen():
-            for i, o in zip(corpus_input, corpus_target):
-                yield (encoder_input.encode(i), encoder_target.encode(o))
+            for i, o in zip(self.corpus_input, self.corpus_target):
+                yield (self.encoder_input.encode(i), self.encoder_target.encode(o))
 
         return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
