@@ -32,9 +32,7 @@ class DataloaderTest(unittest.TestCase):
         self.assertEqual(out, sample)
 
     def test_create_dataset(self):
-        dl = dataloader.TranslationDataloader(
-            "tests/sample1.txt", "tests/sample2.txt", 300
-        )
+        dl = dataloader.Dataloader("tests/sample1.txt", "tests/sample2.txt", 300)
         dataset = dl.create_dataset()
 
         samples_num = 0
