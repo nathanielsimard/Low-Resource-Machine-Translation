@@ -35,27 +35,46 @@ def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: b
     Returns: None
 
     """
-    out = subprocess.run(["sacrebleu", "--input", pred_file_path, target_file_path, '--tokenize',
-                          'none', '--sentence-level', '--score-only'],
-                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    lines = out.stdout.split('\n')
+    out = subprocess.run(
+        [
+            "sacrebleu",
+            "--input",
+            pred_file_path,
+            target_file_path,
+            "--tokenize",
+            "none",
+            "--sentence-level",
+            "--score-only",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    lines = out.stdout.split("\n")
     if print_all_scores:
-        print('\n'.join(lines[:-1]))
+        print("\n".join(lines[:-1]))
     else:
         scores = [float(x) for x in lines[:-1]]
-        print('final avg bleu score: {:.2f}'.format(sum(scores) / len(scores)))
+        print("final avg bleu score: {:.2f}".format(sum(scores) / len(scores)))
 
 
 def main():
-    parser = argparse.ArgumentParser('script for evaluating a model.')
-    parser.add_argument('--target-file-path', help='path to target (reference) file', required=True)
-    parser.add_argument('--input-file-path', help='path to input file', required=True)
-    parser.add_argument('--print-all-scores', help='will print one score per sentence',
-                        action='store_true')
-    parser.add_argument('--do-not-run-model',
-                        help='will use --input-file-path as predictions, instead of running the '
-                             'model on it',
-                        action='store_true')
+    parser = argparse.ArgumentParser("script for evaluating a model.")
+    parser.add_argument(
+        "--target-file-path", help="path to target (reference) file", required=True
+    )
+    parser.add_argument("--input-file-path", help="path to input file", required=True)
+    parser.add_argument(
+        "--print-all-scores",
+        help="will print one score per sentence",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--do-not-run-model",
+        help="will use --input-file-path as predictions, instead of running the "
+        "model on it",
+        action="store_true",
+    )
 
     args = parser.parse_args()
 
@@ -67,5 +86,5 @@ def main():
         compute_bleu(pred_file_path, args.target_file_path, args.print_all_scores)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
