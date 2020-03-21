@@ -131,3 +131,4 @@ dmypy.json
 ## Vscode workspace settings
 .vscode/settings.json
 
+.cache

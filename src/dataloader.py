@@ -1,0 +1,82 @@
+import os
+from typing import List
+
+import tensorflow as tf
+import tensorflow_datasets as tfds
+
+
+class Dataloader:
+    """TranslationDataloader class used for translation."""
+
+    def __init__(
+        self,
+        file_name_input: str,
+        file_name_target: str,
+        vocab_size: int,
+        cache_dir=".cache",
+    ):
+        """Create dataset for translation.
+
+        Args:
+            file_name_input: File name to the input data.
+            file_name_target: File name to the target data.
+            vocab_size: maximum vocabulary size.
+            cache_dir: Cache directory for the encoders.
+        """
+        self.file_name_input = file_name_input
+        self.file_name_target = file_name_target
+        self.vocab_size = vocab_size
+        self.cache_dir = cache_dir
+
+    def create_dataset(self) -> tf.data.Dataset:
+        """Create a Tensorflow dataset."""
+        corpus_input = read_file(self.file_name_input)
+        corpus_target = read_file(self.file_name_target)
+
+        encoder_input = self._create_cached_encoder(self.file_name_input, corpus_input)
+        encoder_target = self._create_cached_encoder(
+            self.file_name_target, corpus_target
+        )
+
+        def gen():
+            for i, o in zip(corpus_input, corpus_target):
+                yield (encoder_input.encode(i), encoder_target.encode(o))
+
+        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
+
+    def _create_cached_encoder(self, file_name, corpus):
+        directory = os.path.join(self.cache_dir, file_name)
+        os.makedirs(directory, exist_ok=True)
+
+        return create_encoder(
+            corpus,
+            self.vocab_size,
+            cache_file=os.path.join(directory, str(self.vocab_size)).format(),
+        )
+
+
+def read_file(file_name: str) -> List[str]:
+    """Read file and returns paragraphs."""
+    output = []
+    with open(file_name, "r") as stream:
+        for line in stream:
+            tokens = line.strip()
+            output.append(tokens)
+    return output
+
+
+def create_encoder(
+    sentences: List[str], max_vocab_size: int, cache_file=None
+) -> tfds.features.text.TextEncoder:
+    """Create the encoder from sentences."""
+    if cache_file is not None and os.path.isfile(cache_file):
+        return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
+
+    encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+        (sentence for sentence in sentences), target_vocab_size=max_vocab_size
+    )
+
+    if cache_file is not None:
+        encoder.save_to_file(cache_file)
+
+    return encoder
