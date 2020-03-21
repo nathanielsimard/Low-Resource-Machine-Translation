@@ -6,37 +6,48 @@ import tensorflow_datasets as tfds
 
 
 class Dataloader:
+    """TranslationDataloader class used for translation."""
+
     def __init__(
         self,
         file_name_input: str,
-        file_name_output: str,
+        file_name_target: str,
         vocab_size: int,
         cache_dir=".cache",
     ):
+        """Create dataset for translation.
+
+        Args:
+            file_name_input: File name to the input data.
+            file_name_target: File name to the target data.
+            vocab_size: maximum vocabulary size.
+            cache_dir: Cache directory for the encoders.
+        """
         self.file_name_input = file_name_input
-        self.file_name_output = file_name_output
+        self.file_name_target = file_name_target
         self.vocab_size = vocab_size
         self.cache_dir = cache_dir
 
     def create_dataset(self) -> tf.data.Dataset:
-        """Create the Tensorflow dataset."""
+        """Create a Tensorflow dataset."""
         corpus_input = read_file(self.file_name_input)
-        corpus_output = read_file(self.file_name_output)
+        corpus_target = read_file(self.file_name_target)
 
         encoder_input = self._create_cached_encoder(self.file_name_input, corpus_input)
-        encoder_ouput = self._create_cached_encoder(
-            self.file_name_output, corpus_output
+        encoder_target = self._create_cached_encoder(
+            self.file_name_target, corpus_target
         )
 
         def gen():
-            for i, o in zip(corpus_input, corpus_output):
-                yield (encoder_input.encode(i), encoder_ouput.encode(o))
+            for i, o in zip(corpus_input, corpus_target):
+                yield (encoder_input.encode(i), encoder_target.encode(o))
 
         return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
     def _create_cached_encoder(self, file_name, corpus):
-        directory = f"{self.cache_dir}/{file_name}"
+        directory = os.path.join(self.cache_dir, file_name)
         os.makedirs(directory, exist_ok=True)
+
         return create_encoder(
             corpus,
             self.vocab_size,
