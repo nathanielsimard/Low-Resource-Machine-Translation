@@ -3,6 +3,7 @@ import unittest
 from src import dataloader
 
 ANY_TEXT_FILE = "data/train.lang1"
+CORPUS = ["a against", "battle", "pandemy"]
 
 
 class DataloaderTest(unittest.TestCase):
@@ -13,13 +14,21 @@ class DataloaderTest(unittest.TestCase):
         self.assertTrue(len(output[0]) >= 1)
 
     def test_create_encoder_from_sentences(self):
-        corpus = ["a against", "battle", "pandemy"]
         sample = "a battle"
-
-        encoder = dataloader.create_encoder(corpus, 258)
+        encoder = dataloader.create_encoder(CORPUS, 258)
 
         ids = encoder.encode(sample)
         out = encoder.decode(ids)
+
+        self.assertEqual(out, sample)
+
+    def test_create_encoder_from_sentences_with_cache(self):
+        sample = "a battle"
+        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
+
+        ids = encoder.encode(sample)
+        out = encoder.decode(ids)
+
         self.assertEqual(out, sample)
 
     def test_create_dataset(self):
