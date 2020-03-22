@@ -1,8 +1,5 @@
 import abc
-
 import tensorflow as tf
-
-from src.data import dataloader
 
 MODEL_BASE_DIR = "models"
 
@@ -30,8 +27,3 @@ class Model(tf.keras.Model, abc.ABC):
         """Loading the model weights."""
         file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
         super().load_weights(file_name)
-
-    @abc.abstractmethod
-    def call(self, x: tf.Tensor, training=False) -> tf.Tensor:
-        """Call the foward past."""
-        pass

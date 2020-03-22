@@ -3,9 +3,10 @@ import subprocess
 from datetime import datetime
 from typing import List
 
+import numpy as np
 import tensorflow as tf
 
-from dataloader import Dataloader
+from src.dataloader import Dataloader
 
 
 def run(
@@ -27,22 +28,25 @@ def run(
     for epoch in range(1, num_epoch + 1):
         train_predictions: List[str] = []
         valid_predictions: List[str] = []
-        for (inputs, targets) in train_dataset.padded_batch(
-            batch_size, padded_shapes=([None], [None])
+        for enc_inputs, dec_inputs, targets in train_dataset.padded_batch(
+            batch_size, padded_shapes=([None], [None], [None])
         ):
             with tf.GradientTape() as tape:
-                outputs = model(inputs, training=True)
+                outputs = model((enc_inputs, dec_inputs), training=True)
+                print(outputs)
+                print(targets)
+                for sentence in np.argmax(outputs.numpy(), axis=2):
+                    train_predictions.append(
+                        train_dataloader.encoder_target.decode(sentence + 1)
+                    )
+                loss = loss_fn(targets, outputs)
+                gradients = tape.gradient(loss, model.trainable_variables)
+                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-                train_predictions += train_dataloader.encoder_target.decode(outputs)
-
-                loss = loss_fn(outputs, targets)
-                gradients = tape.gradients(loss, model.trainable_variables)
-                optimizer.apply(zip(gradients, model.trainable_variables))
-
-        for (inputs, targets) in valid_dataset.padded_batch(
-            batch_size, padded_shapes=([None, None])
+        for enc_inputs, dec_inputs, targets in valid_dataset.padded_batch(
+            batch_size, padded_shapes=([None], [None], [None])
         ):
-            outputs = model(inputs, training=False)
+            outputs = model((enc_inputs, dec_inputs), training=False)
             loss = loss_fn(outputs, targets)
 
             valid_predictions += valid_dataloader.encoder_target.decode(outputs)

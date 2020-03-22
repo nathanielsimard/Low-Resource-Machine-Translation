@@ -24,6 +24,8 @@ class Dataloader:
             file_name_target: File name to the target data.
             vocab_size: maximum vocabulary size.
             cache_dir: Cache directory for the encoders.
+            encoder_input: English tokenizer.
+            encoder_target: French tokenizer.
         """
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
@@ -50,9 +52,12 @@ class Dataloader:
 
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
-                yield (self.encoder_input.encode(i), self.encoder_target.encode(o))
+                encoder_input = self.encoder_input.encode(i)
+                decoder_input = self.encoder_target.encode(o)[:-1]
+                decoder_target = self.encoder_target.encode(o)[1:]
+                yield (encoder_input, decoder_input, decoder_target)
 
-        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
+        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64, tf.int64))
 
     def _create_cached_encoder(self, file_name, corpus):
         directory = os.path.join(self.cache_dir, file_name)
