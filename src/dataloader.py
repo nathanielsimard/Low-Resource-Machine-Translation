@@ -4,6 +4,9 @@ from typing import List
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
+UNKNOWN_TOKEN = "<unk>"
+END_OF_SAMPLE_TOKEN = "<eos>"
+
 
 class Dataloader:
     """TranslationDataloader class used for translation."""
@@ -52,8 +55,10 @@ class Dataloader:
 
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
-                encoder_input = self.encoder_input.encode(i)
-                encoder_target = self.encoder_target.encode(o)
+                encoder_input = self.encoder_input.encode(i + " " + END_OF_SAMPLE_TOKEN)
+                encoder_target = self.encoder_target.encode(
+                    o + " " + END_OF_SAMPLE_TOKEN
+                )
 
                 yield (encoder_input, encoder_target)
 
@@ -87,10 +92,13 @@ def create_encoder(
     if cache_file is not None and os.path.isfile(cache_file):
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
+    # The unknown token must be at first because the padded batch
+    # add zero padding, which will be understood by the network as
+    # unknown words.
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         (sentence for sentence in sentences),
         target_vocab_size=max_vocab_size,
-        reserved_tokens=["<unk>", "<eos>"],
+        reserved_tokens=[UNKNOWN_TOKEN, END_OF_SAMPLE_TOKEN],
     )
 
     if cache_file is not None:
