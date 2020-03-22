@@ -68,6 +68,7 @@ def run(
         train_bleu = compute_bleu(train_path, train_dataloader.file_name_target)
         valid_bleu = compute_bleu(valid_path, valid_dataloader.file_name_target)
 
+        model.save(epoch)
         print(
             f"Epoch {epoch}: train bleu score: {train_bleu} valid bleu score: {valid_bleu}"
         )
