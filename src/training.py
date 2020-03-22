@@ -1,9 +1,11 @@
-import tensorflow as tf
-from dataloader import Dataloader
-from datetime import datetime
 import os
 import subprocess
+from datetime import datetime
 from typing import List
+
+import tensorflow as tf
+
+from dataloader import Dataloader
 
 
 def run(
