@@ -1,6 +1,7 @@
-from src.model import lstm
-from src import training, dataloader
 import tensorflow as tf
+
+from src import dataloader, training
+from src.model import lstm
 
 
 def main():

@@ -3,7 +3,6 @@ import subprocess
 from datetime import datetime
 from typing import List
 
-import numpy as np
 import tensorflow as tf
 
 from src.dataloader import Dataloader
@@ -22,34 +21,43 @@ def run(
     train_dataset = train_dataloader.create_dataset()
     valid_dataset = valid_dataloader.create_dataset()
 
+    train_dataset = model.preprocessing(train_dataset)
+    valid_dataset = model.preprocessing(valid_dataset)
+
     directory = os.path.join("results", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     os.makedirs(directory, exist_ok=True)
 
     for epoch in range(1, num_epoch + 1):
         train_predictions: List[str] = []
         valid_predictions: List[str] = []
-        for enc_inputs, dec_inputs, targets in train_dataset.padded_batch(
-            batch_size, padded_shapes=([None], [None], [None])
+
+        for inputs, targets in train_dataset.padded_batch(
+            batch_size, padded_shapes=model.padded_shapes
         ):
             with tf.GradientTape() as tape:
-                outputs = model((enc_inputs, dec_inputs), training=True)
-                print(outputs)
-                print(targets)
-                for sentence in np.argmax(outputs.numpy(), axis=2):
-                    train_predictions.append(
-                        train_dataloader.encoder_target.decode(sentence + 1)
-                    )
+                outputs = model(inputs, training=True)
+
+                # Calculate the training prediction tokens
+                predictions = model.predictions(
+                    outputs, train_dataloader.encoder_target
+                )
+                train_predictions += predictions
+
+                # Calculate the loss and update the parameters
                 loss = loss_fn(targets, outputs)
+                print(f"Training loss {loss}")
+
                 gradients = tape.gradient(loss, model.trainable_variables)
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-        for enc_inputs, dec_inputs, targets in valid_dataset.padded_batch(
-            batch_size, padded_shapes=([None], [None], [None])
+        for inputs, targets in valid_dataset.padded_batch(
+            batch_size, padded_shapes=model.padded_shapes
         ):
-            outputs = model((enc_inputs, dec_inputs), training=False)
-            loss = loss_fn(outputs, targets)
+            outputs = model(inputs, training=False)
 
-            valid_predictions += valid_dataloader.encoder_target.decode(outputs)
+            # Calculate the validation prediction tokens.
+            predictions = model.predictions(outputs, train_dataloader.encoder_target)
+            valid_predictions += predictions
 
         train_path = os.path.join(directory, f"train-{epoch}")
         valid_path = os.path.join(directory, f"valid-{epoch}")

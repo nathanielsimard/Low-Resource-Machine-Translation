@@ -53,11 +53,11 @@ class Dataloader:
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
                 encoder_input = self.encoder_input.encode(i)
-                decoder_input = self.encoder_target.encode(o)[:-1]
-                decoder_target = self.encoder_target.encode(o)[1:]
-                yield (encoder_input, decoder_input, decoder_target)
+                encoder_target = self.encoder_target.encode(o)
 
-        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64, tf.int64))
+                yield (encoder_input, encoder_target)
+
+        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
     def _create_cached_encoder(self, file_name, corpus):
         directory = os.path.join(self.cache_dir, file_name)

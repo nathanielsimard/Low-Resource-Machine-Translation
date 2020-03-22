@@ -1,6 +1,7 @@
+from typing import List, Tuple
+
 import tensorflow as tf
 from tensorflow.keras import layers
-from typing import List, Tuple
 
 from src.model import base
 
@@ -54,3 +55,16 @@ class Lstm(base.Model):
         x = self.decoder(x[1], states)
 
         return x
+
+    @property
+    def padded_shapes(self):
+        """Padded shapes used to add padding when batching multiple sequences."""
+        return (([None], [None]), [None])
+
+    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
+
+        def preprocess(input_sentence, output_sentence):
+            return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
+
+        return dataset.map(preprocess)
