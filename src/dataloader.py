@@ -88,7 +88,9 @@ def create_encoder(
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-        (sentence for sentence in sentences), target_vocab_size=max_vocab_size
+        (sentence for sentence in sentences),
+        target_vocab_size=max_vocab_size,
+        reserved_tokens=["<unk>", "<eos>"],
     )
 
     if cache_file is not None:
