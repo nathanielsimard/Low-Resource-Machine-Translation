@@ -7,6 +7,24 @@ import tensorflow_datasets as tfds
 UNKNOWN_TOKEN = "<unk>"
 END_OF_SAMPLE_TOKEN = "<eos>"
 
+PUNCTUATION = {
+    ",",
+    ";",
+    ":",
+    "!",
+    "?",
+    ".",
+    "'",
+    '"',
+    "(",
+    ")",
+    "...",
+    "[",
+    "]",
+    "{",
+    "}",
+}
+
 
 class Dataloader:
     """TranslationDataloader class used for translation."""
@@ -80,8 +98,11 @@ def read_file(file_name: str) -> List[str]:
     output = []
     with open(file_name, "r") as stream:
         for line in stream:
-            tokens = line.strip()
-            output.append(tokens)
+            tokens = line.lower().strip().split()
+            filtered_tokens = [
+                token for token in tokens if token not in PUNCTUATION
+            ]
+            output.append(' '.join(filtered_tokens))
     return output
 
 

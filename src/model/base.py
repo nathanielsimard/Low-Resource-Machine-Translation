@@ -43,7 +43,17 @@ class Model(tf.keras.Model, abc.ABC):
     def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder):
         """Generate prediction tokens from the outputs from the last layer."""
         # Index must start at 1.
-        return [
+        sentences = [
             encoder.decode(sentence + 1)
             for sentence in np.argmax(outputs.numpy(), axis=2)
         ]
+
+        result = []
+        for sentence in sentences:
+            new_sentence = []
+            for word in sentence.split():
+                if not ('<unk>' in word):
+                    new_sentence.append(word)
+            result.append(' '.join(new_sentence))
+
+        return result
