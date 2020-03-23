@@ -109,7 +109,7 @@ def train(args, loss_fn):
 
 def test(args, loss_fn):
     """Test the model."""
-    # Used to load the train test encoders.
+    # Used to load the train text encoders.
     train_dl = dataloader.Dataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",
