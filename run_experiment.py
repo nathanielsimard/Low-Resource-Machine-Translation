@@ -46,7 +46,7 @@ def parse_args():
         "--checkpoint",
         help="The checkpoint to load before training.",
         default=None,
-        type=str,
+        type=int,
     )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
     parser.add_argument(

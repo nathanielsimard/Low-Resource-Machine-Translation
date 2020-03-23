@@ -17,6 +17,7 @@ def run(
     valid_dataloader: Dataloader,
     batch_size: int,
     num_epoch: int,
+    checkpoint=None,
 ):
     """Training session."""
     train_dataset = train_dataloader.create_dataset()
@@ -28,7 +29,12 @@ def run(
     directory = os.path.join("results", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     os.makedirs(directory, exist_ok=True)
 
-    for epoch in range(1, num_epoch + 1):
+    if checkpoint is not None:
+        model.load(str(checkpoint))
+    else:
+        checkpoint = 1
+
+    for epoch in range(checkpoint, num_epoch + 1):
         train_predictions: List[str] = []
 
         for inputs, targets in train_dataset.padded_batch(
@@ -70,12 +76,12 @@ def run(
 
 
 def test(
-    model: base.Model, loss_fn, dataloader: Dataloader, batch_size: int, checkpoint: str
+    model: base.Model, loss_fn, dataloader: Dataloader, batch_size: int, checkpoint: int
 ):
     """Test a model at a specific checkpoint."""
     dataset = dataloader.create_dataset()
     dataset = model.preprocessing(dataset)
-    model.load(checkpoint)
+    model.load(str(checkpoint))
 
     predictions = _generate_predictions(
         model, loss_fn, dataset, dataloader.encoder_target, batch_size
