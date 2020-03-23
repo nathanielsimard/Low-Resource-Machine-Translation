@@ -40,10 +40,18 @@ class Model(tf.keras.Model, abc.ABC):
         """Can apply some preprocessing specific to the model."""
         return dataset
 
-    def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder):
+    def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder = None):
         """Generate prediction tokens from the outputs from the last layer."""
         # Index must start at 1.
+        encoder.append('END')
+        print('encoder len: ', len(encoder))
+        #[[   print(word) for word in sentence] for sentence in np.argmax(outputs.numpy(), axis=2)]
+        print('SHAPEEEE:')
+        print(outputs.numpy().shape)
+        print('WORDDDDDDDDDDDDDDDD ::::::::::::::::::::::::::')
+        print(encoder)
+
         return [
-            encoder.decode(sentence + 1)
+            " ".join([encoder[word] for word in sentence])
             for sentence in np.argmax(outputs.numpy(), axis=2)
         ]

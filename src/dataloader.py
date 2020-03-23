@@ -1,5 +1,7 @@
 import os
 from typing import List
+import numpy as np
+
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -40,27 +42,51 @@ class Dataloader:
         self.corpus_input = read_file(file_name_input)
         self.corpus_target = read_file(file_name_target)
 
-        if self.encoder_input is None:
-            self.encoder_input = self._create_cached_encoder(
-                file_name_input, self.corpus_input
-            )
+        all_eng_words = set()
+        for eng in self.corpus_input:
+            for word in eng:
+                if word not in all_eng_words:
+                    all_eng_words.add(word)
 
-        if self.encoder_target is None:
-            self.encoder_target = self._create_cached_encoder(
-                file_name_target, self.corpus_target
-            )
+        all_french_words = set()
+        for fr in self.corpus_target:
+            for word in fr:
+                if word not in all_french_words:
+                    all_french_words.add(word)
+
+        self.input_words = sorted(list(all_eng_words))
+        self.target_words = sorted(list(all_french_words))
+        self.num_encoder_tokens = len(all_eng_words)
+        self.num_decoder_tokens = len(all_french_words)
+        max_len_input = _max_len(self.corpus_input)
+        max_len_target = _max_len(self.corpus_target)
+        self.max_len = max(max_len_input, max_len_target) + 1
+        # del all_eng_words, all_french_words
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
 
         def gen():
-            for i, o in zip(self.corpus_input, self.corpus_target):
-                encoder_input = self.encoder_input.encode(i + " " + END_OF_SAMPLE_TOKEN)
-                encoder_target = self.encoder_target.encode(
-                    o + " " + END_OF_SAMPLE_TOKEN
-                )
+            # lines.fr = lines.fr.apply(lambda x : 'START_ '+ x + ' _END')# Create vocabulary of words
 
-                yield (encoder_input, encoder_target)
+            max_len_input = _max_len(self.corpus_input)
+            max_len_target = _max_len(self.corpus_target)
+            max_len = max(max_len_input, max_len_target) + 1
+
+            encoder_input_data = np.zeros((len(self.corpus_input), max_len), dtype='float32')
+            decoder_input_data = np.zeros((len(self.corpus_target), max_len), dtype='float32')
+            # generate datafor i, (input_text, target_text) in enumerate(zip(lines.eng, lines.fr)):
+
+            for i, (input_text, target_text) in enumerate(zip(self.corpus_input, self.corpus_target)):
+                for t, word in enumerate(input_text):
+                    encoder_input_data[i, t] = self.input_words.index(word)
+
+                decoder_input_data[i, 0] = len(self.target_words)
+                for t, word in enumerate(target_text):
+                    # decoder_target_data is ahead of decoder_input_data by one timestep
+                    decoder_input_data[i, t + 1] = self.target_words.index(word)
+
+                yield (encoder_input_data[i], decoder_input_data[i])
 
         return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
@@ -81,8 +107,16 @@ def read_file(file_name: str) -> List[str]:
     with open(file_name, "r") as stream:
         for line in stream:
             tokens = line.strip()
-            output.append(tokens)
+            output.append(tokens.split())
     return output
+
+
+def _max_len(sentences):
+    max_len = 0
+    for sentence in sentences:
+        if len(sentence) > max_len:
+            max_len = len(sentence)
+    return max_len
 
 
 def create_encoder(

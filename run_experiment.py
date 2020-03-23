@@ -22,7 +22,7 @@ def main():
         encoder_target=train_dl.encoder_target,
     )
     model = lstm.Lstm(
-        train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
+        train_dl.num_encoder_tokens + 10, train_dl.num_decoder_tokens + 10
     )
     training.run(
         model,

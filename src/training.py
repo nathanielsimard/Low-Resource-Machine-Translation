@@ -31,16 +31,14 @@ def run(
         train_predictions: List[str] = []
         valid_predictions: List[str] = []
 
-        for inputs, targets in train_dataset.padded_batch(
-            batch_size, padded_shapes=model.padded_shapes
+        for inputs, targets in train_dataset.batch(
+            batch_size
         ):
             with tf.GradientTape() as tape:
                 outputs = model(inputs, training=True)
 
                 # Calculate the training prediction tokens
-                predictions = model.predictions(
-                    outputs, train_dataloader.encoder_target
-                )
+                predictions = model.predictions(outputs, train_dataloader.target_words)
                 train_predictions += predictions
 
                 # Calculate the loss and update the parameters
@@ -56,7 +54,7 @@ def run(
             outputs = model(inputs, training=False)
 
             # Calculate the validation prediction tokens.
-            predictions = model.predictions(outputs, train_dataloader.encoder_target)
+            predictions = model.predictions(outputs, train_dataloader.target_words)
             valid_predictions += predictions
 
         train_path = os.path.join(directory, f"train-{epoch}")

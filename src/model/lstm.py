@@ -68,6 +68,7 @@ class Lstm(base.Model):
             x: Inputs of the model (encoder_input, decoder_input).
             training: If the model is training.
         """
+
         states = self.encoder(x[0])
         x = self.decoder(x[1], states)
 
