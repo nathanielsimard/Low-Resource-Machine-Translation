@@ -24,7 +24,7 @@ class Encoder(base.Model):
         self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
         self.lstm2 = layers.LSTM(1024, return_state=True)
 
-    def call(self, x: tf.Tensor, training=False) -> List[tf.Tensor]:
+    def call(self, x: tf.Tensor, training=False) -> List[List[tf.Tensor]]:
         """Call the foward past."""
         x = self.embed(x)
 
@@ -51,9 +51,13 @@ class Decoder(base.Model):
         self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
 
         self.lstm2 = layers.LSTM(1024, return_sequences=True, return_state=True)
-        self.dense2 = layers.TimeDistributed(layers.Dense(vocab_size, activation="softmax"))
+        self.dense2 = layers.TimeDistributed(
+            layers.Dense(vocab_size, activation="softmax")
+        )
 
-    def call(self, x: tf.Tensor, states: List[tf.Tensor], training=False) -> tf.Tensor:
+    def call(
+        self, x: tf.Tensor, states: List[List[tf.Tensor]], training=False
+    ) -> tf.Tensor:
         """Call the foward past."""
         x = self.embed(x)
 
