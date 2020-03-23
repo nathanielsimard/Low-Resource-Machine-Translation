@@ -102,9 +102,7 @@ def _generate_predictions(model, loss_fn, dataset, encoder, batch_size):
         batch_size, padded_shapes=model.padded_shapes
     ):
         outputs = model(inputs, training=False)
-
-        predictions = model.predictions(outputs, encoder)
-        predictions += predictions
+        predictions += model.predictions(outputs, encoder)
 
     return predictions
 
