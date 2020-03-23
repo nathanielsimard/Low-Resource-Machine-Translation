@@ -18,15 +18,22 @@ class Encoder(base.Model):
             vocab_size: Size of the vocabulary of the input language.
         """
         super().__init__(f"{NAME}-Encoder")
-        self.embed = layers.Embedding(vocab_size, 200)
-        self.lstm = layers.LSTM(200, return_state=True)
+        self.embed = layers.Embedding(vocab_size, 256)
 
-    def call(self, x: tf.Tensor, training=False) -> List[tf.Tensor]:
+        self.lstm1 = layers.LSTM(256, return_sequences=True, return_state=True)
+        self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
+        self.lstm2 = layers.LSTM(1024, return_state=True)
+
+    def call(self, x: tf.Tensor, training=False) -> List[List[tf.Tensor]]:
         """Call the foward past."""
         x = self.embed(x)
-        _, hidden_state, carry_state = self.lstm(x)
 
-        return [hidden_state, carry_state]
+        x, hidden_state_1, carry_state_1 = self.lstm1(x)
+        x = self.dense1(x)
+
+        _, hidden_state_2, carry_state_2 = self.lstm2(x)
+
+        return [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
 
 class Decoder(base.Model):
@@ -39,15 +46,26 @@ class Decoder(base.Model):
             vocab_size: Size of the vocabulary of the output language.
         """
         super().__init__(f"{NAME}-Decoder")
-        self.embed = layers.Embedding(vocab_size, 200)
-        self.dense = layers.Dense(vocab_size, activation="softmax")
-        self.lstm = layers.LSTM(200, return_sequences=True, return_state=True)
+        self.embed = layers.Embedding(vocab_size, 256)
+        self.lstm1 = layers.LSTM(256, return_sequences=True)
+        self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
 
-    def call(self, x: tf.Tensor, states: List[tf.Tensor], training=False) -> tf.Tensor:
+        self.lstm2 = layers.LSTM(1024, return_sequences=True, return_state=True)
+        self.dense2 = layers.TimeDistributed(
+            layers.Dense(vocab_size, activation="softmax")
+        )
+
+    def call(
+        self, x: tf.Tensor, states: List[List[tf.Tensor]], training=False
+    ) -> tf.Tensor:
         """Call the foward past."""
         x = self.embed(x)
-        x, _, _ = self.lstm(x, initial_state=states)
-        x = self.dense(x)
+
+        x = self.lstm1(x, initial_state=states[0])
+        x = self.dense1(x)
+
+        x, _, _ = self.lstm2(x, initial_state=states[1])
+        x = self.dense2(x)
 
         return x
 

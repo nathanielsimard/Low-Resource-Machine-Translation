@@ -6,6 +6,7 @@ from typing import List
 import tensorflow as tf
 
 from src.dataloader import Dataloader
+from src.model import base
 
 
 def run(
@@ -16,6 +17,7 @@ def run(
     valid_dataloader: Dataloader,
     batch_size: int,
     num_epoch: int,
+    checkpoint=None,
 ):
     """Training session."""
     train_dataset = train_dataloader.create_dataset()
@@ -27,9 +29,13 @@ def run(
     directory = os.path.join("results", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     os.makedirs(directory, exist_ok=True)
 
-    for epoch in range(1, num_epoch + 1):
+    if checkpoint is not None:
+        model.load(str(checkpoint))
+    else:
+        checkpoint = 1
+
+    for epoch in range(checkpoint, num_epoch + 1):
         train_predictions: List[str] = []
-        valid_predictions: List[str] = []
 
         for inputs, targets in train_dataset.padded_batch(
             batch_size, padded_shapes=model.padded_shapes
@@ -50,14 +56,9 @@ def run(
                 gradients = tape.gradient(loss, model.trainable_variables)
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-        for inputs, targets in valid_dataset.padded_batch(
-            batch_size, padded_shapes=model.padded_shapes
-        ):
-            outputs = model(inputs, training=False)
-
-            # Calculate the validation prediction tokens.
-            predictions = model.predictions(outputs, train_dataloader.encoder_target)
-            valid_predictions += predictions
+        valid_predictions = _generate_predictions(
+            model, loss_fn, valid_dataset, valid_dataloader.encoder_target, batch_size
+        )
 
         train_path = os.path.join(directory, f"train-{epoch}")
         valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -72,6 +73,38 @@ def run(
         print(
             f"Epoch {epoch}: train bleu score: {train_bleu} valid bleu score: {valid_bleu}"
         )
+
+
+def test(
+    model: base.Model, loss_fn, dataloader: Dataloader, batch_size: int, checkpoint: int
+):
+    """Test a model at a specific checkpoint."""
+    dataset = dataloader.create_dataset()
+    dataset = model.preprocessing(dataset)
+    model.load(str(checkpoint))
+
+    predictions = _generate_predictions(
+        model, loss_fn, dataset, dataloader.encoder_target, batch_size
+    )
+
+    directory = os.path.join("results/test", model.title)
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, f"test-{checkpoint}")
+    write_text(predictions, path)
+
+    bleu = compute_bleu(path, dataloader.file_name_target)
+    print(f"Bleu score {bleu}")
+
+
+def _generate_predictions(model, loss_fn, dataset, encoder, batch_size):
+    predictions = []
+    for inputs, targets in dataset.padded_batch(
+        batch_size, padded_shapes=model.padded_shapes
+    ):
+        outputs = model(inputs, training=False)
+        predictions += model.predictions(outputs, encoder)
+
+    return predictions
 
 
 def write_text(sentences, output_file):
