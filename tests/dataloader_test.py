@@ -31,6 +31,13 @@ class DataloaderTest(unittest.TestCase):
 
         self.assertEqual(out, sample)
 
+    def test_encoder_first_id_is_unk(self):
+        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
+
+        ids = encoder.encode("<unk> battle")
+
+        self.assertEqual(ids[0], 1)
+
     def test_create_dataset(self):
         dl = dataloader.Dataloader("tests/sample1.txt", "tests/sample2.txt", 300)
         dataset = dl.create_dataset()
