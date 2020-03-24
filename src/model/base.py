@@ -3,6 +3,10 @@ import abc
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import src.dataloader as dataloader
+
+UNKNOWN_TOKEN = dataloader.UNKNOWN_TOKEN
+END_OF_SAMPLE_TOKEN = dataloader.END_OF_SAMPLE_TOKEN
 
 MODEL_BASE_DIR = "models"
 
@@ -43,7 +47,20 @@ class Model(tf.keras.Model, abc.ABC):
     def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder):
         """Generate prediction tokens from the outputs from the last layer."""
         # Index must start at 1.
-        return [
+        sentences = [
             encoder.decode(sentence + 1)
             for sentence in np.argmax(outputs.numpy(), axis=2)
         ]
+        return _remove_unk(sentences)
+
+
+def _remove_unk(sentences):
+    result = []
+    for sentence in sentences:
+        new_sentence = []
+        for word in sentence.split():
+            if not (END_OF_SAMPLE_TOKEN in word or UNKNOWN_TOKEN in word):
+                new_sentence.append(word)
+        result.append(' '.join(new_sentence))
+
+    return result

@@ -83,12 +83,12 @@ def train(args, loss_fn):
     optim = tf.keras.optimizers.Adam(args.lr)
     train_dl = dataloader.Dataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
-        file_name_target="data/splitted_data/sorted_train_token.fr",
+        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
         vocab_size=args.vocab_size,
     )
     valid_dl = dataloader.Dataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
-        file_name_target="data/splitted_data/sorted_val_token.fr",
+        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
