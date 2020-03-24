@@ -3,6 +3,10 @@ import abc
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import src.dataloader as dataloader
+
+UNKNOWN_TOKEN = dataloader.UNKNOWN_TOKEN
+END_OF_SAMPLE_TOKEN = dataloader.END_OF_SAMPLE_TOKEN
 
 MODEL_BASE_DIR = "models"
 
@@ -55,7 +59,7 @@ def _remove_unk(sentences):
     for sentence in sentences:
         new_sentence = []
         for word in sentence.split():
-            if not ('<unk>' in word):
+            if not (END_OF_SAMPLE_TOKEN in word or UNKNOWN_TOKEN in word):
                 new_sentence.append(word)
         result.append(' '.join(new_sentence))
 
