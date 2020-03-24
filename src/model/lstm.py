@@ -1,5 +1,6 @@
 from typing import List, Tuple
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
@@ -61,13 +62,13 @@ class Decoder(base.Model):
         """Call the foward past."""
         x = self.embed(x)
 
-        x = self.lstm1(x, initial_state=states[0])
+        x, hidden_state_1, carry_state_1 = self.lstm1(x, initial_state=states[0])
         x = self.dense1(x)
 
-        x, _, _ = self.lstm2(x, initial_state=states[1])
+        x, hidden_state_2, carry_state_2 = self.lstm2(x, initial_state=states[1])
         x = self.dense2(x)
 
-        return x
+        return x, [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
 
 class Lstm(base.Model):
@@ -87,7 +88,7 @@ class Lstm(base.Model):
             training: If the model is training.
         """
         states = self.encoder(x[0])
-        x = self.decoder(x[1], states)
+        x, _ = self.decoder(x[1], states)
 
         return x
 
@@ -95,6 +96,21 @@ class Lstm(base.Model):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
+
+    def translate(self, x: tf.Tensor):
+        """Translate on input tensor."""
+        batch_size = x.shape[0]
+        states = self.encoder(x)
+
+        words = tf.ones([batch_size, 1])
+        words, states = self.decoder(words, states)
+
+        last_words = words[:, -1]
+        while np.equal(last_words.numpy(), np.zeros(batch_size, 1)):
+            words, states = self.decoder(last_words, states)
+            last_words = words[:, -1]
+
+        return words
 
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""

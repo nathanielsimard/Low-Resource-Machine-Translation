@@ -109,15 +109,12 @@ def _create_updated_dataloader(
         corpus_target=new_corpus_target,
     )
 
+
 def _generate_predictions_unaligned(model, dataset, encoder, batch_size):
     predictions = []
-    for inputs in dataset.padded_batch(
-        batch_size, padded_shapes=[None]
-    ):
+    for inputs in dataset.padded_batch(batch_size, padded_shapes=[None]):
         print(inputs.shape)
-        outputs = model(inputs, training=False)
+        outputs = model.translate(inputs)
         predictions += model.predictions(outputs, encoder)
 
     return predictions
-
-

@@ -6,6 +6,7 @@ import tensorflow_datasets as tfds
 
 UNKNOWN_TOKEN = "<unk>"
 END_OF_SAMPLE_TOKEN = "<eos>"
+START_OF_SAMPLE_TOKEN = "<sos>"
 
 
 class SingleDataloader:
@@ -36,7 +37,9 @@ class SingleDataloader:
 
         def gen():
             for i in self.corpus:
-                yield self.encoder.encode(i + " " + END_OF_SAMPLE_TOKEN)
+                yield self.encoder.encode(
+                    START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
+                )
 
         return tf.data.Dataset.from_generator(gen, tf.int64)
 
@@ -95,9 +98,11 @@ class AlignedDataloader:
 
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
-                encoder_input = self.encoder_input.encode(i + " " + END_OF_SAMPLE_TOKEN)
+                encoder_input = self.encoder_input.encode(
+                    START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
+                )
                 encoder_target = self.encoder_target.encode(
-                    o + " " + END_OF_SAMPLE_TOKEN
+                    START_OF_SAMPLE_TOKEN + " " + o + " " + END_OF_SAMPLE_TOKEN
                 )
 
                 yield (encoder_input, encoder_target)
@@ -132,7 +137,7 @@ def create_encoder(
 ) -> tfds.features.text.TextEncoder:
     """Create the encoder from sentences."""
     print(cache_file)
-    if cache_file is not None and os.path.isfile(cache_file +".subwords"):
+    if cache_file is not None and os.path.isfile(cache_file + ".subwords"):
         print(f"Loading cache encoder {cache_file}")
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
@@ -143,7 +148,7 @@ def create_encoder(
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         (sentence for sentence in sentences),
         target_vocab_size=max_vocab_size,
-        reserved_tokens=[UNKNOWN_TOKEN, END_OF_SAMPLE_TOKEN],
+        reserved_tokens=[UNKNOWN_TOKEN, START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
     )
 
     if cache_file is not None:
