@@ -69,6 +69,7 @@ class BackTranslationTraining(base.Training):
                 self.aligned_dataloader,
                 batch_size,
             )
+            
             # Train model on augmented dataset
             training = base.BasicMachineTranslationTraining(
                 self.model_1, updated_dataloader, self.aligned_valid_dataloader
@@ -113,8 +114,8 @@ def _create_updated_dataloader(
 def _generate_predictions_unaligned(model, dataset, encoder, batch_size):
     predictions = []
     for inputs in dataset.padded_batch(batch_size, padded_shapes=[None]):
-        print(inputs.shape)
         outputs = model.translate(inputs)
-        predictions += model.predictions(outputs, encoder)
+        predictions += model.predictions(outputs, encoder, logit=True)
+        print(predictions[-1])
 
     return predictions

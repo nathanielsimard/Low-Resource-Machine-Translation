@@ -57,9 +57,10 @@ class BasicMachineTranslationTraining(Training):
         if checkpoint is not None:
             self.model.load(str(checkpoint))
         else:
-            checkpoint = 1
+            checkpoint = 0
 
-        for epoch in range(checkpoint, num_epoch + 1):
+        print(checkpoint)
+        for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
 
             for inputs, targets in train_dataset.padded_batch(

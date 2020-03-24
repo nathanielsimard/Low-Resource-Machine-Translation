@@ -123,9 +123,11 @@ def back_translation_training(args, loss_fn):
     optim = tf.keras.optimizers.Adam(args.lr)
     print("Creating training unaligned dataloader ...")
     train_dl = dataloader.SingleDataloader("data/unaligned.en", args.vocab_size)
+    print(f"English vocab size: {train_dl.encoder.vocab_size}")
 
     print("Creating training unaligned dataloader reverse ...")
     train_dl_reverse = dataloader.SingleDataloader("data/unaligned.fr", args.vocab_size)
+    print(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
     print("Creating training aligned dataloader ...")
     aligned_train_dl = dataloader.AlignedDataloader(
@@ -187,7 +189,7 @@ def back_translation_training(args, loss_fn):
     )
 
     training.run(
-        loss_fn, optim, batch_size=args.batch_size, num_epoch=args.epochs,
+        loss_fn, optim, batch_size=args.batch_size, num_epoch=args.epochs, checkpoint=args.checkpoint
     )
 
 

@@ -40,10 +40,15 @@ class Model(tf.keras.Model, abc.ABC):
         """Can apply some preprocessing specific to the model."""
         return dataset
 
-    def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder):
+    def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder, logit=False):
         """Generate prediction tokens from the outputs from the last layer."""
         # Index must start at 1.
+        sentences = outputs
+
+        if not logit:
+            sentences = np.argmax(sentences.numpy(), axis=2)
+
         return [
             encoder.decode(sentence + 1)
-            for sentence in np.argmax(outputs.numpy(), axis=2)
+            for sentence in sentences
         ]
