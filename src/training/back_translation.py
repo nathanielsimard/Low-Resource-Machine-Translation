@@ -89,7 +89,7 @@ def _create_updated_dataloader(
     model, dataloader, dataloader_reverse, aligned_dataloader, batch_size
 ):
     dataset = dataloader.create_dataset()
-    predictions = base._generate_predictions(
+    predictions = _generate_predictions_unaligned(
         model, dataset, dataloader_reverse.encoder, batch_size
     )
 
@@ -108,3 +108,16 @@ def _create_updated_dataloader(
         corpus_input=new_corpus_input,
         corpus_target=new_corpus_target,
     )
+
+def _generate_predictions_unaligned(model, dataset, encoder, batch_size):
+    predictions = []
+    for inputs in dataset.padded_batch(
+        batch_size, padded_shapes=[None]
+    ):
+        print(inputs.shape)
+        outputs = model(inputs, training=False)
+        predictions += model.predictions(outputs, encoder)
+
+    return predictions
+
+

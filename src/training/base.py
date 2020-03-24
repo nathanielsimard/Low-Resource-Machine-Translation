@@ -65,6 +65,7 @@ class BasicMachineTranslationTraining(Training):
             for inputs, targets in train_dataset.padded_batch(
                 batch_size, padded_shapes=self.model.padded_shapes
             ):
+                print(inputs.shape)
                 with tf.GradientTape() as tape:
                     outputs = self.model(inputs, training=True)
 

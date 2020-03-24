@@ -118,6 +118,7 @@ def _create_cached_encoder(file_name, corpus, cache_dir, vocab_size):
 
 def read_file(file_name: str) -> List[str]:
     """Read file and returns paragraphs."""
+    print(f"Reading file {file_name}")
     output = []
     with open(file_name, "r") as stream:
         for line in stream:
@@ -130,9 +131,12 @@ def create_encoder(
     sentences: List[str], max_vocab_size: int, cache_file=None
 ) -> tfds.features.text.TextEncoder:
     """Create the encoder from sentences."""
-    if cache_file is not None and os.path.isfile(cache_file):
+    print(cache_file)
+    if cache_file is not None and os.path.isfile(cache_file +".subwords"):
+        print(f"Loading cache encoder {cache_file}")
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
+    print("Creating new encoder")
     # The unknown token must be at first because the padded batch
     # add zero padding, which will be understood by the network as
     # unknown words.
@@ -143,6 +147,7 @@ def create_encoder(
     )
 
     if cache_file is not None:
+        print(f"Saving encoder {cache_file}")
         encoder.save_to_file(cache_file)
 
     return encoder

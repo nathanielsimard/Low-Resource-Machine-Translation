@@ -121,9 +121,13 @@ def basic_training(args, loss_fn):
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
     optim = tf.keras.optimizers.Adam(args.lr)
+    print("Creating training unaligned dataloader ...")
     train_dl = dataloader.SingleDataloader("data/unaligned.en", args.vocab_size)
+
+    print("Creating training unaligned dataloader reverse ...")
     train_dl_reverse = dataloader.SingleDataloader("data/unaligned.fr", args.vocab_size)
 
+    print("Creating training aligned dataloader ...")
     aligned_train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",
@@ -132,14 +136,16 @@ def back_translation_training(args, loss_fn):
         encoder_target=train_dl_reverse.encoder,
     )
 
+    print("Creating training aligned dataloader reverse ...")
     aligned_train_dl_reverse = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.fr",
         file_name_target="data/splitted_data/sorted_train_token.en",
         vocab_size=args.vocab_size,
-        encoder_input=aligned_train_dl.encoder_target.encoder,
-        encoder_target=aligned_train_dl.encoder_input.encoder,
+        encoder_input=aligned_train_dl.encoder_target,
+        encoder_target=aligned_train_dl.encoder_input,
     )
 
+    print("Creating valid aligned dataloader ...")
     aligned_valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
         file_name_target="data/splitted_data/sorted_val_token.fr",
@@ -148,6 +154,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl.encoder_target,
     )
 
+    print("Creating valid aligned dataloader reverse ...")
     aligned_valid_dl_reverse = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.fr",
         file_name_target="data/splitted_data/sorted_val_token.en",
@@ -155,6 +162,7 @@ def back_translation_training(args, loss_fn):
         encoder_input=aligned_train_dl_reverse.encoder_input,
         encoder_target=aligned_train_dl_reverse.encoder_target,
     )
+
     model = MODELS[args.model](
         args,
         aligned_train_dl.encoder_input.vocab_size,
