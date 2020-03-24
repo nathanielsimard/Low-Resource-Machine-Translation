@@ -10,14 +10,21 @@ END_OF_SAMPLE_TOKEN = "<eos>"
 
 class SingleDataloader:
     def __init__(
-        self, file_name: str, vocab_size: int, cache_dir=".cache", encoder=None
+        self,
+        file_name: str,
+        vocab_size: int,
+        cache_dir=".cache",
+        encoder=None,
+        corpus=None,
     ):
         self.file_name = file_name
         self.vocab_size = vocab_size
         self.cache_dir = cache_dir
         self.encoder = encoder
+        self.corpus = corpus
 
-        self.corpus = read_file(file_name)
+        if self.corpus is None:
+            self.corpus = read_file(file_name)
 
         if self.encoder is None:
             self.encoder = _create_cached_encoder(
@@ -45,6 +52,8 @@ class AlignedDataloader:
         cache_dir=".cache",
         encoder_input=None,
         encoder_target=None,
+        corpus_input=None,
+        corpus_target=None,
     ):
         """Create dataset for translation.
 
@@ -62,9 +71,14 @@ class AlignedDataloader:
         self.cache_dir = cache_dir
         self.encoder_input = encoder_input
         self.encoder_target = encoder_target
+        self.corpus_input = corpus_input
+        self.corpus_target = corpus_target
 
-        self.corpus_input = read_file(file_name_input)
-        self.corpus_target = read_file(file_name_target)
+        if self.corpus_input is None:
+            self.corpus_input = read_file(file_name_input)
+
+        if self.corpus_target is None:
+            self.corpus_target = read_file(file_name_target)
 
         if self.encoder_input is None:
             self.encoder_input = _create_cached_encoder(

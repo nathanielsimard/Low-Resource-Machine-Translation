@@ -6,8 +6,8 @@ import tensorflow as tf
 from src import dataloader
 from src.model import lstm
 from src.training import base
+from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
-from src.training.basic_training import BackTranslationTraining
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):

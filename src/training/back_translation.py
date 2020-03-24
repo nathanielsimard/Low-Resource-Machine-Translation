@@ -39,14 +39,14 @@ class BackTranslationTraining(base.Training):
         training = base.BasicMachineTranslationTraining(
             self.model_1, self.aligned_dataloader, self.aligned_valid_dataloader
         )
-        training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
+        training.run(loss_fn, optimizer, batch_size, 0, checkpoint=checkpoint)
 
         training = base.BasicMachineTranslationTraining(
             self.model_2,
             self.aligned_dataloader_reversed,
             self.aligned_valid_dataloader_reverse,
         )
-        training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
+        training.run(loss_fn, optimizer, batch_size, 0, checkpoint=checkpoint)
 
         for epoch in range(1, num_epoch + 1):
             # Generate dataloader lang1 -> lang2 with model
@@ -60,7 +60,6 @@ class BackTranslationTraining(base.Training):
                 self.dataloader,
                 self.aligned_dataloader_reversed,
                 batch_size,
-                "augmented",
             )
             # Same thing, but reverse
             updated_dataloader_reverse = _create_updated_dataloader(
@@ -69,7 +68,6 @@ class BackTranslationTraining(base.Training):
                 self.dataloader_reverse,
                 self.aligned_dataloader,
                 batch_size,
-                "augmented_reverse",
             )
             # Train model on augmented dataset
             training = base.BasicMachineTranslationTraining(
@@ -88,7 +86,7 @@ class BackTranslationTraining(base.Training):
 
 
 def _create_updated_dataloader(
-    model, dataloader, dataloader_reverse, aligned_dataloader, batch_size, file_name
+    model, dataloader, dataloader_reverse, aligned_dataloader, batch_size
 ):
     dataset = dataloader.create_dataset()
     predictions = base._generate_predictions(
@@ -101,16 +99,12 @@ def _create_updated_dataloader(
         aligned_dataloader.corpus_input + dataloader.corpus[:additional_data]
     )
 
-    # Sorted new corpus
-    file_name_input = f"{file_name}_input"
-    file_name_target = f"{file_name}_target"
-    base.write_text(new_corpus_input, file_name_input)
-    base.write_text(new_corpus_target, file_name_target)
-
     return AlignedDataloader(
-        file_name_input,
-        file_name_target,
+        "new_corpus_input",
+        "new_corpus_target",
         dataloader.vocab_size,
         encoder_input=dataloader.encoder_input,
         encoder_target=dataloader.encoder_target,
+        corpus_input=new_corpus_input,
+        corpus_target=new_corpus_target,
     )
