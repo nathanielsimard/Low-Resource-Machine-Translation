@@ -39,14 +39,14 @@ class BackTranslationTraining(base.Training):
         training = base.BasicMachineTranslationTraining(
             self.model_1, self.aligned_dataloader, self.aligned_valid_dataloader
         )
-        training.run(loss_fn, optimizer, batch_size, 0, checkpoint=checkpoint)
+        training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         training = base.BasicMachineTranslationTraining(
             self.model_2,
             self.aligned_dataloader_reversed,
             self.aligned_valid_dataloader_reverse,
         )
-        training.run(loss_fn, optimizer, batch_size, 0, checkpoint=checkpoint)
+        training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         for epoch in range(1, num_epoch + 1):
             # Generate dataloader lang1 -> lang2 with model

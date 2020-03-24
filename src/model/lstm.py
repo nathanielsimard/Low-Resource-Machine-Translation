@@ -48,7 +48,7 @@ class Decoder(base.Model):
         """
         super().__init__(f"{NAME}-Decoder")
         self.embed = layers.Embedding(vocab_size, 256)
-        self.lstm1 = layers.LSTM(256, return_sequences=True)
+        self.lstm1 = layers.LSTM(256, return_sequences=True, return_state=True)
         self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
 
         self.lstm2 = layers.LSTM(1024, return_sequences=True, return_state=True)
@@ -102,13 +102,22 @@ class Lstm(base.Model):
         batch_size = x.shape[0]
         states = self.encoder(x)
 
-        words = tf.ones([batch_size, 1])
-        words, states = self.decoder(words, states)
+        words = tf.ones([batch_size, 1], dtype=tf.int64)
 
-        last_words = words[:, -1]
-        while np.equal(last_words.numpy(), np.zeros(batch_size, 1)):
-            words, states = self.decoder(last_words, states)
-            last_words = words[:, -1]
+        last_words, states = self.decoder(words, states)
+        last_words = tf.math.argmax(last_words, axis=2)
+        words = tf.concat([words, last_words], 1)
+
+        #print(f"Words : {words}")
+        #print(f"Last Words : {last_words}")
+        while not np.array_equal(last_words.numpy(), np.zeros([batch_size, 1], dtype=np.int64)):
+            #print("Inside")
+            last_words, states = self.decoder(last_words, states)
+            last_words = tf.math.argmax(last_words, axis=2)
+            words = tf.concat([words, last_words], 1)
+
+            #print(f"Words : {words}")
+            #print(f"Last Words : {last_words}")
 
         return words
 
