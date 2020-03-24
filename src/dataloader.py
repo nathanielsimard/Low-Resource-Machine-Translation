@@ -8,8 +8,34 @@ UNKNOWN_TOKEN = "<unk>"
 END_OF_SAMPLE_TOKEN = "<eos>"
 
 
-class Dataloader:
-    """TranslationDataloader class used for translation."""
+class SingleDataloader:
+    def __init__(
+        self, file_name: str, vocab_size: int, cache_dir=".cache", encoder=None
+    ):
+        self.file_name = file_name
+        self.vocab_size = vocab_size
+        self.cache_dir = cache_dir
+        self.encoder = encoder
+
+        self.corpus = read_file(file_name)
+
+        if self.encoder is None:
+            self.encoder = _create_cached_encoder(
+                file_name, self.corpus, self.cache_dir, self.vocab_size
+            )
+
+    def create_dataset(self) -> tf.data.Dataset:
+        """Create a Tensorflow dataset."""
+
+        def gen():
+            for i in self.corpus:
+                yield self.encoder.encode(i + " " + END_OF_SAMPLE_TOKEN)
+
+        return tf.data.Dataset.from_generator(gen, tf.int64)
+
+
+class AlignedDataloader:
+    """AlignedDataloader class used for translation."""
 
     def __init__(
         self,
@@ -41,13 +67,13 @@ class Dataloader:
         self.corpus_target = read_file(file_name_target)
 
         if self.encoder_input is None:
-            self.encoder_input = self._create_cached_encoder(
-                file_name_input, self.corpus_input
+            self.encoder_input = _create_cached_encoder(
+                file_name_input, self.corpus_input, self.cache_dir, self.vocab_size
             )
 
         if self.encoder_target is None:
-            self.encoder_target = self._create_cached_encoder(
-                file_name_target, self.corpus_target
+            self.encoder_target = _create_cached_encoder(
+                file_name_target, self.corpus_target, self.cache_dir, self.vocab_size
             )
 
     def create_dataset(self) -> tf.data.Dataset:
@@ -64,15 +90,16 @@ class Dataloader:
 
         return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
-    def _create_cached_encoder(self, file_name, corpus):
-        directory = os.path.join(self.cache_dir, file_name)
-        os.makedirs(directory, exist_ok=True)
 
-        return create_encoder(
-            corpus,
-            self.vocab_size,
-            cache_file=os.path.join(directory, str(self.vocab_size)).format(),
-        )
+def _create_cached_encoder(file_name, corpus, cache_dir, vocab_size):
+    directory = os.path.join(cache_dir, file_name)
+    os.makedirs(directory, exist_ok=True)
+
+    return create_encoder(
+        corpus,
+        vocab_size,
+        cache_file=os.path.join(directory, str(vocab_size)).format(),
+    )
 
 
 def read_file(file_name: str) -> List[str]:
