@@ -101,7 +101,7 @@ def _create_updated_dataloader(
 ):
     dataset = dataloader.create_dataset()
     predictions = _generate_predictions_unaligned(
-        model, dataset, dataloader_reverse.encoder, batch_size
+        model, dataset, dataloader_reverse.encoder, batch_size, len(dataloader.corpus)
     )
 
     additional_data = 2 * len(aligned_dataloader.corpus)
@@ -121,11 +121,11 @@ def _create_updated_dataloader(
     )
 
 
-def _generate_predictions_unaligned(model, dataset, encoder, batch_size):
+def _generate_predictions_unaligned(model, dataset, encoder, batch_size, num_samples):
     predictions = []
-    for inputs in dataset.padded_batch(batch_size, padded_shapes=[None]):
+    for i, inputs in enumerate(dataset.padded_batch(batch_size, padded_shapes=[None])):
+        print(f"Generating samples, progression {i}/{num_samples}")
         outputs = model.translate(inputs)
         predictions += model.predictions(outputs, encoder, logit=True)
-        print(predictions[-1])
 
     return predictions
