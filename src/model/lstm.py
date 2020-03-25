@@ -108,16 +108,18 @@ class Lstm(base.Model):
         last_words = tf.math.argmax(last_words, axis=2)
         words = tf.concat([words, last_words], 1)
 
-        #print(f"Words : {words}")
-        #print(f"Last Words : {last_words}")
-        while not np.array_equal(last_words.numpy(), np.zeros([batch_size, 1], dtype=np.int64)):
-            #print("Inside")
+        # print(f"Words : {words}")
+        # print(f"Last Words : {last_words}")
+        while not np.array_equal(
+            last_words.numpy(), np.zeros([batch_size, 1], dtype=np.int64)
+        ):
+            # print("Inside")
             last_words, states = self.decoder(last_words, states)
             last_words = tf.math.argmax(last_words, axis=2)
             words = tf.concat([words, last_words], 1)
 
-            #print(f"Words : {words}")
-            #print(f"Last Words : {last_words}")
+            print(f"Words : {words}")
+            # print(f"Last Words : {last_words}")
 
         return words
 
