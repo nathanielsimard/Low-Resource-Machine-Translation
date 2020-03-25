@@ -55,16 +55,12 @@ class BackTranslationTraining(base.Training):
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         for epoch in range(1, num_epoch + 1):
-            # Generate dataloader lang1 -> lang2 with model
-            # that translate lang2 -> lang1 and use those
-            # predictions to augmente the inputs of the
-            # dataset lang1 -> lang2.
-            # Targets are always the real data.
+
             print(
                 "Creating updated dataloader by generating new samples "
                 + "with model2 for lang1 -> lang2"
             )
-            updated_dataloader = _create_updated_dataloader(
+            updated_dataloader = create_updated_dataloader(
                 self.model_2,
                 self.dataloader_reverse,
                 self.dataloader,
@@ -75,7 +71,7 @@ class BackTranslationTraining(base.Training):
                 "Creating updated dataloader by generating new samples "
                 + "with model1 for lang2 -> lang1"
             )
-            updated_dataloader_reverse = _create_updated_dataloader(
+            updated_dataloader_reverse = create_updated_dataloader(
                 self.model_1,
                 self.dataloader,
                 self.dataloader_reverse,
@@ -100,13 +96,25 @@ class BackTranslationTraining(base.Training):
             self.model_2.save(str(epoch))
 
 
-def _create_updated_dataloader(
-    model, dataloader, dataloader_reverse, aligned_dataloader, batch_size
+def create_updated_dataloader(
+    model,
+    dataloader,
+    dataloader_reverse,
+    aligned_dataloader,
+    batch_size,
+    aumgentation_ratio=2,
 ):
-    additional_data = 2 * len(aligned_dataloader.corpus_input)
+    """Create updated dataloader by augmenting the old dataset with predictions.
+
+        Generate dataloader lang1 -> lang2 with model that translate lang2 -> lang1.
+        It then uses those predictions to augmente the inputs of theadataset lang1 -> lang2.
+        Targets are always the real data.
+    """
+    additional_data = aumgentation_ratio * len(aligned_dataloader.corpus_input)
     additional_data = batch_size
 
     corpus = copy.deepcopy(dataloader.corpus)
+    # Reduce the corpus to only predict the same number as the number of additional data.
     dataloader.corpus = corpus[:additional_data]
 
     dataset = dataloader.create_dataset()

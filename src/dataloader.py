@@ -4,13 +4,13 @@ from typing import List
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-UNKNOWN_TOKEN = "<unk>"
-UNKNOWN_TOKEN_INDEX = 1
+EMPTY_TOKEN = "<empty>"
+EMPTY_TOKEN_INDEX = 1
 
-START_OF_SAMPLE_TOKEN = "<sos>"
+START_OF_SAMPLE_TOKEN = "<start>"
 START_OF_SAMPLE_TOKEN_INDEX = 2
 
-END_OF_SAMPLE_TOKEN = "<eos>"
+END_OF_SAMPLE_TOKEN = "<end>"
 END_OF_SAMPLE_TOKEN_INDEX = 3
 
 
@@ -147,13 +147,13 @@ def create_encoder(
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
     print("Creating new encoder")
-    # The unknown token must be at first because the padded batch
+    # The empty token must be at first because the padded batch
     # add zero padding, which will be understood by the network as
-    # unknown words.
+    # empty words.
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         (sentence for sentence in sentences),
         target_vocab_size=max_vocab_size,
-        reserved_tokens=[UNKNOWN_TOKEN, START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
+        reserved_tokens=[EMPTY_TOKEN, START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
     )
 
     if cache_file is not None:

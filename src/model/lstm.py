@@ -4,7 +4,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX, UNKNOWN_TOKEN_INDEX
+from src.dataloader import (END_OF_SAMPLE_TOKEN_INDEX,
+                            START_OF_SAMPLE_TOKEN_INDEX)
 from src.model import base
 
 NAME = "lstm"
@@ -104,26 +105,28 @@ class Lstm(base.Model):
         batch_size = x.shape[0]
         states = self.encoder(x)
 
-        words = tf.ones([batch_size, 1], dtype=tf.int64)
+        # The first words of each sentence in the batch is the start of sample token.
+        words = tf.zeros([batch_size, 1], dtype=tf.int64) + START_OF_SAMPLE_TOKEN_INDEX
+        last_words = words
 
-        last_words, states = self.decoder(words, states)
-        last_words = tf.math.argmax(last_words, axis=2)
-        words = tf.concat([words, last_words], 1)
+        has_finish_predicting = False
+        reach_max_seq_lenght = False
 
-        # print(f"Words : {words}")
-        # print(f"Last Words : {last_words}")
-        end_of_sample = (
-            np.zeros([batch_size, 1], dtype=np.int64) + END_OF_SAMPLE_TOKEN_INDEX
-        )
-        while not (np.array_equal(last_words.numpy(), end_of_sample) or words.shape[1] > MAX_SEQ_LENGHT):
-            # print("Inside")
+        while not (has_finish_predicting or reach_max_seq_lenght):
+            # Predicting the next words from the last words using
+            # the last state while updating the last words and states.
             last_words, states = self.decoder(last_words, states)
             last_words = tf.math.argmax(last_words, axis=2)
+
+            # Append the newly predicted words into words.
             words = tf.concat([words, last_words], 1)
 
-            # print(last_words)
-            # print(words.shape)
-            # print(f"Last Words : {last_words}")
+            # Compute the end condition of the while loop.
+            end_of_sample = (
+                np.zeros([batch_size, 1], dtype=np.int64) + END_OF_SAMPLE_TOKEN_INDEX
+            )
+            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
 
         return words
 
