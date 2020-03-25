@@ -39,6 +39,7 @@ class BackTranslationTraining(base.Training):
         training = base.BasicMachineTranslationTraining(
             self.model_1, self.aligned_dataloader, self.aligned_valid_dataloader
         )
+        print("Training first model on aligned dataset.")
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         training = base.BasicMachineTranslationTraining(
@@ -46,14 +47,19 @@ class BackTranslationTraining(base.Training):
             self.aligned_dataloader_reversed,
             self.aligned_valid_dataloader_reverse,
         )
+        print("Training second model on reversed aligned dataaset.")
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         for epoch in range(1, num_epoch + 1):
             # Generate dataloader lang1 -> lang2 with model
             # that translate lang2 -> lang1 and use those
-            # perdictions to augmente the inputs of the
+            # predictions to augmente the inputs of the
             # dataset lang1 -> lang2.
             # Targets are always the real data.
+            print(
+                "Creating updated dataloader by generating new samples "
+                + "with model2 for lang1 -> lang2"
+            )
             updated_dataloader = _create_updated_dataloader(
                 self.model_2,
                 self.dataloader_reverse,
@@ -61,7 +67,10 @@ class BackTranslationTraining(base.Training):
                 self.aligned_dataloader_reversed,
                 batch_size,
             )
-            # Same thing, but reverse
+            print(
+                "Creating updated dataloader by generating new samples "
+                + "with model1 for lang2 -> lang1"
+            )
             updated_dataloader_reverse = _create_updated_dataloader(
                 self.model_1,
                 self.dataloader,
@@ -69,11 +78,11 @@ class BackTranslationTraining(base.Training):
                 self.aligned_dataloader,
                 batch_size,
             )
-            
             # Train model on augmented dataset
             training = base.BasicMachineTranslationTraining(
                 self.model_1, updated_dataloader, self.aligned_valid_dataloader
             )
+            print("Training first model on augmented aligned dataaset.")
             training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
             self.model_1.save(str(epoch))
 
@@ -82,6 +91,7 @@ class BackTranslationTraining(base.Training):
                 updated_dataloader_reverse,
                 self.aligned_valid_dataloader_reverse,
             )
+            print("Training second model on reversed augmented aligned dataaset.")
             training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
             self.model_2.save(str(epoch))
 
