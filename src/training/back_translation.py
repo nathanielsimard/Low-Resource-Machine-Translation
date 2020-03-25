@@ -69,7 +69,7 @@ class BackTranslationTraining(base.Training):
                 self.dataloader_reverse,
                 self.dataloader,
                 self.aligned_dataloader_reversed,
-                batch_size,
+                24 * batch_size,
             )
             print(
                 "Creating updated dataloader by generating new samples "
@@ -80,7 +80,7 @@ class BackTranslationTraining(base.Training):
                 self.dataloader,
                 self.dataloader_reverse,
                 self.aligned_dataloader,
-                batch_size,
+                24 * batch_size,
             )
             # Train model on augmented dataset
             training = base.BasicMachineTranslationTraining(
