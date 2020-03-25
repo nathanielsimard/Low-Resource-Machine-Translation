@@ -5,8 +5,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from src.dataloader import (EMPTY_TOKEN, END_OF_SAMPLE_TOKEN,
-                            START_OF_SAMPLE_TOKEN)
+from src.dataloader import EMPTY_TOKEN, END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
 
 MODEL_BASE_DIR = "models"
 
@@ -14,7 +13,6 @@ MODEL_BASE_DIR = "models"
 class Model(tf.keras.Model, abc.ABC):
     """All models will inherit from this class.
 
-    Each model must supplie their configuration with what features they need.
     Each model has full control over the preprocessing apply on the data.
     """
 
@@ -46,6 +44,11 @@ class Model(tf.keras.Model, abc.ABC):
 
 
 class MachineTranslationModel(Model):
+    """Model used to do machine translation.
+
+    Each model must implement the translate method.
+    """
+
     def predictions(
         self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder, logit=False
     ) -> List[str]:
@@ -66,7 +69,7 @@ class MachineTranslationModel(Model):
 
         Example::
             >>> translated = model.translate(x)
-            >>> predictions = model.predict(translated)
+            >>> predictions = model.predict(translated, encoder, logit=True)
         """
         pass
 

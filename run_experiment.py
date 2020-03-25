@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
     parser.add_argument(
         "--model",
-        help=f"Name of the model to basic_training, available models are:\n{list(MODELS.keys())}",
+        help=f"Name of the model to run, available models are:\n{list(MODELS.keys())}",
         type=str,
         required=True,
     )
@@ -75,7 +75,7 @@ def main():
 
     if args.basic_training and args.back_translation_training:
         raise ValueError(
-            "Both basic training and back translation training were chose, only one can be use at the same time."
+            "Both basic training and back translation training were chosen, only one can be use at the same time."
         )
 
     if not args.random_seed:
@@ -122,11 +122,13 @@ def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
     optim = tf.keras.optimizers.Adam(args.lr)
     print("Creating training unaligned dataloader ...")
-    train_dl = dataloader.SingleDataloader("data/unaligned.en", args.vocab_size)
+    train_dl = dataloader.UnalignedDataloader("data/unaligned.en", args.vocab_size)
     print(f"English vocab size: {train_dl.encoder.vocab_size}")
 
-    print("Creating training unaligned dataloader reverse ...")
-    train_dl_reverse = dataloader.SingleDataloader("data/unaligned.fr", args.vocab_size)
+    print("Creating reversed training unaligned dataloader ...")
+    train_dl_reverse = dataloader.UnalignedDataloader(
+        "data/unaligned.fr", args.vocab_size
+    )
     print(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
     print("Creating training aligned dataloader ...")
@@ -138,7 +140,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=train_dl_reverse.encoder,
     )
 
-    print("Creating training aligned dataloader reverse ...")
+    print("Creating reversed training aligned dataloader ...")
     aligned_train_dl_reverse = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.fr",
         file_name_target="data/splitted_data/sorted_train_token.en",
@@ -156,7 +158,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl.encoder_target,
     )
 
-    print("Creating valid aligned dataloader reverse ...")
+    print("Creating reversed valid aligned dataloader ...")
     aligned_valid_dl_reverse = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.fr",
         file_name_target="data/splitted_data/sorted_val_token.en",
@@ -189,13 +191,17 @@ def back_translation_training(args, loss_fn):
     )
 
     training.run(
-        loss_fn, optim, batch_size=args.batch_size, num_epoch=args.epochs, checkpoint=args.checkpoint
+        loss_fn,
+        optim,
+        batch_size=args.batch_size,
+        num_epoch=args.epochs,
+        checkpoint=args.checkpoint,
     )
 
 
 def test(args, loss_fn):
     """Test the model."""
-    # Used to load the basic_training text encoders.
+    # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",

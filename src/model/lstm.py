@@ -4,8 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from src.dataloader import (END_OF_SAMPLE_TOKEN_INDEX,
-                            START_OF_SAMPLE_TOKEN_INDEX)
+from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX, START_OF_SAMPLE_TOKEN_INDEX
 from src.model import base
 
 NAME = "lstm"

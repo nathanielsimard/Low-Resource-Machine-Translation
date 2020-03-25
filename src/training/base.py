@@ -11,6 +11,8 @@ from src.model import base
 
 
 class Training(abc.ABC):
+    """Abstract class for training a model."""
+
     @abc.abstractmethod
     def run(
         self,
@@ -20,16 +22,20 @@ class Training(abc.ABC):
         num_epoch: int,
         checkpoint=None,
     ):
+        """Each training sub-class must implement their own run method."""
         pass
 
 
 class BasicMachineTranslationTraining(Training):
+    """Train a machine translation model with only aligned datasets."""
+
     def __init__(
         self,
         model,
         train_dataloader: AlignedDataloader,
         valid_dataloader: AlignedDataloader,
     ):
+        """Create BasicMachineTranslationTraining."""
         self.model = model
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
@@ -55,11 +61,11 @@ class BasicMachineTranslationTraining(Training):
         os.makedirs(directory, exist_ok=True)
 
         if checkpoint is not None:
+            print(f"Loading model {checkpoint}")
             self.model.load(str(checkpoint))
         else:
             checkpoint = 0
 
-        print(checkpoint)
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
 

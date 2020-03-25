@@ -14,7 +14,9 @@ END_OF_SAMPLE_TOKEN = "<end>"
 END_OF_SAMPLE_TOKEN_INDEX = 3
 
 
-class SingleDataloader:
+class UnalignedDataloader:
+    """Dataloader used for a single unaligned dataset."""
+
     def __init__(
         self,
         file_name: str,
@@ -23,6 +25,10 @@ class SingleDataloader:
         encoder=None,
         corpus=None,
     ):
+        """Create the UnalignedDataloader.
+
+        If no corpus of encoder are passed, new ones are created.
+        """
         self.file_name = file_name
         self.vocab_size = vocab_size
         self.cache_dir = cache_dir
@@ -72,6 +78,8 @@ class AlignedDataloader:
             cache_dir: Cache directory for the encoders.
             encoder_input: English tokenizer.
             encoder_target: French tokenizer.
+            corpus_input: The corpus lang1,
+            corpus_target: the corpus lang2,
         """
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
@@ -141,7 +149,6 @@ def create_encoder(
     sentences: List[str], max_vocab_size: int, cache_file=None
 ) -> tfds.features.text.TextEncoder:
     """Create the encoder from sentences."""
-    print(cache_file)
     if cache_file is not None and os.path.isfile(cache_file + ".subwords"):
         print(f"Loading cache encoder {cache_file}")
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
