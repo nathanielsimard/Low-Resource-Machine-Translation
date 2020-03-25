@@ -102,6 +102,7 @@ def _create_updated_dataloader(
     model, dataloader, dataloader_reverse, aligned_dataloader, batch_size
 ):
     additional_data = 2 * len(aligned_dataloader.corpus_input)
+    additional_data = batch_size
 
     corpus = copy.deepcopy(dataloader.corpus)
     dataloader.corpus = corpus[:additional_data]
@@ -120,8 +121,8 @@ def _create_updated_dataloader(
         "new_corpus_input",
         "new_corpus_target",
         dataloader.vocab_size,
-        encoder_input=dataloader.encoder_input,
-        encoder_target=dataloader.encoder_target,
+        encoder_input=aligned_dataloader.encoder_target,
+        encoder_target=aligned_dataloader.encoder_input,
         corpus_input=new_corpus_input,
         corpus_target=new_corpus_target,
     )
