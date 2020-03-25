@@ -74,7 +74,7 @@ class Decoder(base.Model):
         return x, [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
 
-class Lstm(base.Model):
+class Lstm(base.MachineTranslationModel):
     """Basic sequence-to-sequence lstm model to perform machine translation."""
 
     def __init__(self, input_vocab_size: int, output_vocab_size: int):

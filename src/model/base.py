@@ -44,6 +44,8 @@ class Model(tf.keras.Model, abc.ABC):
         """Can apply some preprocessing specific to the model."""
         return dataset
 
+
+class MachineTranslationModel(Model):
     def predictions(
         self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder, logit=False
     ) -> List[str]:
