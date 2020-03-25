@@ -38,6 +38,8 @@ class BackTranslationTraining(base.Training):
         num_epoch: int,
         checkpoint=None,
     ):
+        self.model_1.title = self.model_1.title + "-model-1"
+        self.model_2.title = self.model_2.title + "-model-2"
         training = base.BasicMachineTranslationTraining(
             self.model_1, self.aligned_dataloader, self.aligned_valid_dataloader
         )
