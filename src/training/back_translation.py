@@ -65,7 +65,8 @@ class BackTranslationTraining(base.Training):
                 self.dataloader_reverse,
                 self.dataloader,
                 self.aligned_dataloader_reversed,
-                24 * batch_size,
+                24
+                * batch_size,  # Batch size can be higher because it is one word after the other (seq of 1)
             )
             print(
                 "Creating updated dataloader by generating new samples "
@@ -76,7 +77,8 @@ class BackTranslationTraining(base.Training):
                 self.dataloader,
                 self.dataloader_reverse,
                 self.aligned_dataloader,
-                24 * batch_size,
+                24
+                * batch_size,  # Batch size can be higher because it is one word after the other (seq of 1)
             )
             # Train model on augmented dataset
             training = base.BasicMachineTranslationTraining(
@@ -124,9 +126,6 @@ def create_updated_dataloader(
 
     new_corpus_input = aligned_dataloader.corpus_target + predictions
     new_corpus_target = aligned_dataloader.corpus_input + dataloader.corpus
-
-    print(new_corpus_input[:10])
-    print(new_corpus_target[:10])
 
     dataloader.corpus = corpus
 
