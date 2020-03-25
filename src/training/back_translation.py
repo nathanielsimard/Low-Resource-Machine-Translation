@@ -1,3 +1,5 @@
+import copy
+
 import tensorflow as tf
 
 from src.dataloader import AlignedDataloader
@@ -99,16 +101,20 @@ class BackTranslationTraining(base.Training):
 def _create_updated_dataloader(
     model, dataloader, dataloader_reverse, aligned_dataloader, batch_size
 ):
+    additional_data = 2 * len(aligned_dataloader.corpus)
+
+    corpus = copy.deepcopy(dataloader.corpus)
+    dataloader.corpus = corpus[:additional_data]
+
     dataset = dataloader.create_dataset()
     predictions = _generate_predictions_unaligned(
         model, dataset, dataloader_reverse.encoder, batch_size, len(dataloader.corpus)
     )
 
-    additional_data = 2 * len(aligned_dataloader.corpus)
-    new_corpus_input = aligned_dataloader.corpus_target + predictions[:additional_data]
-    new_corpus_target = (
-        aligned_dataloader.corpus_input + dataloader.corpus[:additional_data]
-    )
+    new_corpus_input = aligned_dataloader.corpus_target + predictions
+    new_corpus_target = aligned_dataloader.corpus_input + dataloader.corpus
+
+    dataloader.corpus = corpus
 
     return AlignedDataloader(
         "new_corpus_input",
