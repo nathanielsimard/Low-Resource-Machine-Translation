@@ -117,6 +117,9 @@ def _create_updated_dataloader(
     new_corpus_input = aligned_dataloader.corpus_target + predictions
     new_corpus_target = aligned_dataloader.corpus_input + dataloader.corpus
 
+    print(new_corpus_input[:10])
+    print(new_corpus_target[:10])
+
     dataloader.corpus = corpus
 
     return AlignedDataloader(
