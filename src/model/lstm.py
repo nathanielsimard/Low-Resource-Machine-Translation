@@ -120,7 +120,7 @@ class Lstm(base.Model):
             last_words = tf.math.argmax(last_words, axis=2)
             words = tf.concat([words, last_words], 1)
 
-            print(f"Words : {words}")
+            # print(f"Words : {words}")
             # print(f"Last Words : {last_words}")
 
         return words
