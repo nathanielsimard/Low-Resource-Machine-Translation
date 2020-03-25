@@ -3,6 +3,10 @@ import abc
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import src.dataloader as dataloader
+
+UNKNOWN_TOKEN = dataloader.UNKNOWN_TOKEN
+END_OF_SAMPLE_TOKEN = dataloader.END_OF_SAMPLE_TOKEN
 
 MODEL_BASE_DIR = "models"
 
@@ -48,7 +52,21 @@ class Model(tf.keras.Model, abc.ABC):
         if not logit:
             sentences = np.argmax(sentences.numpy(), axis=2)
 
-        return [
+        sentences = [
             encoder.decode(sentence + 1)
             for sentence in sentences
         ]
+
+        return _remove_unk(sentences)
+
+
+def _remove_unk(sentences):
+    result = []
+    for sentence in sentences:
+        new_sentence = []
+        for word in sentence.split():
+            if not (END_OF_SAMPLE_TOKEN in word or UNKNOWN_TOKEN in word):
+                new_sentence.append(word)
+        result.append(' '.join(new_sentence))
+
+    return result
