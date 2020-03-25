@@ -4,10 +4,11 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX
+from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX, UNKNOWN_TOKEN_INDEX
 from src.model import base
 
 NAME = "lstm"
+MAX_SEQ_LENGHT = 100
 
 
 class Encoder(base.Model):
@@ -114,13 +115,14 @@ class Lstm(base.Model):
         end_of_sample = (
             np.zeros([batch_size, 1], dtype=np.int64) + END_OF_SAMPLE_TOKEN_INDEX
         )
-        while not np.array_equal(last_words.numpy(), end_of_sample):
+        while not (np.array_equal(last_words.numpy(), end_of_sample) or words.shape[1] > MAX_SEQ_LENGHT):
             # print("Inside")
             last_words, states = self.decoder(last_words, states)
             last_words = tf.math.argmax(last_words, axis=2)
             words = tf.concat([words, last_words], 1)
 
-            # print(f"Words : {words}")
+            # print(last_words)
+            # print(words.shape)
             # print(f"Last Words : {last_words}")
 
         return words
