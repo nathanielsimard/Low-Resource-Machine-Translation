@@ -101,7 +101,7 @@ class BackTranslationTraining(base.Training):
 def _create_updated_dataloader(
     model, dataloader, dataloader_reverse, aligned_dataloader, batch_size
 ):
-    additional_data = 2 * len(aligned_dataloader.corpus)
+    additional_data = 2 * len(aligned_dataloader.corpus_input)
 
     corpus = copy.deepcopy(dataloader.corpus)
     dataloader.corpus = corpus[:additional_data]
