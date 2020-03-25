@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
+from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX
 from src.model import base
 
 NAME = "lstm"
@@ -110,9 +111,10 @@ class Lstm(base.Model):
 
         # print(f"Words : {words}")
         # print(f"Last Words : {last_words}")
-        while not np.array_equal(
-            last_words.numpy(), np.zeros([batch_size, 1], dtype=np.int64)
-        ):
+        end_of_sample = (
+            np.zeros([batch_size, 1], dtype=np.int64) + END_OF_SAMPLE_TOKEN_INDEX
+        )
+        while not np.array_equal(last_words.numpy(), end_of_sample):
             # print("Inside")
             last_words, states = self.decoder(last_words, states)
             last_words = tf.math.argmax(last_words, axis=2)

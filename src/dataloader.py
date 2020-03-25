@@ -5,8 +5,13 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 UNKNOWN_TOKEN = "<unk>"
-END_OF_SAMPLE_TOKEN = "<eos>"
+UNKNOWN_TOKEN_INDEX = 1
+
 START_OF_SAMPLE_TOKEN = "<sos>"
+START_OF_SAMPLE_TOKEN_INDEX = 2
+
+END_OF_SAMPLE_TOKEN = "<eos>"
+END_OF_SAMPLE_TOKEN_INDEX = 3
 
 
 class SingleDataloader:
