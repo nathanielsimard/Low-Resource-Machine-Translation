@@ -18,11 +18,11 @@ class Transformer(base.Model):
         num_layers=2,
         d_model=512,
         num_heads=8,
-        dff = ,
-        input_vocab_size,
-        target_vocab_size,
-        pe_input,
-        pe_target,
+        dff=512,
+        input_vocab_size=80000,
+        target_vocab_size=80000,
+        pe_input=80000,
+        pe_target=80000,
         rate=0.1,
     ):
         """Initialize the Encoder module.
@@ -55,7 +55,6 @@ class Transformer(base.Model):
         self, inp, tar, training, enc_padding_mask, look_ahead_mask, dec_padding_mask
     ):
         """Forward pass of the Transformer."""
-
         enc_output = self.encoder(
             inp, training, enc_padding_mask
         )  # (batch_size, inp_seq_len, d_model)
