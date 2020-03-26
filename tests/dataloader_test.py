@@ -31,12 +31,20 @@ class DataloaderTest(unittest.TestCase):
 
         self.assertEqual(out, sample)
 
-    def test_encoder_first_id_is_unk(self):
+    def test_encoder_empty_token(self):
         encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
+        ids = encoder.encode(dataloader.EMPTY_TOKEN + " battle")
+        self.assertEqual(ids[0], dataloader.EMPTY_TOKEN_INDEX)
 
-        ids = encoder.encode("<unk> battle")
+    def test_encoder_start_of_sentence_token(self):
+        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
+        ids = encoder.encode(dataloader.START_OF_SAMPLE_TOKEN + " battle")
+        self.assertEqual(ids[0], dataloader.START_OF_SAMPLE_TOKEN_INDEX)
 
-        self.assertEqual(ids[0], 1)
+    def test_encoder_end_of_sentence_token(self):
+        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
+        ids = encoder.encode(dataloader.END_OF_SAMPLE_TOKEN + " battle")
+        self.assertEqual(ids[0], dataloader.END_OF_SAMPLE_TOKEN_INDEX)
 
     def test_create_dataset(self):
         dl = dataloader.AlignedDataloader("tests/sample1.txt", "tests/sample2.txt", 300)
