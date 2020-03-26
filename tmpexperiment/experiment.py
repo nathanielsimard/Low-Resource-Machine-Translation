@@ -312,9 +312,8 @@ def plot_attention(attention, sentence, predicted_sentence):
 
 
 def main():
-    #train_lines = read_file('test.train')
+    train_lines = read_file('test.train')
     #val_lines = read_file('test.val')
-    train_lines = read_file('test.val')
 
     en_train, fr_train = create_dataset(train_lines, None)
     #en_val, fr_val = create_dataset(val_lines, None)
