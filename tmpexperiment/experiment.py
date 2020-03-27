@@ -23,7 +23,8 @@ def write_text(sentences, output_file):
     with open(output_file, "w+") as out_stream:
         for sentence in sentences:
             out_stream.write(sentence + "\n")
-            
+
+
 def read_file(file_name):
     """Read file and returns paragraphs."""
     output = []
@@ -32,6 +33,7 @@ def read_file(file_name):
             tokens = line.strip()
             output.append(tokens)
     return output
+
 
 def compute_bleu(pred_file_path, target_file_path):
     """Compute bleu score.
@@ -63,223 +65,240 @@ def compute_bleu(pred_file_path, target_file_path):
     return sum(scores) / len(scores)
 
 # Converts the unicode file to ascii
-def unicode_to_ascii(s):
-  return ''.join(c for c in unicodedata.normalize('NFD', s)
-      if unicodedata.category(c) != 'Mn')
 
+
+def unicode_to_ascii(s):
+    return ''.join(c for c in unicodedata.normalize('NFD', s)
+                   if unicodedata.category(c) != 'Mn')
 
 
 def preprocess_sentence(w):
-  w = unicode_to_ascii(w.lower().strip())
+    w = unicode_to_ascii(w.lower().strip())
 
-  # creating a space between a word and the punctuation following it
-  # eg: "he is a boy." => "he is a boy ."
-  # Reference:- https://stackoverflow.com/questions/3645931/python-padding-punctuation-with-white-spaces-keeping-punctuation
-  w = re.sub(r"([?.!,¿])", r" \1 ", w)
-  w = re.sub(r'[" "]+', " ", w)
+    # creating a space between a word and the punctuation following it
+    # eg: "he is a boy." => "he is a boy ."
+    # Reference:- https://stackoverflow.com/questions/3645931/python-padding-punctuation-with-white-spaces-keeping-punctuation
+    w = re.sub(r"([?.!,¿])", r" \1 ", w)
+    w = re.sub(r'[" "]+', " ", w)
 
-  # replacing everything with space except (a-z, A-Z, ".", "?", "!", ",")
-  w = re.sub(r"[^a-zA-Z?.!,¿]+", " ", w)
+    # replacing everything with space except (a-z, A-Z, ".", "?", "!", ",")
+    w = re.sub(r"[^a-zA-Z?.!,¿]+", " ", w)
 
-  w = w.rstrip().strip()
+    w = w.rstrip().strip()
 
-  # adding a start and an end token to the sentence
-  # so that the model know when to start and stop predicting.
-  w = '<start> ' + w + ' <end>'
-  return w
+    # adding a start and an end token to the sentence
+    # so that the model know when to start and stop predicting.
+    w = '<start> ' + w + ' <end>'
+    return w
 
 
 # 1. Remove the accents
 # 2. Clean the sentences
 # 3. Return word pairs in the format: [ENGLISH, SPANISH]
 def create_dataset(lines, num_examples):
-  #lines = io.open(path, encoding='UTF-8').read().strip().split('\n')
+    #lines = io.open(path, encoding='UTF-8').read().strip().split('\n')
 
-  word_pairs = [[preprocess_sentence(w) for w in l.split('\t')]  for l in lines[:num_examples]]
+    word_pairs = [[preprocess_sentence(w) for w in l.split('\t')] for l in lines[:num_examples]]
 
-  return zip(*word_pairs)
+    return zip(*word_pairs)
+
 
 def max_length(tensor):
-  return max(len(t) for t in tensor)
+    return max(len(t) for t in tensor)
+
 
 def tokenize(lang):
-  lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(
-      filters='')
-  lang_tokenizer.fit_on_texts(lang)
+    lang_tokenizer = tf.keras.preprocessing.text.Tokenizer(
+        filters='')
+    lang_tokenizer.fit_on_texts(lang)
 
-  tensor = lang_tokenizer.texts_to_sequences(lang)
+    tensor = lang_tokenizer.texts_to_sequences(lang)
 
-  tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor,
-                                                         padding='post')
+    tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor,
+                                                           padding='post')
 
-  return tensor, lang_tokenizer
+    return tensor, lang_tokenizer
+
 
 def tokenize_with_tokenizer(lang, tokenizer):
     tensor = tokenizer.texts_to_sequences(lang)
 
     tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor,
-                                                         padding='post')
+                                                           padding='post')
 
     return tensor
 
+
 def load_dataset(i, t, num_examples=None):
-  # creating cleaned input, output pairs
-  #targ_lang, inp_lang = create_dataset(path, num_examples)
+    # creating cleaned input, output pairs
+    #targ_lang, inp_lang = create_dataset(path, num_examples)
 
-  input_tensor, inp_lang_tokenizer = tokenize(i)
-  target_tensor, targ_lang_tokenizer = tokenize(t)
+    input_tensor, inp_lang_tokenizer = tokenize(i)
+    target_tensor, targ_lang_tokenizer = tokenize(t)
 
-  return input_tensor, target_tensor, inp_lang_tokenizer, targ_lang_tokenizer
+    return input_tensor, target_tensor, inp_lang_tokenizer, targ_lang_tokenizer
+
 
 class Encoder(tf.keras.Model):
-  def __init__(self, vocab_size, embedding_dim, enc_units, batch_sz):
-    super(Encoder, self).__init__()
-    self.batch_sz = batch_sz
-    self.enc_units = enc_units
-    self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-    self.gru = tf.keras.layers.GRU(self.enc_units,
-                                   return_sequences=True,
-                                   return_state=True,
-                                   recurrent_initializer='glorot_uniform')
+    def __init__(self, vocab_size, embedding_dim, enc_units, batch_sz):
+        super(Encoder, self).__init__()
+        self.batch_sz = batch_sz
+        self.enc_units = enc_units
+        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
+        self.gru = tf.keras.layers.GRU(self.enc_units,
+                                       return_sequences=True,
+                                       return_state=True,
+                                       recurrent_initializer='glorot_uniform')
 
-  def call(self, x, hidden):
-    x = self.embedding(x)
-    output, state = self.gru(x, initial_state = hidden)
-    return output, state
+    def call(self, x, hidden):
+        x = self.embedding(x)
+        output, state = self.gru(x, initial_state=hidden)
+        return output, state
 
-  def initialize_hidden_state(self):
-    return tf.zeros((self.batch_sz, self.enc_units))
+    def initialize_hidden_state(self):
+        return tf.zeros((self.batch_sz, self.enc_units))
+
 
 class BahdanauAttention(tf.keras.layers.Layer):
-  def __init__(self, units):
-    super(BahdanauAttention, self).__init__()
-    self.W1 = tf.keras.layers.Dense(units)
-    self.W2 = tf.keras.layers.Dense(units)
-    self.V = tf.keras.layers.Dense(1)
+    def __init__(self, units):
+        super(BahdanauAttention, self).__init__()
+        self.W1 = tf.keras.layers.Dense(units)
+        self.W2 = tf.keras.layers.Dense(units)
+        self.V = tf.keras.layers.Dense(1)
 
-  def call(self, query, values):
-    # query hidden state shape == (batch_size, hidden size)
-    # query_with_time_axis shape == (batch_size, 1, hidden size)
-    # values shape == (batch_size, max_len, hidden size)
-    # we are doing this to broadcast addition along the time axis to calculate the score
-    query_with_time_axis = tf.expand_dims(query, 1)
+    def call(self, query, values):
+        # query hidden state shape == (batch_size, hidden size)
+        # query_with_time_axis shape == (batch_size, 1, hidden size)
+        # values shape == (batch_size, max_len, hidden size)
+        # we are doing this to broadcast addition along the time axis to calculate the score
+        query_with_time_axis = tf.expand_dims(query, 1)
 
-    # score shape == (batch_size, max_length, 1)
-    # we get 1 at the last axis because we are applying score to self.V
-    # the shape of the tensor before applying self.V is (batch_size, max_length, units)
-    score = self.V(tf.nn.tanh(
-        self.W1(query_with_time_axis) + self.W2(values)))
+        # score shape == (batch_size, max_length, 1)
+        # we get 1 at the last axis because we are applying score to self.V
+        # the shape of the tensor before applying self.V is (batch_size, max_length, units)
+        score = self.V(tf.nn.tanh(
+            self.W1(query_with_time_axis) + self.W2(values)))
 
-    # attention_weights shape == (batch_size, max_length, 1)
-    attention_weights = tf.nn.softmax(score, axis=1)
+        # attention_weights shape == (batch_size, max_length, 1)
+        attention_weights = tf.nn.softmax(score, axis=1)
 
-    # context_vector shape after sum == (batch_size, hidden_size)
-    context_vector = attention_weights * values
-    context_vector = tf.reduce_sum(context_vector, axis=1)
+        # context_vector shape after sum == (batch_size, hidden_size)
+        context_vector = attention_weights * values
+        context_vector = tf.reduce_sum(context_vector, axis=1)
 
-    return context_vector, attention_weights
+        return context_vector, attention_weights
+
 
 class Decoder(tf.keras.Model):
-  def __init__(self, vocab_size, embedding_dim, dec_units, batch_sz):
-    super(Decoder, self).__init__()
-    self.batch_sz = batch_sz
-    self.dec_units = dec_units
-    self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-    self.gru = tf.keras.layers.GRU(self.dec_units,
-                                   return_sequences=True,
-                                   return_state=True,
-                                   recurrent_initializer='glorot_uniform')
-    self.fc = tf.keras.layers.Dense(vocab_size)
+    def __init__(self, vocab_size, embedding_dim, dec_units, batch_sz):
+        super(Decoder, self).__init__()
+        self.batch_sz = batch_sz
+        self.dec_units = dec_units
+        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
+        self.gru = tf.keras.layers.GRU(self.dec_units,
+                                       return_sequences=True,
+                                       return_state=True,
+                                       recurrent_initializer='glorot_uniform')
+        self.fc = tf.keras.layers.Dense(vocab_size)
 
-    # used for attention
-    self.attention = BahdanauAttention(self.dec_units)
+        # used for attention
+        self.attention = BahdanauAttention(self.dec_units)
 
-  def call(self, x, hidden, enc_output):
-    # enc_output shape == (batch_size, max_length, hidden_size)
-    context_vector, attention_weights = self.attention(hidden, enc_output)
+    def call(self, x, hidden, enc_output):
+        # enc_output shape == (batch_size, max_length, hidden_size)
+        context_vector, attention_weights = self.attention(hidden, enc_output)
 
-    # x shape after passing through embedding == (batch_size, 1, embedding_dim)
-    x = self.embedding(x)
+        # x shape after passing through embedding == (batch_size, 1, embedding_dim)
+        x = self.embedding(x)
 
-    # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
-    x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
+        # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
+        x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
 
-    # passing the concatenated vector to the GRU
-    output, state = self.gru(x)
+        # passing the concatenated vector to the GRU
+        output, state = self.gru(x)
 
-    # output shape == (batch_size * 1, hidden_size)
-    output = tf.reshape(output, (-1, output.shape[2]))
+        # output shape == (batch_size * 1, hidden_size)
+        output = tf.reshape(output, (-1, output.shape[2]))
 
-    # output shape == (batch_size, vocab)
-    x = self.fc(output)
+        # output shape == (batch_size, vocab)
+        x = self.fc(output)
 
-    return x, state, attention_weights
+        return x, state, attention_weights
+
 
 def loss_function(real, pred, loss_object):
-  mask = tf.math.logical_not(tf.math.equal(real, 0))
-  loss_ = loss_object(real, pred)
+    mask = tf.math.logical_not(tf.math.equal(real, 0))
+    loss_ = loss_object(real, pred)
 
-  mask = tf.cast(mask, dtype=loss_.dtype)
-  loss_ *= mask
+    mask = tf.cast(mask, dtype=loss_.dtype)
+    loss_ *= mask
 
-  return tf.reduce_mean(loss_)
+    return tf.reduce_mean(loss_)
+
 
 @tf.function
-def train_step(inp, targ, enc_hidden, encoder, decoder, targ_lang, BATCH_SIZE,loss_object, optimizer):
-  loss = 0
+def train_step(inp, targ, enc_hidden, encoder, decoder, targ_lang, BATCH_SIZE, loss_object, optimizer):
+    loss = 0
 
-  with tf.GradientTape() as tape:
-    enc_output, enc_hidden = encoder(inp, enc_hidden)
+    with tf.GradientTape() as tape:
+        enc_output, enc_hidden = encoder(inp, enc_hidden)
 
-    dec_hidden = enc_hidden
+        dec_hidden = enc_hidden
 
-    dec_input = tf.expand_dims([targ_lang.word_index['<start>']] * BATCH_SIZE, 1)
+        dec_input = tf.expand_dims([targ_lang.word_index['<start>']] * BATCH_SIZE, 1)
 
-    prediction = []
-    target = []
-    # Teacher forcing - feeding the target as the next input
-    for t in range(1, targ.shape[1]):
-      # passing enc_output to the decoder
-      predictions, dec_hidden, _ = decoder(dec_input, dec_hidden, enc_output)
+        prediction = []
+        target = []
+        # Teacher forcing - feeding the target as the next input
+        for t in range(1, targ.shape[1]):
+            # passing enc_output to the decoder
+            predictions, dec_hidden, _ = decoder(dec_input, dec_hidden, enc_output)
 
-      prediction.append(predictions)
-      target.append(targ[:, t])
+            prediction.append(predictions)
+            target.append(targ[:, t])
 
-      loss += loss_function(targ[:, t], predictions, loss_object)
+            loss += loss_function(targ[:, t], predictions, loss_object)
 
-      # using teacher forcing
-      dec_input = tf.expand_dims(targ[:, t], 1)
+            # using teacher forcing
+            dec_input = tf.expand_dims(targ[:, t], 1)
 
-  batch_loss = (loss / int(targ.shape[1]))
+    batch_loss = (loss / int(targ.shape[1]))
 
-  variables = encoder.trainable_variables + decoder.trainable_variables
+    variables = encoder.trainable_variables + decoder.trainable_variables
 
-  gradients = tape.gradient(loss, variables)
+    gradients = tape.gradient(loss, variables)
 
-  optimizer.apply_gradients(zip(gradients, variables))
+    optimizer.apply_gradients(zip(gradients, variables))
 
-  return batch_loss, target, prediction
+    return batch_loss, target, prediction
+
 
 def compute_pred_tar(pred, tar, targ_lang_tokenizer):
-  targets = []
+    targets = []
 
-  for fa in tf.transpose(tar):
-    target = []
-    for i in fa.numpy():
-        if(not i == 0):
-            target.append(targ_lang_tokenizer.index_word[i])
-    targets.append(' '.join(target))
+    for fa in tf.transpose(tar):
+        target = []
+        for i in fa.numpy():
+            if(not i == 0):
+                word = targ_lang_tokenizer.index_word[i]
+                if word == '<end>':
+                    break
+                target.append(word)
 
-  predictions = []
-  for tr in tf.transpose(pred, [1,0,2]):
-      prediction = []
-      for word in tr:
-          m = tf.argmax(word).numpy()
-          prediction.append(targ_lang_tokenizer.index_word[m])
-      predictions.append(' '.join(prediction))
+        targets.append(' '.join(target))
 
-  return predictions, targets
+    predictions = []
+    for tr in tf.transpose(pred, [1, 0, 2]):
+        prediction = []
+        for word in tr:
+            m = tf.argmax(word).numpy()
+            word = targ_lang_tokenizer.index_word[m]
+            if word == '<end>':
+                break
+            prediction.append(word)
+        predictions.append(' '.join(prediction))
 
+    return predictions, targets
 
 
 def main():
@@ -298,11 +317,11 @@ def main():
 
     BUFFER_SIZE = len(input_tensor_train)
     BATCH_SIZE = 4
-    steps_per_epoch = len(input_tensor_train)//BATCH_SIZE
+    steps_per_epoch = len(input_tensor_train) // BATCH_SIZE
     embedding_dim = 256
     units = 1024
-    vocab_inp_size = len(inp_lang_tokenizer.word_index)+1
-    vocab_tar_size = len(targ_lang_tokenizer.word_index)+1
+    vocab_inp_size = len(inp_lang_tokenizer.word_index) + 1
+    vocab_tar_size = len(targ_lang_tokenizer.word_index) + 1
 
     dataset_train = tf.data.Dataset.from_tensor_slices((input_tensor_train, target_tensor_train))
     dataset_train = dataset_train.batch(BATCH_SIZE, drop_remainder=True)
@@ -322,45 +341,46 @@ def main():
 
     decoder = Decoder(vocab_tar_size, embedding_dim, units, BATCH_SIZE)
     sample_decoder_output, _, _ = decoder(tf.random.uniform((BATCH_SIZE, 1)),
-                                                  sample_hidden, sample_output)
+                                          sample_hidden, sample_output)
 
     optimizer = tf.keras.optimizers.Adam()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=True, reduction='none')
 
-
     EPOCHS = 10
 
     for epoch in range(EPOCHS):
-      start = time.time()
+        start = time.time()
 
-      enc_hidden = encoder.initialize_hidden_state()
-      total_loss = 0
+        enc_hidden = encoder.initialize_hidden_state()
+        total_loss = 0
 
-      pred = []
-      tar = [] 
-      for (batch, (inp, targ)) in enumerate(dataset_train.take(steps_per_epoch)):
-        batch_loss, target, prediction = train_step(inp, targ, enc_hidden, encoder,decoder,  targ_lang_tokenizer, BATCH_SIZE, loss_object, optimizer)
-        total_loss += batch_loss
+        pred = []
+        tar = []
+        for (batch, (inp, targ)) in enumerate(dataset_train.take(steps_per_epoch)):
+            batch_loss, target, prediction = train_step(
+                inp, targ, enc_hidden, encoder, decoder, targ_lang_tokenizer, BATCH_SIZE, loss_object, optimizer)
+            total_loss += batch_loss
 
-        p, t = compute_pred_tar(prediction, target, targ_lang_tokenizer)
+            p, t = compute_pred_tar(prediction, target, targ_lang_tokenizer)
 
-        pred += p
-        tar += t
-        if batch % 100 == 0:
-          print('Epoch {} Batch {} Loss {:.4f}'.format(epoch + 1,
-                                                       batch,
-                                                       batch_loss.numpy()))
-      write_text(pred, 'Predictionnns3')
-      write_text(tar, 'Targetttss3')
-      bleu = compute_bleu('Predictionnns3', 'Targetttss3')
-      message = f'Epoch {epoch+1} Bleu {bleu}, Loss {total_loss/steps_per_epoch}, Time {time.time() -start}'
-      write_text(message, f'Result_{epoch+1}')
+            pred += p
+            tar += t
+            if batch % 100 == 0:
+                print('Epoch {} Batch {} Loss {:.4f}'.format(epoch + 1,
+                                                             batch,
+                                                             batch_loss.numpy()))
+        write_text(pred, f'Prediction_{epoch+1}')
+        write_text(tar, f'Target_{epoch+1}')
+        bleu = compute_bleu(f'Prediction_{epoch+1}', f'Target_{epoch+1}')
 
-      print(f'Epoch {epoch+1} Bleu {bleu}')
-      print('Epoch {} Loss {:.4f}'.format(epoch + 1,
-                                          total_loss / steps_per_epoch))
-      print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
+        message = [f'Epoch {epoch+1} Bleu {bleu}, Loss {total_loss/steps_per_epoch}, Time {time.time() -start}']
+        write_text(message, f'Result_{epoch+1}')
+
+        print(f'Epoch {epoch+1} Bleu {bleu}')
+        print('Epoch {} Loss {:.4f}'.format(epoch + 1,
+                                            total_loss / steps_per_epoch))
+        print('Time taken for 1 epoch {} sec\n'.format(time.time() - start))
 
 
 if __name__ == '__main__':
