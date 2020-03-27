@@ -4,14 +4,17 @@ from tensorflow.keras import layers
 from src.model import base
 from typing import Tuple
 
+from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX, START_OF_SAMPLE_TOKEN_INDEX
+
 # DISCLAIMER: This module is taken as is from the tensorflow documentation, under the Creative Commons 4.0 License.
 # It is thus available for free adaptation and sharing.
 # The more detailed implementation can be found @ https://www.tensorflow.org/tutorials/text/transformer
 
 NAME = "transformer"
+MAX_SEQ_LENGTH = 100
 
 
-class Transformer(base.Model):
+class Transformer(base.MachineTranslationModel):
     """Transformer model."""
 
     def __init__(
@@ -41,6 +44,8 @@ class Transformer(base.Model):
             rate: dropout rate.
         """
         super(Transformer, self).__init__(f"{NAME}")
+        self.input_vocab_size = input_vocab_size
+        self.target_vocab_size = target_vocab_size
 
         self.encoder = Encoder(
             num_layers, d_model, num_heads, dff, input_vocab_size, pe_input, rate
@@ -52,16 +57,9 @@ class Transformer(base.Model):
 
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
-    def call(
-        self,
-        x: Tuple[tf.Tensor, tf.Tensor],
-        training,
-        enc_padding_mask,
-        look_ahead_mask,
-        dec_padding_mask,
-    ):
+    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Forward pass of the Transformer."""
-
+        enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(x[0], x[1])
         enc_output = self.encoder(
             x[0], training, enc_padding_mask
         )  # (batch_size, inp_seq_len, d_model)
@@ -75,7 +73,54 @@ class Transformer(base.Model):
             dec_output
         )  # (batch_size, tar_seq_len, target_vocab_size)
 
-        return final_output, attention_weights
+        return final_output
+
+    def translate(self, x: tf.Tensor):
+        """Translation function for the test set."""
+        batch_size = x.shape[0]
+        # The first words of each sentence in the batch is the start of sample token.
+        words = tf.zeros([batch_size, 1], dtype=tf.int64) + START_OF_SAMPLE_TOKEN_INDEX
+        words = tf.expand_dims(words, 0)
+
+        decoder_input = [self.target_vocab_size]
+        output = tf.expand_dims(decoder_input, 0)
+
+        has_finish_predicting = False
+        reach_max_seq_lenght = False
+
+        while not (has_finish_predicting or reach_max_seq_lenght):
+
+            # predictions.shape == (batch_size, seq_len, vocab_size)
+            predictions, attention_weights = self.call((words, output), training=False)
+            # select the last word from the seq_len dimension
+            predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
+
+            predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int64)
+
+            end_of_sample = (
+                np.zeros([batch_size, words.shape[1], 1], dtype=np.int64)
+                + END_OF_SAMPLE_TOKEN_INDEX
+            )
+
+            has_finish_predicting = np.array_equal(predicted_id.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGTH
+
+            output = tf.concat([output, predicted_id], axis=-1)
+
+        return tf.squeeze(output, axis=0)
+
+    @property
+    def padded_shapes(self):
+        """Padded shapes used to add padding when batching multiple sequences."""
+        return (([None], [None]), [None])
+
+    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
+
+        def preprocess(input_sentence, output_sentence):
+            return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
+
+        return dataset.map(preprocess)
 
 
 class Decoder(layers.Layer):
@@ -141,7 +186,7 @@ class Decoder(layers.Layer):
         return x, attention_weights
 
 
-class Encoder(tf.keras.layers.Layer):
+class Encoder(layers.Layer):
     """Encoder of the Transformer model.
 
     Stacks many EncoderLayer.

@@ -155,6 +155,6 @@ def _generate_predictions_unaligned(model, dataset, encoder, batch_size, num_sam
     for i, inputs in enumerate(dataset.padded_batch(batch_size, padded_shapes=[None])):
         print(f"Generating samples, progression {i*batch_size}/{num_samples}")
         outputs = model.translate(inputs)
-        predictions += model.predictions(outputs, encoder, logit=True)
+        predictions += model.predictions(outputs, encoder, logit=False)
 
     return predictions
