@@ -4,7 +4,7 @@ import random
 import tensorflow as tf
 
 from src import dataloader, training
-from src.model import lstm
+from src.model import lstm, transformer
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
@@ -12,7 +12,22 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
     return model
 
 
-MODELS = {lstm.NAME: create_lstm}
+def create_transformer(args, input_vocab_size, target_vocab_size):
+    model = transformer.Transformer(
+        num_layers=2,
+        num_heads=8,
+        dff=512,
+        d_model=512,
+        input_vocab_size=input_vocab_size,
+        target_vocab_size=target_vocab_size,
+        pe_input=input_vocab_size,
+        pe_target=target_vocab_size,
+        rate=0.1,
+    )
+    return model
+
+
+MODELS = {lstm.NAME: create_lstm, transformer.NAME: create_transformer}
 
 
 def parse_args():

@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras import layers
 from src.model import base
+from typing import Tuple
 
 # DISCLAIMER: This module is taken as is from the tensorflow documentation, under the Creative Commons 4.0 License.
 # It is thus available for free adaptation and sharing.
@@ -15,15 +16,15 @@ class Transformer(base.Model):
 
     def __init__(
         self,
-        num_layers=2,
-        d_model=512,
-        num_heads=8,
-        dff=512,
-        input_vocab_size=80000,
-        target_vocab_size=80000,
-        pe_input=80000,
-        pe_target=80000,
-        rate=0.1,
+        num_layers: int,
+        d_model: int,
+        num_heads: int,
+        dff: int,
+        input_vocab_size: int,
+        target_vocab_size: int,
+        pe_input: int,
+        pe_target: int,
+        rate: float,
     ):
         """Initialize the Encoder module.
 
@@ -52,16 +53,22 @@ class Transformer(base.Model):
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
     def call(
-        self, inp, tar, training, enc_padding_mask, look_ahead_mask, dec_padding_mask
+        self,
+        x: Tuple[tf.Tensor, tf.Tensor],
+        training,
+        enc_padding_mask,
+        look_ahead_mask,
+        dec_padding_mask,
     ):
         """Forward pass of the Transformer."""
+
         enc_output = self.encoder(
-            inp, training, enc_padding_mask
+            x[0], training, enc_padding_mask
         )  # (batch_size, inp_seq_len, d_model)
 
         # dec_output.shape == (batch_size, tar_seq_len, d_model)
         dec_output, attention_weights = self.decoder(
-            tar, enc_output, training, look_ahead_mask, dec_padding_mask
+            x[1], enc_output, training, look_ahead_mask, dec_padding_mask
         )
 
         final_output = self.final_layer(
@@ -403,3 +410,21 @@ def _point_wise_feed_forward_network(d_model, dff):
             layers.Dense(d_model),  # (batch_size, seq_len, d_model)
         ]
     )
+
+
+def _create_masks(inp, tar):
+    # Encoder padding mask
+    enc_padding_mask = _create_padding_mask(inp)
+
+    # Used in the 2nd attention block in the decoder.
+    # This padding mask is used to mask the encoder outputs.
+    dec_padding_mask = _create_padding_mask(inp)
+
+    # Used in the 1st attention block in the decoder.
+    # It is used to pad and mask future tokens in the input received by
+    # the decoder.
+    look_ahead_mask = _create_look_ahead_mask(tf.shape(tar)[1])
+    dec_target_padding_mask = _create_padding_mask(tar)
+    combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
+
+    return enc_padding_mask, combined_mask, dec_padding_mask
