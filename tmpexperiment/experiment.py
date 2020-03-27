@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import tensorflow as tf
 
+from src import logging
+import subprocess
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from sklearn.model_selection import train_test_split
@@ -13,13 +15,16 @@ import os
 import io
 import time
 
+logger = logging.create_logger(__name__)
+
+
 def write_text(sentences, output_file):
     """Write text from sentences."""
     with open(output_file, "w+") as out_stream:
         for sentence in sentences:
             out_stream.write(sentence + "\n")
             
-def read_file(file_name: str):
+def read_file(file_name):
     """Read file and returns paragraphs."""
     output = []
     with open(file_name, "r") as stream:
@@ -28,7 +33,7 @@ def read_file(file_name: str):
             output.append(tokens)
     return output
 
-def compute_bleu(pred_file_path: str, target_file_path: str):
+def compute_bleu(pred_file_path, target_file_path):
     """Compute bleu score.
 
     Args:
@@ -236,6 +241,7 @@ def train_step(inp, targ, enc_hidden, encoder, decoder, targ_lang, BATCH_SIZE,lo
     for t in range(1, targ.shape[1]):
       # passing enc_output to the decoder
       predictions, dec_hidden, _ = decoder(dec_input, dec_hidden, enc_output)
+
       prediction.append(predictions)
       target.append(targ[:, t])
 
@@ -254,66 +260,32 @@ def train_step(inp, targ, enc_hidden, encoder, decoder, targ_lang, BATCH_SIZE,lo
 
   return batch_loss, target, prediction
 
-def evaluate(sentence):
-  attention_plot = np.zeros((max_length_targ, max_length_inp))
+def compute_pred_tar(pred, tar, targ_lang_tokenizer):
+  targets = []
 
-  sentence = preprocess_sentence(sentence)
+  for fa in tf.transpose(tar):
+    target = []
+    for i in fa.numpy():
+        if(not i == 0):
+            target.append(targ_lang_tokenizer.index_word[i])
+    targets.append(' '.join(target))
 
-  inputs = [inp_lang.word_index[i] for i in sentence.split(' ')]
-  inputs = tf.keras.preprocessing.sequence.pad_sequences([inputs],
-                                                         maxlen=max_length_inp,
-                                                         padding='post')
-  inputs = tf.convert_to_tensor(inputs)
+  predictions = []
+  for tr in tf.transpose(pred, [1,0,2]):
+      prediction = []
+      for word in tr:
+          m = tf.argmax(word).numpy()
+          prediction.append(targ_lang_tokenizer.index_word[m])
+      predictions.append(' '.join(prediction))
 
-  result = ''
+  return predictions, targets
 
-  hidden = [tf.zeros((1, units))]
-  enc_out, enc_hidden = encoder(inputs, hidden)
-
-  dec_hidden = enc_hidden
-  dec_input = tf.expand_dims([targ_lang.word_index['<start>']], 0)
-
-  for t in range(max_length_targ):
-    predictions, dec_hidden, attention_weights = decoder(dec_input,
-                                                         dec_hidden,
-                                                         enc_out)
-
-    # storing the attention weights to plot later on
-    attention_weights = tf.reshape(attention_weights, (-1, ))
-    attention_plot[t] = attention_weights.numpy()
-
-    predicted_id = tf.argmax(predictions[0]).numpy()
-
-    result += targ_lang.index_word[predicted_id] + ' '
-
-    if targ_lang.index_word[predicted_id] == '<end>':
-      return result, sentence, attention_plot
-
-    # the predicted ID is fed back into the model
-    dec_input = tf.expand_dims([predicted_id], 0)
-
-  return result, sentence, attention_plot
-
-# function for plotting the attention weights
-def plot_attention(attention, sentence, predicted_sentence):
-  fig = plt.figure(figsize=(10,10))
-  ax = fig.add_subplot(1, 1, 1)
-  ax.matshow(attention, cmap='viridis')
-
-  fontdict = {'fontsize': 14}
-
-  ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
-  ax.set_yticklabels([''] + predicted_sentence, fontdict=fontdict)
-
-  ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
-  ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-
-  plt.show()
 
 
 def main():
     train_lines = read_file('test.train')
     #val_lines = read_file('test.val')
+    #train_lines = read_file('test.val')
 
     en_train, fr_train = create_dataset(train_lines, None)
     #en_val, fr_val = create_dataset(val_lines, None)
@@ -371,15 +343,19 @@ def main():
         batch_loss, target, prediction = train_step(inp, targ, enc_hidden, encoder,decoder,  targ_lang_tokenizer, BATCH_SIZE, loss_object, optimizer)
         total_loss += batch_loss
 
-        pred += prediction
-        tar += target
+        p, t = compute_pred_tar(prediction, target, targ_lang_tokenizer)
+
+        pred += p
+        tar += t
         if batch % 100 == 0:
           print('Epoch {} Batch {} Loss {:.4f}'.format(epoch + 1,
                                                        batch,
                                                        batch_loss.numpy()))
-      write_text(pred, 'Predictionnns')
-      write_text(tar, 'Targetttss')
-      bleu = compute_bleu('Predictionnns', 'Targetttss')
+      write_text(pred, 'Predictionnns3')
+      write_text(tar, 'Targetttss3')
+      bleu = compute_bleu('Predictionnns3', 'Targetttss3')
+      message = f'Epoch {epoch+1} Bleu {bleu}, Loss {total_loss/steps_per_epoch}, Time {time.time() -start}'
+      write_text(message, f'Result_{epoch+1}')
 
       print(f'Epoch {epoch+1} Bleu {bleu}')
       print('Epoch {} Loss {:.4f}'.format(epoch + 1,
