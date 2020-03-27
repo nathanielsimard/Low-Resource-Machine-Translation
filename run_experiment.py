@@ -4,7 +4,7 @@ import random
 import tensorflow as tf
 
 from src import dataloader
-from src.model import lstm
+from src.model import lstm, transformer
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
@@ -15,7 +15,22 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
     return model
 
 
-MODELS = {lstm.NAME: create_lstm}
+def create_transformer(args, input_vocab_size, target_vocab_size):
+    model = transformer.Transformer(
+        num_layers=4,
+        num_heads=2,
+        dff=512,
+        d_model=128,
+        input_vocab_size=input_vocab_size,
+        target_vocab_size=target_vocab_size,
+        pe_input=input_vocab_size,
+        pe_target=target_vocab_size,
+        rate=0.1,
+    )
+    return model
+
+
+MODELS = {lstm.NAME: create_lstm, transformer.NAME: create_transformer}
 
 
 def parse_args():
@@ -82,21 +97,34 @@ def main():
         random.seed(args.seed)
         tf.random.set_seed(args.seed)
 
-    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+        from_logits=True, reduction="none"
+    )
+
+    def loss_function(real, pred):
+        mask = tf.math.logical_not(tf.math.equal(real, 0))
+        loss_ = loss_object(real, pred)
+
+        mask = tf.cast(mask, dtype=loss_.dtype)
+        loss_ *= mask
+
+        return tf.reduce_mean(loss_)
 
     if args.basic_training:
-        basic_training(args, loss_fn)
+        basic_training(args, loss_function)
 
     if args.back_translation_training:
-        back_translation_training(args, loss_fn)
+        back_translation_training(args, loss_function)
 
     if args.test is not None:
-        test(args, loss_fn)
+        test(args, loss_function)
 
 
 def basic_training(args, loss_fn):
     """Train the model."""
-    optim = tf.keras.optimizers.Adam(args.lr)
+    optim = tf.keras.optimizers.Adam(
+        learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
+    )
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
@@ -114,7 +142,11 @@ def basic_training(args, loss_fn):
     )
     training = BasicMachineTranslationTraining(model, train_dl, valid_dl)
     training.run(
-        loss_fn, optim, batch_size=args.batch_size, num_epoch=args.epochs,
+        loss_fn,
+        optim,
+        batch_size=args.batch_size,
+        num_epoch=args.epochs,
+        checkpoint=args.checkpoint,
     )
 
 
