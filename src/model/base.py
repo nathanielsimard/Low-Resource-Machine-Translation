@@ -1,12 +1,11 @@
 import abc
+from typing import List
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import src.dataloader as dataloader
 
-UNKNOWN_TOKEN = dataloader.UNKNOWN_TOKEN
-END_OF_SAMPLE_TOKEN = dataloader.END_OF_SAMPLE_TOKEN
+from src.dataloader import EMPTY_TOKEN, END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
 
 MODEL_BASE_DIR = "models"
 
@@ -14,7 +13,6 @@ MODEL_BASE_DIR = "models"
 class Model(tf.keras.Model, abc.ABC):
     """All models will inherit from this class.
 
-    Each model must supplie their configuration with what features they need.
     Each model has full control over the preprocessing apply on the data.
     """
 
@@ -44,23 +42,49 @@ class Model(tf.keras.Model, abc.ABC):
         """Can apply some preprocessing specific to the model."""
         return dataset
 
-    def predictions(self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder):
+
+class MachineTranslationModel(Model):
+    """Model used to do machine translation.
+
+    Each model must implement the translate method.
+    """
+
+    def predictions(
+        self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder, logit=False
+    ) -> List[str]:
         """Generate prediction tokens from the outputs from the last layer."""
-        # Index must start at 1.
-        sentences = [
-            encoder.decode(sentence + 1)
-            for sentence in np.argmax(outputs.numpy(), axis=2)
-        ]
-        return _remove_unk(sentences)
+        sentences = outputs
+
+        if not logit:
+            sentences = np.argmax(sentences.numpy(), axis=2)
+
+        # Index from the encoder must start at 1, so we need to add 1 here.
+        sentences = [encoder.decode(sentence + 1) for sentence in sentences]
+
+        return _clean_tokens(sentences)
+
+    @abc.abstractmethod
+    def translate(self, x: tf.Tensor) -> tf.Tensor:
+        """Translate a sentence from input.
+
+        Example::
+            >>> translated = model.translate(x)
+            >>> predictions = model.predict(translated, encoder, logit=True)
+        """
+        pass
 
 
-def _remove_unk(sentences):
+def _clean_tokens(sentences):
     result = []
     for sentence in sentences:
         new_sentence = []
         for word in sentence.split():
-            if not (END_OF_SAMPLE_TOKEN in word or UNKNOWN_TOKEN in word):
+            if not (
+                EMPTY_TOKEN in word
+                or START_OF_SAMPLE_TOKEN in word
+                or END_OF_SAMPLE_TOKEN in word
+            ):
                 new_sentence.append(word)
-        result.append(' '.join(new_sentence))
+        result.append(" ".join(new_sentence))
 
     return result
