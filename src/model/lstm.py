@@ -1,11 +1,14 @@
 from typing import List, Tuple
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
+from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX, START_OF_SAMPLE_TOKEN_INDEX
 from src.model import base
 
 NAME = "lstm"
+MAX_SEQ_LENGHT = 100
 
 
 class Encoder(base.Model):
@@ -47,7 +50,7 @@ class Decoder(base.Model):
         """
         super().__init__(f"{NAME}-Decoder")
         self.embed = layers.Embedding(vocab_size, 256)
-        self.lstm1 = layers.LSTM(256, return_sequences=True)
+        self.lstm1 = layers.LSTM(256, return_sequences=True, return_state=True)
         self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
 
         self.lstm2 = layers.LSTM(1024, return_sequences=True, return_state=True)
@@ -61,16 +64,16 @@ class Decoder(base.Model):
         """Call the foward past."""
         x = self.embed(x)
 
-        x = self.lstm1(x, initial_state=states[0])
+        x, hidden_state_1, carry_state_1 = self.lstm1(x, initial_state=states[0])
         x = self.dense1(x)
 
-        x, _, _ = self.lstm2(x, initial_state=states[1])
+        x, hidden_state_2, carry_state_2 = self.lstm2(x, initial_state=states[1])
         x = self.dense2(x)
 
-        return x
+        return x, [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
 
-class Lstm(base.Model):
+class Lstm(base.MachineTranslationModel):
     """Basic sequence-to-sequence lstm model to perform machine translation."""
 
     def __init__(self, input_vocab_size: int, output_vocab_size: int):
@@ -87,7 +90,7 @@ class Lstm(base.Model):
             training: If the model is training.
         """
         states = self.encoder(x[0])
-        x = self.decoder(x[1], states)
+        x, _ = self.decoder(x[1], states)
 
         return x
 
@@ -95,6 +98,36 @@ class Lstm(base.Model):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
+
+    def translate(self, x: tf.Tensor):
+        """Translate on input tensor."""
+        batch_size = x.shape[0]
+        states = self.encoder(x)
+
+        # The first words of each sentence in the batch is the start of sample token.
+        words = tf.zeros([batch_size, 1], dtype=tf.int64) + START_OF_SAMPLE_TOKEN_INDEX
+        last_words = words
+
+        has_finish_predicting = False
+        reach_max_seq_lenght = False
+
+        while not (has_finish_predicting or reach_max_seq_lenght):
+            # Predicting the next words from the last words using
+            # the last state while updating the last words and states.
+            last_words, states = self.decoder(last_words, states)
+            last_words = tf.math.argmax(last_words, axis=2)
+
+            # Append the newly predicted words into words.
+            words = tf.concat([words, last_words], 1)
+
+            # Compute the end condition of the while loop.
+            end_of_sample = (
+                np.zeros([batch_size, 1], dtype=np.int64) + END_OF_SAMPLE_TOKEN_INDEX
+            )
+            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+
+        return words
 
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
