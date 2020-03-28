@@ -75,18 +75,13 @@ class Decoder(tf.keras.Model):
 
     def call(self, x, hidden, enc_output):
         # enc_output shape == (batch_size, seq_lenght, hidden_size)
-        seq_lenght = x.shape[1]
-        print(f"Input shape {x.shape}")
         context_vector, attention_weights = self.attention(hidden, enc_output)
-        print(f"Context shape {context_vector.shape}")
-        print(f"Attention shape {attention_weights.shape}")
 
         # x shape after passing through embedding == (batch_size, seq_lenght, embedding_dim)
         x = self.embedding(x)
-        print(f"Embedding shape {x.shape}")
 
         # x shape after concatenation == (batch_size, seq_lenght, embedding_dim + hidden_size)
-        x = tf.concat([tf.expand_dims(context_vector, seq_lenght), x], axis=-1)
+        x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
 
         # passing the concatenated vector to the GRU
         output, state = self.gru(x)
@@ -103,22 +98,31 @@ class Decoder(tf.keras.Model):
 class GRU(base.MachineTranslationModel):
     def __init__(self, input_vocab_size: int, output_vocab_size: int):
         super().__init__(NAME)
+        self.input_vocab_size = input_vocab_size
+        self.output_vocab_size = output_vocab_size
+
         self.encoder = Encoder(input_vocab_size, 256, 1024)
         self.attention_layer = BahdanauAttention(10)
         self.decoder = Decoder(output_vocab_size, 256, 1024)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         batch_size = x[0].shape[0]
+        seq_lenght = x[0].shape[1]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
         encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden)
 
         decoder_hidden = encoder_hidden
-        decoder_output, decoder_hidden, _ = self.decoder(
-            x[1], decoder_hidden, encoder_output
-        )
+        predictions = tf.zeros(batch_size, seq_lenght, self.output_vocab_size)
 
-        return decoder_output
+        for t in range(seq_lenght):
+            decoder_input = tf.expand_dims(x[:, t], 1)
+            decoder_output, decoder_hidden, _ = self.decoder(
+                decoder_input, decoder_hidden, encoder_output
+            )
+            predictions[:, :, t] = decoder_output
+
+        return predictions
 
     def translate(self, x: tf.Tensor) -> tf.Tensor:
         """Translate a sentence from input."""
