@@ -106,10 +106,10 @@ class GRU(base.MachineTranslationModel):
         batch_size = x[0].shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden, _ = self.encoder(x[0], encoder_hidden)
+        encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden)
 
         decoder_hidden = encoder_hidden
-        decoder_output, decoder_hidden = self.decoder(
+        decoder_output, decoder_hidden, _ = self.decoder(
             x[1], decoder_hidden, encoder_output
         )
 
