@@ -95,7 +95,7 @@ class Decoder(tf.keras.Model):
 
 class GRU(base.MachineTranslationModel):
     def __init__(self, input_vocab_size: int, output_vocab_size: int):
-        self.super().__init__(NAME)
+        super().__init__(NAME)
         self.encoder = Encoder(input_vocab_size, 256, 1024)
         self.attention_layer = BahdanauAttention(10)
         self.decoder = Decoder(output_vocab_size, 256, 1024)
