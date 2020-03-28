@@ -74,19 +74,20 @@ class Decoder(tf.keras.Model):
         self.attention = BahdanauAttention(self.dec_units)
 
     def call(self, x, hidden, enc_output):
-        # enc_output shape == (batch_size, max_length, hidden_size)
+        # enc_output shape == (batch_size, seq_lenght, hidden_size)
+        seq_lenght = x.shape[1]
         context_vector, attention_weights = self.attention(hidden, enc_output)
 
-        # x shape after passing through embedding == (batch_size, 1, embedding_dim)
+        # x shape after passing through embedding == (batch_size, seq_lenght, embedding_dim)
         x = self.embedding(x)
 
-        # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
-        x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
+        # x shape after concatenation == (batch_size, seq_lenght, embedding_dim + hidden_size)
+        x = tf.concat([tf.expand_dims(context_vector, seq_lenght), x], axis=-1)
 
         # passing the concatenated vector to the GRU
         output, state = self.gru(x)
 
-        # output shape == (batch_size * 1, hidden_size)
+        # output shape == (batch_size * seq_lenght, hidden_size)
         output = tf.reshape(output, (-1, output.shape[2]))
 
         # output shape == (batch_size, vocab)
