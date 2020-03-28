@@ -107,7 +107,6 @@ class GRU(base.MachineTranslationModel):
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         batch_size = x[0].shape[0]
-        seq_lenght = x[0].shape[1]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
         encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden)
@@ -115,15 +114,24 @@ class GRU(base.MachineTranslationModel):
         decoder_hidden = encoder_hidden
         predictions = None
 
+        seq_lenght = x[1].shape[1]
         for t in range(seq_lenght):
-            decoder_input = tf.expand_dims(x[1][:, t], 1)
+            # The decoder input is the word at timestep t
+            previous_target_word = x[1][:, t]
+            decoder_input = tf.expand_dims(previous_target_word, 1)
+
+            # Call the decoder and update the decoder hidden state
             decoder_output, decoder_hidden, _ = self.decoder(
                 decoder_input, decoder_hidden, encoder_output
             )
+
+            # The predictions are concatenated on the time axis
+            # The shape is (batch_size, seq_lenght, output_vocab_size)
             if predictions is None:
-                predictions = decoder_output
+                predictions = tf.expand_dims(decoder_output, 1)
             else:
-                tf.concat([predictions, decoder_output], axis=2)
+                decoder_output = tf.expand_dims(decoder_output, 1)
+                predictions = tf.concat([predictions, decoder_output], axis=1)
 
         return predictions
 
