@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 
 from src.model import base
@@ -100,8 +102,8 @@ class GRU(base.MachineTranslationModel):
         self.attention_layer = BahdanauAttention(10)
         self.decoder = Decoder(output_vocab_size, 256, 1024)
 
-    def call(self, x: tf.Tensor, training=False):
-        batch_size = x.shape[0]
+    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
+        batch_size = x[0].shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
         encoder_output, encoder_hidden, _ = self.encoder(x[0], encoder_hidden)
@@ -116,3 +118,16 @@ class GRU(base.MachineTranslationModel):
     def translate(self, x: tf.Tensor) -> tf.Tensor:
         """Translate a sentence from input."""
         pass
+
+    @property
+    def padded_shapes(self):
+        """Padded shapes used to add padding when batching multiple sequences."""
+        return (([None], [None]), [None])
+
+    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
+
+        def preprocess(input_sentence, output_sentence):
+            return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
+
+        return dataset.map(preprocess)
