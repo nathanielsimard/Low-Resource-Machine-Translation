@@ -76,10 +76,14 @@ class Decoder(tf.keras.Model):
     def call(self, x, hidden, enc_output):
         # enc_output shape == (batch_size, seq_lenght, hidden_size)
         seq_lenght = x.shape[1]
+        print(f"Input shape {x.shape}")
         context_vector, attention_weights = self.attention(hidden, enc_output)
+        print(f"Context shape {context_vector.shape}")
+        print(f"Attention shape {attention_weights.shape}")
 
         # x shape after passing through embedding == (batch_size, seq_lenght, embedding_dim)
         x = self.embedding(x)
+        print(f"Embedding shape {x.shape}")
 
         # x shape after concatenation == (batch_size, seq_lenght, embedding_dim + hidden_size)
         x = tf.concat([tf.expand_dims(context_vector, seq_lenght), x], axis=-1)
