@@ -4,15 +4,14 @@ import random
 import tensorflow as tf
 
 from src import dataloader
-from src.model import lstm, transformer
+from src.model import gru_attention, lstm, transformer
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
-    model = lstm.Lstm(input_vocab_size, target_vocab_size)
-    return model
+    return lstm.Lstm(input_vocab_size, target_vocab_size)
 
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
@@ -30,7 +29,15 @@ def create_transformer(args, input_vocab_size, target_vocab_size):
     return model
 
 
-MODELS = {lstm.NAME: create_lstm, transformer.NAME: create_transformer}
+def create_gru_attention(args, input_vocab_size, target_vocab_size):
+    return gru_attention.GRU(input_vocab_size, target_vocab_size)
+
+
+MODELS = {
+    lstm.NAME: create_lstm,
+    transformer.NAME: create_transformer,
+    gru_attention.NAME: create_gru_attention,
+}
 
 
 def parse_args():
