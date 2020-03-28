@@ -113,9 +113,8 @@ class GRU(base.MachineTranslationModel):
         encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden)
 
         decoder_hidden = encoder_hidden
-        predictions = tf.zeros(batch_size, seq_lenght, self.output_vocab_size)
-
         predictions = None
+
         for t in range(seq_lenght):
             decoder_input = tf.expand_dims(x[:, t], 1)
             decoder_output, decoder_hidden, _ = self.decoder(
