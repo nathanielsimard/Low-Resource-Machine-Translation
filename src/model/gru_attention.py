@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from src.model import base
 
-NAME = "GRU-Attention"
+NAME = "gru-attention"
 
 
 class Encoder(tf.keras.Model):
