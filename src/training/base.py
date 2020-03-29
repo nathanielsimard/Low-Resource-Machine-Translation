@@ -149,7 +149,7 @@ def _generate_predictions(model, dataset, encoder, batch_size):
         outputs = model(inputs, training=False)
         predictions += model.predictions(outputs, encoder)
 
-    return predictions
+    return reversed(predictions)
 
 
 def write_text(sentences, output_file):

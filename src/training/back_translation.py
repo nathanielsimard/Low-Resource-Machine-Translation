@@ -157,4 +157,4 @@ def _generate_predictions_unaligned(model, dataset, encoder, batch_size, num_sam
         outputs = model.translate(inputs)
         predictions += model.predictions(outputs, encoder, logit=False)
 
-    return predictions
+    return reversed(predictions)
