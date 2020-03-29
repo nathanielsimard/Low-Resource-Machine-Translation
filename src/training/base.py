@@ -149,14 +149,14 @@ def _generate_predictions(model, dataset, encoder, batch_size):
         outputs = model(inputs, training=False)
         predictions += model.predictions(outputs, encoder)
 
-    return reversed(predictions)
+    return predictions
 
 
 def write_text(sentences, output_file):
     """Write text from sentences."""
     with open(output_file, "w+") as out_stream:
-        for sentence in sentences:
-            out_stream.write(sentence + "\n")
+        for sentence in reversed(sentences):
+            out_stream.write(sentence + "\nse")
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str):
