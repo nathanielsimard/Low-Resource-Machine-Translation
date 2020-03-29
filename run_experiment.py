@@ -80,6 +80,9 @@ def parse_args():
     )
     parser.add_argument("--batch_size", help="Batch size", default=16, type=int)
     parser.add_argument(
+        "--max_seq_lenght", help="Max sequence lenght", default=None, type=int
+    )
+    parser.add_argument(
         "--vocab_size", help="Size of the vocabulary", default=80000, type=int
     )
     return parser.parse_args()
@@ -129,6 +132,7 @@ def basic_training(args, loss_fn):
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
         vocab_size=args.vocab_size,
+        max_seq_lenght=args.max_seq_lenght,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
@@ -136,6 +140,7 @@ def basic_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
+        max_seq_lenght=args.max_seq_lenght,
     )
     model = MODELS[args.model](
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -154,12 +159,14 @@ def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
     optim = tf.keras.optimizers.Adam(args.lr)
     print("Creating training unaligned dataloader ...")
-    train_dl = dataloader.UnalignedDataloader("data/unaligned.en", args.vocab_size)
+    train_dl = dataloader.UnalignedDataloader(
+        "data/unaligned.en", args.vocab_size, max_seq_lenght=args.max_seq_lenght,
+    )
     print(f"English vocab size: {train_dl.encoder.vocab_size}")
 
     print("Creating reversed training unaligned dataloader ...")
     train_dl_reverse = dataloader.UnalignedDataloader(
-        "data/unaligned.fr", args.vocab_size
+        "data/unaligned.fr", args.vocab_size, max_seq_lenght=args.max_seq_lenght,
     )
     print(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
@@ -170,6 +177,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder,
         encoder_target=train_dl_reverse.encoder,
+        max_seq_lenght=args.max_seq_lenght,
     )
 
     print("Creating reversed training aligned dataloader ...")
@@ -179,6 +187,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_target,
         encoder_target=aligned_train_dl.encoder_input,
+        max_seq_lenght=args.max_seq_lenght,
     )
 
     print("Creating valid aligned dataloader ...")
@@ -188,6 +197,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_input,
         encoder_target=aligned_train_dl.encoder_target,
+        max_seq_lenght=args.max_seq_lenght,
     )
 
     print("Creating reversed valid aligned dataloader ...")
@@ -197,6 +207,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl_reverse.encoder_input,
         encoder_target=aligned_train_dl_reverse.encoder_target,
+        max_seq_lenght=args.max_seq_lenght,
     )
 
     model = MODELS[args.model](
@@ -238,6 +249,7 @@ def test(args, loss_fn):
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",
         vocab_size=args.vocab_size,
+        max_seq_lenght=args.max_seq_lenght,
     )
     test_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_test_token.en",
@@ -245,6 +257,7 @@ def test(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
+        max_seq_lenght=args.max_seq_lenght,
     )
     model = MODELS[args.model](
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size

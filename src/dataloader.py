@@ -24,6 +24,7 @@ class UnalignedDataloader:
         cache_dir=".cache",
         encoder=None,
         corpus=None,
+        max_seq_lenght=None,
     ):
         """Create the UnalignedDataloader.
 
@@ -34,6 +35,7 @@ class UnalignedDataloader:
         self.cache_dir = cache_dir
         self.encoder = encoder
         self.corpus = corpus
+        self.max_seq_lenght = max_seq_lenght
 
         if self.corpus is None:
             self.corpus = read_file(file_name)
@@ -42,12 +44,16 @@ class UnalignedDataloader:
             self.encoder = _create_cached_encoder(
                 file_name, self.corpus, self.cache_dir, self.vocab_size
             )
+        self.corpus = reversed(corpus)
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
 
         def gen():
             for i in self.corpus:
+                if self.max_seq_lenght is not None:
+                    i = i[: self.max_seq_lenght]
+
                 yield self.encoder.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
                 )
@@ -68,6 +74,7 @@ class AlignedDataloader:
         encoder_target=None,
         corpus_input=None,
         corpus_target=None,
+        max_seq_lenght=None,
     ):
         """Create dataset for translation.
 
@@ -89,6 +96,7 @@ class AlignedDataloader:
         self.encoder_target = encoder_target
         self.corpus_input = corpus_input
         self.corpus_target = corpus_target
+        self.max_seq_lenght = max_seq_lenght
 
         if self.corpus_input is None:
             self.corpus_input = read_file(file_name_input)
@@ -106,11 +114,18 @@ class AlignedDataloader:
                 file_name_target, self.corpus_target, self.cache_dir, self.vocab_size
             )
 
+        self.corpus_input = reversed(corpus_input)
+        self.corpus_target = reversed(corpus_target)
+
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
 
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
+                if self.max_seq_lenght is not None:
+                    i = i[: self.max_seq_lenght]
+                    o = o[: self.max_seq_lenght]
+
                 encoder_input = self.encoder_input.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
                 )
