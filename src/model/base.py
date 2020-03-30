@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from src.dataloader import EMPTY_TOKEN, END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
+from src.dataloader import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
 
 MODEL_BASE_DIR = "models"
 
@@ -81,11 +81,7 @@ def _clean_tokens(sentences):
     for sentence in sentences:
         new_sentence = []
         for word in sentence.split():
-            if not (
-                EMPTY_TOKEN in word
-                or START_OF_SAMPLE_TOKEN in word
-                or END_OF_SAMPLE_TOKEN in word
-            ):
+            if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word):
                 new_sentence.append(word)
         result.append(" ".join(new_sentence))
 
