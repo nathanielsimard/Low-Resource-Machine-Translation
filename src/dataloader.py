@@ -239,8 +239,6 @@ class WordEncoder(tfds.features.text.TextEncoder):
             except KeyError:
                 self._insert(i + 1, reserved_tokens[i])
 
-        self._vocab_size = len(self.tokenizer.index_word)
-
     def encode(self, texts):
         return self.tokenizer.texts_to_sequences([texts])[0]
 
@@ -271,7 +269,7 @@ class WordEncoder(tfds.features.text.TextEncoder):
 
     @property
     def vocab_size(self):
-        return self._vocab_size
+        return len(self.tokenizer.index_word) + 1
 
 
 def create_word_encoder(sentences: List[str], max_vocab_size: int, cache_file=None):
