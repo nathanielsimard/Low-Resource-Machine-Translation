@@ -155,12 +155,12 @@ class AlignedDataloader:
 
                     if i_drop_char_len > 0:
                         print(
-                            f"{i_drop_char_len} characters where cut from the input line."
+                            f"{i_drop_char_len} characters were cut from the input line."
                         )
 
                     if o_drop_char_len > 0:
                         print(
-                            f"{o_drop_char_len} characters where cut from the output line."
+                            f"{o_drop_char_len} characters were cut from the output line."
                         )
 
                 encoder_input = self.encoder_input.encode(
