@@ -24,6 +24,7 @@ class UnalignedDataloader:
         cache_dir=".cache",
         encoder=None,
         corpus=None,
+        max_seq_lenght=None,
     ):
         """Create the UnalignedDataloader.
 
@@ -34,6 +35,7 @@ class UnalignedDataloader:
         self.cache_dir = cache_dir
         self.encoder = encoder
         self.corpus = corpus
+        self.max_seq_lenght = max_seq_lenght
 
         if self.corpus is None:
             self.corpus = read_file(file_name)
@@ -42,12 +44,18 @@ class UnalignedDataloader:
             self.encoder = _create_cached_encoder(
                 file_name, self.corpus, self.cache_dir, self.vocab_size
             )
+        self.corpus = list(reversed(self.corpus))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
 
         def gen():
             for i in self.corpus:
+                if self.max_seq_lenght is not None:
+                    drop_char_len = len(i) - self.max_seq_lenght
+                    i = i[: self.max_seq_lenght]
+                    print(f'{drop_char_len} characters were cut from the line.')
+
                 yield self.encoder.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
                 )
@@ -68,6 +76,7 @@ class AlignedDataloader:
         encoder_target=None,
         corpus_input=None,
         corpus_target=None,
+        max_seq_lenght=None,
     ):
         """Create dataset for translation.
 
@@ -80,6 +89,7 @@ class AlignedDataloader:
             encoder_target: French tokenizer.
             corpus_input: The corpus lang1,
             corpus_target: the corpus lang2,
+            max_seq_lenght: The maximum seuqnce lenght of a sample in both corpuses.
         """
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
@@ -89,6 +99,7 @@ class AlignedDataloader:
         self.encoder_target = encoder_target
         self.corpus_input = corpus_input
         self.corpus_target = corpus_target
+        self.max_seq_lenght = max_seq_lenght
 
         if self.corpus_input is None:
             self.corpus_input = read_file(file_name_input)
@@ -106,11 +117,22 @@ class AlignedDataloader:
                 file_name_target, self.corpus_target, self.cache_dir, self.vocab_size
             )
 
+        self.corpus_input = list(reversed(self.corpus_input))
+        self.corpus_target = list(reversed(self.corpus_target))
+
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
 
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
+                if self.max_seq_lenght is not None:
+                    i_drop_char_len = len(i) - self.max_seq_lenght
+                    o_drop_char_len = len(o) - self.max_seq_lenght
+                    i = i[: self.max_seq_lenght]
+                    o = o[: self.max_seq_lenght]
+                    print(f'{i_drop_char_len} characters where cut from the input line.')
+                    print(f'{o_drop_char_len} characters where cut from the output line.')
+
                 encoder_input = self.encoder_input.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
                 )
