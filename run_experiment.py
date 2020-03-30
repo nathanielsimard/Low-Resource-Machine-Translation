@@ -73,6 +73,9 @@ def parse_args():
     )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
     parser.add_argument(
+        "--text_encoder", help="Text Encoder type", default="word", type=str
+    )
+    parser.add_argument(
         "--model",
         help=f"Name of the model to run, available models are:\n{list(MODELS.keys())}",
         type=str,
@@ -122,6 +125,8 @@ def main():
 
 def basic_training(args, loss_fn):
     """Train the model."""
+    text_encoder_type = dataloader.TextEncoderType(args.text_encoder)
+
     optim = tf.keras.optimizers.Adam(
         learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
     )
@@ -129,11 +134,13 @@ def basic_training(args, loss_fn):
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
         vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
         vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
     )
@@ -152,14 +159,18 @@ def basic_training(args, loss_fn):
 
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
+    text_encoder_type = dataloader.TextEncoderType(args.text_encoder)
+
     optim = tf.keras.optimizers.Adam(args.lr)
     print("Creating training unaligned dataloader ...")
-    train_dl = dataloader.UnalignedDataloader("data/unaligned.en", args.vocab_size)
+    train_dl = dataloader.UnalignedDataloader(
+        "data/unaligned.en", args.vocab_size, text_encoder_type=text_encoder_type
+    )
     print(f"English vocab size: {train_dl.encoder.vocab_size}")
 
     print("Creating reversed training unaligned dataloader ...")
     train_dl_reverse = dataloader.UnalignedDataloader(
-        "data/unaligned.fr", args.vocab_size
+        "data/unaligned.fr", args.vocab_size, text_encoder_type=text_encoder_type,
     )
     print(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
@@ -170,6 +181,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder,
         encoder_target=train_dl_reverse.encoder,
+        text_encoder_type=text_encoder_type,
     )
 
     print("Creating reversed training aligned dataloader ...")
@@ -179,6 +191,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_target,
         encoder_target=aligned_train_dl.encoder_input,
+        text_encoder_type=text_encoder_type,
     )
 
     print("Creating valid aligned dataloader ...")
@@ -188,6 +201,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_input,
         encoder_target=aligned_train_dl.encoder_target,
+        text_encoder_type=text_encoder_type,
     )
 
     print("Creating reversed valid aligned dataloader ...")
@@ -197,6 +211,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl_reverse.encoder_input,
         encoder_target=aligned_train_dl_reverse.encoder_target,
+        text_encoder_type=text_encoder_type,
     )
 
     model = MODELS[args.model](
@@ -233,11 +248,13 @@ def back_translation_training(args, loss_fn):
 
 def test(args, loss_fn):
     """Test the model."""
+    text_encoder_type = dataloader.TextEncoderType(args.text_encoder)
     # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",
         vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
     )
     test_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_test_token.en",
@@ -245,6 +262,7 @@ def test(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
+        text_encoder_type=text_encoder_type,
     )
     model = MODELS[args.model](
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size

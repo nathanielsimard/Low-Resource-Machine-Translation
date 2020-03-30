@@ -1,4 +1,6 @@
+import enum
 import os
+import pickle
 from typing import List
 
 import tensorflow as tf
@@ -14,6 +16,13 @@ END_OF_SAMPLE_TOKEN = "<end>"
 END_OF_SAMPLE_TOKEN_INDEX = 3
 
 
+class TextEncoderType(enum.Enum):
+    """Supported Text Encoder."""
+
+    SUBWORD = "subword"
+    WORD = "word"
+
+
 class UnalignedDataloader:
     """Dataloader used for a single unaligned dataset."""
 
@@ -21,6 +30,7 @@ class UnalignedDataloader:
         self,
         file_name: str,
         vocab_size: int,
+        text_encoder_type: TextEncoderType,
         cache_dir=".cache",
         encoder=None,
         corpus=None,
@@ -40,7 +50,11 @@ class UnalignedDataloader:
 
         if self.encoder is None:
             self.encoder = _create_cached_encoder(
-                file_name, self.corpus, self.cache_dir, self.vocab_size
+                file_name,
+                self.corpus,
+                self.cache_dir,
+                self.vocab_size,
+                text_encoder_type,
             )
 
     def create_dataset(self) -> tf.data.Dataset:
@@ -63,6 +77,7 @@ class AlignedDataloader:
         file_name_input: str,
         file_name_target: str,
         vocab_size: int,
+        text_encoder_type: TextEncoderType,
         cache_dir=".cache",
         encoder_input=None,
         encoder_target=None,
@@ -98,12 +113,20 @@ class AlignedDataloader:
 
         if self.encoder_input is None:
             self.encoder_input = _create_cached_encoder(
-                file_name_input, self.corpus_input, self.cache_dir, self.vocab_size
+                file_name_input,
+                self.corpus_input,
+                self.cache_dir,
+                self.vocab_size,
+                text_encoder_type,
             )
 
         if self.encoder_target is None:
             self.encoder_target = _create_cached_encoder(
-                file_name_target, self.corpus_target, self.cache_dir, self.vocab_size
+                file_name_target,
+                self.corpus_target,
+                self.cache_dir,
+                self.vocab_size,
+                text_encoder_type,
             )
 
     def create_dataset(self) -> tf.data.Dataset:
@@ -123,11 +146,22 @@ class AlignedDataloader:
         return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
 
-def _create_cached_encoder(file_name, corpus, cache_dir, vocab_size):
+def _create_cached_encoder(
+    file_name, corpus, cache_dir, vocab_size, text_encoder_type: TextEncoderType
+):
     directory = os.path.join(cache_dir, file_name)
     os.makedirs(directory, exist_ok=True)
 
-    return create_encoder(
+    encoder_functions = {
+        TextEncoderType.SUBWORD: create_subword_encoder,
+        TextEncoderType.WORD: create_word_encoder,
+    }
+    try:
+        function = encoder_functions[text_encoder_type]
+    except KeyError:
+        print(f"Text Encoder Type {text_encoder_type} is not supported.")
+
+    return function(
         corpus,
         vocab_size,
         cache_file=os.path.join(directory, str(vocab_size)).format(),
@@ -145,7 +179,7 @@ def read_file(file_name: str) -> List[str]:
     return output
 
 
-def create_encoder(
+def create_subword_encoder(
     sentences: List[str], max_vocab_size: int, cache_file=None
 ) -> tfds.features.text.TextEncoder:
     """Create the encoder from sentences."""
@@ -165,6 +199,40 @@ def create_encoder(
 
     if cache_file is not None:
         print(f"Saving encoder {cache_file}")
+        encoder.save_to_file(cache_file)
+
+    return encoder
+
+
+class WordEncoder(tfds.features.text.TextEncoder):
+    def __init__(self, max_vocab_size: int, sentences: List[str]):
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_vocab_size)
+        self.tokenizer.fit_on_texts(sentences)
+
+    def encode(self, texts):
+        return self.tokenizer.texts_to_sequences([texts])[0]
+
+    def decode(self, sequences):
+        return self.tokenizer.sequences_to_texts([sequences])[0]
+
+    @classmethod
+    def load_from_file(cls, file_name):
+        with open(file_name, "rb") as file:
+            return pickle.load(file)
+
+    def save_to_file(self, file_name):
+        with open(file_name, "wb") as file:
+            pickle.dump(self, file)
+
+    @property
+    def vocab_size(self):
+        return len(self.tokenizer.index_word)
+
+
+def create_word_encoder(sentences: List[str], max_vocab_size: int, cache_file=None):
+    encoder = WordEncoder(max_vocab_size, sentences)
+
+    if cache_file is not None:
         encoder.save_to_file(cache_file)
 
     return encoder
