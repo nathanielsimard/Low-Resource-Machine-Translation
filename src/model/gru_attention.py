@@ -8,7 +8,10 @@ NAME = "gru-attention"
 
 
 class Encoder(tf.keras.Model):
+    """Encoder of the gru with attention model."""
+
     def __init__(self, vocab_size, embedding_dim, enc_units):
+        """Create the encoder."""
         super(Encoder, self).__init__()
         self.enc_units = enc_units
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
@@ -20,22 +23,31 @@ class Encoder(tf.keras.Model):
         )
 
     def call(self, x, hidden):
+        """Call the foward past."""
         x = self.embedding(x)
         output, state = self.gru(x, initial_state=hidden)
         return output, state
 
     def initialize_hidden_state(self, batch_size):
+        """Initialize the hidden state with zeros."""
         return tf.zeros((batch_size, self.enc_units))
 
 
 class BahdanauAttention(tf.keras.layers.Layer):
+    """Attention layer used with the gru model."""
+
     def __init__(self, units):
+        """Create the attention layer."""
         super(BahdanauAttention, self).__init__()
         self.W1 = tf.keras.layers.Dense(units)
         self.W2 = tf.keras.layers.Dense(units)
         self.V = tf.keras.layers.Dense(1)
 
     def call(self, query, values):
+        """Call of the attention layer.
+
+        Note that the call must be for one caracter/word at a time.
+        """
         # query hidden state shape == (batch_size, hidden size)
         # query_with_time_axis shape == (batch_size, 1, hidden size)
         # values shape == (batch_size, max_len, hidden size)
@@ -58,7 +70,10 @@ class BahdanauAttention(tf.keras.layers.Layer):
 
 
 class Decoder(tf.keras.Model):
+    """Decoder of the gru with attention model."""
+
     def __init__(self, vocab_size, embedding_dim, dec_units):
+        """Create the decoder."""
         super(Decoder, self).__init__()
         self.dec_units = dec_units
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
@@ -74,6 +89,10 @@ class Decoder(tf.keras.Model):
         self.attention = BahdanauAttention(self.dec_units)
 
     def call(self, x, hidden, enc_output):
+        """Call the foward past.
+
+        Note that the call must be for one caracter/word at a time.
+        """
         # enc_output shape == (batch_size, seq_lenght, hidden_size)
         context_vector, attention_weights = self.attention(hidden, enc_output)
 
@@ -96,7 +115,10 @@ class Decoder(tf.keras.Model):
 
 
 class GRU(base.MachineTranslationModel):
+    """Gru with Bahdanau attention."""
+
     def __init__(self, input_vocab_size: int, output_vocab_size: int):
+        """Create the gru model."""
         super().__init__(NAME)
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
@@ -106,6 +128,7 @@ class GRU(base.MachineTranslationModel):
         self.decoder = Decoder(output_vocab_size, 256, 1024)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
+        """Call the foward past."""
         batch_size = x[0].shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
