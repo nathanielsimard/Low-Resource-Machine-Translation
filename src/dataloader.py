@@ -233,19 +233,30 @@ class WordEncoder(tfds.features.text.TextEncoder):
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_vocab_size)
         self.tokenizer.fit_on_texts(sentences)
 
-        def swap(index1, index2):
-            tmp = self.tokenizer.index_word[index1]
-            self.tokenizer.index_word[index1] = self.tokenizer.index_word[index2]
-            self.tokenizer.index_word[index2] = tmp
-
         for i in range(num_reserved):
-            swap(i + 1, self.tokenizer.word_index[reserved_tokens[i]])
+            try:
+                self._swap(i + 1, self.tokenizer.word_index[reserved_tokens[i]])
+            except KeyError:
+                self._insert(i + 1, reserved_tokens[i])
 
     def encode(self, texts):
         return self.tokenizer.texts_to_sequences([texts])[0]
 
     def decode(self, sequences):
         return self.tokenizer.sequences_to_texts([sequences])[0]
+
+    def _swap(self, index1, index2):
+        tmp = self.tokenizer.index_word[index1]
+        self.tokenizer.index_word[index1] = self.tokenizer.index_word[index2]
+        self.tokenizer.index_word[index2] = tmp
+
+        self.tokenizer.word_index[self.tokenizer.index_word[index1]] = index1
+        self.tokenizer.word_index[self.tokenizer.index_word[index2]] = index2
+
+    def _insert(self, index, new_word):
+        self.tokenizer.index_word[len(self.tokenizer.index_word)] = new_word
+        self.tokenizer.word_index[new_word] = len(self.tokenizer.index_word)
+        self._swap(index, len(self.tokenizer.index_word))
 
     @classmethod
     def load_from_file(cls, file_name):
