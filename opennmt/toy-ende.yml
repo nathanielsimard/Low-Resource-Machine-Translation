@@ -1,0 +1,14 @@
+model_dir: run/
+
+data:
+  train_features_file: toy-ende/src-train.txt
+  train_labels_file:   toy-ende/tgt-train.txt
+  eval_features_file:  toy-ende/src-val.txt
+  eval_labels_file:    toy-ende/tgt-val.txt
+  source_vocabulary:   toy-ende/src-vocab.txt
+  target_vocabulary:   toy-ende/tgt-vocab.txt
+
+eval:
+  external_evaluators: bleu
+  export_on_best: bleu
+  

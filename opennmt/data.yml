@@ -1,0 +1,21 @@
+model_dir: run/
+
+data:
+  train_features_file: ../data/splitted_data/train/train_token.en
+  train_labels_file:   ../data/splitted_data/train/train_token.fr
+  eval_features_file:  ../data/splitted_data/valid/val_token.en
+  eval_labels_file:    ../data/splitted_data/valid/val_token.fr
+  source_vocabulary:   ../data/splitted_data/train/src-vocab.txt
+  target_vocabulary:   ../data/splitted_data/train/tgt-vocab.txt
+
+eval:
+  external_evaluators: bleu
+  export_on_best: bleu
+  steps: 1000
+#In order to have "epochs"
+#train:
+#  save_checkpoints_steps: 100
+#  max_step: null
+#  single_pass: true
+#eval:
+  
