@@ -6,14 +6,11 @@ from typing import List
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-EMPTY_TOKEN = "<empty>"
-EMPTY_TOKEN_INDEX = 1
-
 START_OF_SAMPLE_TOKEN = "<start>"
-START_OF_SAMPLE_TOKEN_INDEX = 2
+START_OF_SAMPLE_TOKEN_INDEX = 1
 
 END_OF_SAMPLE_TOKEN = "<end>"
-END_OF_SAMPLE_TOKEN_INDEX = 3
+END_OF_SAMPLE_TOKEN_INDEX = 2
 
 
 class TextEncoderType(enum.Enum):
@@ -220,7 +217,7 @@ def create_subword_encoder(
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         (sentence for sentence in sentences),
         target_vocab_size=max_vocab_size,
-        reserved_tokens=[EMPTY_TOKEN, START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
+        reserved_tokens=[START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
     )
 
     if cache_file is not None:
@@ -273,7 +270,7 @@ def create_word_encoder(sentences: List[str], max_vocab_size: int, cache_file=No
     encoder = WordEncoder(
         max_vocab_size,
         sentences,
-        reserved_tokens=[EMPTY_TOKEN, START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
+        reserved_tokens=[START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
     )
 
     if cache_file is not None:

@@ -33,13 +33,6 @@ class DataloaderTest(unittest.TestCase):
 
         self.assertEqual(out, sample)
 
-    def test_encoder_empty_token(self):
-        encoder = dataloader.create_subword_encoder(
-            CORPUS, 258, cache_file="/tmp/cachetest"
-        )
-        ids = encoder.encode(dataloader.EMPTY_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.EMPTY_TOKEN_INDEX)
-
     def test_encoder_start_of_sentence_token(self):
         encoder = dataloader.create_subword_encoder(
             CORPUS, 258, cache_file="/tmp/cachetest"
