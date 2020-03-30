@@ -184,10 +184,10 @@ def create_subword_encoder(
 ) -> tfds.features.text.TextEncoder:
     """Create the encoder from sentences."""
     if cache_file is not None and os.path.isfile(cache_file + ".subwords"):
-        print(f"Loading cache encoder {cache_file}")
+        print(f"Loading cache subword encoder {cache_file}")
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
-    print("Creating new encoder")
+    print("Creating new subwords encoder")
     # The empty token must be at first because the padded batch
     # add zero padding, which will be understood by the network as
     # empty words.
@@ -198,16 +198,25 @@ def create_subword_encoder(
     )
 
     if cache_file is not None:
-        print(f"Saving encoder {cache_file}")
+        print(f"Saving subword encoder {cache_file}")
         encoder.save_to_file(cache_file)
 
     return encoder
 
 
 class WordEncoder(tfds.features.text.TextEncoder):
-    def __init__(self, max_vocab_size: int, sentences: List[str]):
+    def __init__(self, max_vocab_size: int, sentences: List[str], reserved_tokens=[]):
+        num_reserved = len(reserved_tokens)
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_vocab_size)
         self.tokenizer.fit_on_texts(sentences)
+
+        def swap(index1, index2):
+            tmp = self.tokenizer.index_word[index1]
+            self.tokenizer.index_word[index1] = self.tokenizer.index_word[index2]
+            self.tokenizer.index_word[index2] = tmp
+
+        for i in range(num_reserved):
+            swap(i + 1, self.tokenizer.word_index[reserved_tokens[i]])
 
     def encode(self, texts):
         return self.tokenizer.texts_to_sequences([texts])[0]
@@ -230,7 +239,16 @@ class WordEncoder(tfds.features.text.TextEncoder):
 
 
 def create_word_encoder(sentences: List[str], max_vocab_size: int, cache_file=None):
-    encoder = WordEncoder(max_vocab_size, sentences)
+    if cache_file is not None and os.path.isfile(cache_file):
+        print(f"Loading cache word encoder {cache_file}")
+        return WordEncoder.load_from_file(cache_file)
+
+    print("Creating word text encoder.")
+    encoder = WordEncoder(
+        max_vocab_size,
+        sentences,
+        reserved_tokens=[EMPTY_TOKEN, START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
+    )
 
     if cache_file is not None:
         encoder.save_to_file(cache_file)
