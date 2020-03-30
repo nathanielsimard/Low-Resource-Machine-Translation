@@ -44,7 +44,7 @@ class UnalignedDataloader:
             self.encoder = _create_cached_encoder(
                 file_name, self.corpus, self.cache_dir, self.vocab_size
             )
-        self.corpus = reversed(self.corpus)
+        self.corpus = list(reversed(self.corpus))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
@@ -87,6 +87,7 @@ class AlignedDataloader:
             encoder_target: French tokenizer.
             corpus_input: The corpus lang1,
             corpus_target: the corpus lang2,
+            max_seq_lenght: The maximum seuqnce lenght of a sample in both corpuses.
         """
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
@@ -114,8 +115,8 @@ class AlignedDataloader:
                 file_name_target, self.corpus_target, self.cache_dir, self.vocab_size
             )
 
-        self.corpus_input = reversed(self.corpus_input)
-        self.corpus_target = reversed(self.corpus_target)
+        self.corpus_input = list(reversed(self.corpus_input))
+        self.corpus_target = list(reversed(self.corpus_target))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""

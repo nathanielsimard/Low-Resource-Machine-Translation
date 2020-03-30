@@ -156,7 +156,7 @@ def write_text(sentences, output_file):
     """Write text from sentences."""
     with open(output_file, "w+") as out_stream:
         for sentence in reversed(sentences):
-            out_stream.write(sentence + "\nse")
+            out_stream.write(sentence + "\n")
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str):
