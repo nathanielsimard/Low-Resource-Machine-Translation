@@ -155,7 +155,7 @@ def _generate_predictions(model, dataset, encoder, batch_size):
 def write_text(sentences, output_file):
     """Write text from sentences."""
     with open(output_file, "w+") as out_stream:
-        for sentence in sentences:
+        for sentence in reversed(sentences):
             out_stream.write(sentence + "\n")
 
 
