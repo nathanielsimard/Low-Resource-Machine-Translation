@@ -152,12 +152,16 @@ class AlignedDataloader:
                     o_drop_char_len = len(o) - self.max_seq_lenght
                     i = i[: self.max_seq_lenght]
                     o = o[: self.max_seq_lenght]
-                    print(
-                        f"{i_drop_char_len} characters where cut from the input line."
-                    )
-                    print(
-                        f"{o_drop_char_len} characters where cut from the output line."
-                    )
+
+                    if i_drop_char_len > 0:
+                        print(
+                            f"{i_drop_char_len} characters where cut from the input line."
+                        )
+
+                    if o_drop_char_len > 0:
+                        print(
+                            f"{o_drop_char_len} characters where cut from the output line."
+                        )
 
                 encoder_input = self.encoder_input.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
