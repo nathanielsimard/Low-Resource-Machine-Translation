@@ -6,11 +6,14 @@ from typing import List
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-START_OF_SAMPLE_TOKEN = "<start>"
+OUT_OF_SAMPLE_TOKEN = "<out>"
 START_OF_SAMPLE_TOKEN_INDEX = 1
 
+START_OF_SAMPLE_TOKEN = "<start>"
+START_OF_SAMPLE_TOKEN_INDEX = 2
+
 END_OF_SAMPLE_TOKEN = "<end>"
-END_OF_SAMPLE_TOKEN_INDEX = 2
+END_OF_SAMPLE_TOKEN_INDEX = 3
 
 
 class TextEncoderType(enum.Enum):
@@ -55,7 +58,7 @@ class UnalignedDataloader:
                 self.vocab_size,
                 text_encoder_type,
             )
-        self.corpus = list(reversed(self.corpus))
+        self.corpus = _add_start_end_token(reversed(self.corpus))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
@@ -139,8 +142,8 @@ class AlignedDataloader:
                 text_encoder_type,
             )
 
-        self.corpus_input = list(reversed(self.corpus_input))
-        self.corpus_target = list(reversed(self.corpus_target))
+        self.corpus_input = _add_start_end_token(reversed(self.corpus_input))
+        self.corpus_target = _add_start_end_token(reversed(self.corpus_target))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
@@ -150,25 +153,21 @@ class AlignedDataloader:
                 if self.max_seq_lenght is not None:
                     i_drop_char_len = len(i) - self.max_seq_lenght
                     o_drop_char_len = len(o) - self.max_seq_lenght
-                    i = i[: self.max_seq_lenght]
-                    o = o[: self.max_seq_lenght]
 
                     if i_drop_char_len > 0:
+                        i = i[: self.max_seq_lenght] + END_OF_SAMPLE_TOKEN
                         print(
                             f"{i_drop_char_len} characters were cut from the input line."
                         )
 
                     if o_drop_char_len > 0:
+                        o = o[: self.max_seq_lenght] + END_OF_SAMPLE_TOKEN
                         print(
                             f"{o_drop_char_len} characters were cut from the output line."
                         )
 
-                encoder_input = self.encoder_input.encode(
-                    START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
-                )
-                encoder_target = self.encoder_target.encode(
-                    START_OF_SAMPLE_TOKEN + " " + o + " " + END_OF_SAMPLE_TOKEN
-                )
+                encoder_input = self.encoder_input.encode(i)
+                encoder_target = self.encoder_target.encode(o)
 
                 yield (encoder_input, encoder_target)
 
@@ -223,7 +222,7 @@ def create_subword_encoder(
     encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
         (sentence for sentence in sentences),
         target_vocab_size=max_vocab_size,
-        reserved_tokens=[START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
+        reserved_tokens=[OUT_OF_SAMPLE_TOKEN],
     )
 
     if cache_file is not None:
@@ -233,12 +232,20 @@ def create_subword_encoder(
     return encoder
 
 
+def _add_start_end_token(corpus):
+    return [
+        f"{START_OF_SAMPLE_TOKEN} {token} {END_OF_SAMPLE_TOKEN}" for token in corpus
+    ]
+
+
 class WordEncoder(tfds.features.text.TextEncoder):
-    def __init__(self, max_vocab_size: int, sentences: List[str], reserved_tokens=[]):
-        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_vocab_size)
-        self.tokenizer.fit_on_texts(
-            [START_OF_SAMPLE_TOKEN + " " + END_OF_SAMPLE_TOKEN] + sentences
+    def __init__(self, vocab_size: int, sentences: List[str]):
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
+            num_words=vocab_size, oov_token=OUT_OF_SAMPLE_TOKEN
         )
+        self.tokenizer.fit_on_texts(sentences)
+        self._vocab_size = vocab_size
+        print(self.tokenizer.index_word)
 
     def encode(self, texts):
         return self.tokenizer.texts_to_sequences([texts])[0]
@@ -257,7 +264,7 @@ class WordEncoder(tfds.features.text.TextEncoder):
 
     @property
     def vocab_size(self):
-        return len(self.tokenizer.index_word) + 1
+        return self._vocab_size
 
 
 def create_word_encoder(sentences: List[str], max_vocab_size: int, cache_file=None):
@@ -266,11 +273,7 @@ def create_word_encoder(sentences: List[str], max_vocab_size: int, cache_file=No
         return WordEncoder.load_from_file(cache_file)
 
     print("Creating word text encoder.")
-    encoder = WordEncoder(
-        max_vocab_size,
-        sentences,
-        reserved_tokens=[START_OF_SAMPLE_TOKEN, END_OF_SAMPLE_TOKEN],
-    )
+    encoder = WordEncoder(max_vocab_size, sentences)
 
     if cache_file is not None:
         encoder.save_to_file(cache_file)

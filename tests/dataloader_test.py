@@ -3,7 +3,7 @@ import unittest
 from src import dataloader
 
 ANY_TEXT_FILE = "data/train.lang1"
-CORPUS = ["a against", "battle", "pandemy"]
+CORPUS = dataloader._add_start_end_token(["a against", "battle", "pandemy"])
 
 
 class DataloaderTest(unittest.TestCase):
