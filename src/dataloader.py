@@ -50,6 +50,8 @@ class UnalignedDataloader:
         if self.corpus is None:
             self.corpus = read_file(file_name)
 
+        self.corpus = _add_start_end_token(reversed(self.corpus))
+
         if self.encoder is None:
             self.encoder = _create_cached_encoder(
                 file_name,
@@ -58,7 +60,6 @@ class UnalignedDataloader:
                 self.vocab_size,
                 text_encoder_type,
             )
-        self.corpus = _add_start_end_token(reversed(self.corpus))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
@@ -124,6 +125,9 @@ class AlignedDataloader:
         if self.corpus_target is None:
             self.corpus_target = read_file(file_name_target)
 
+        self.corpus_input = _add_start_end_token(reversed(self.corpus_input))
+        self.corpus_target = _add_start_end_token(reversed(self.corpus_target))
+
         if self.encoder_input is None:
             self.encoder_input = _create_cached_encoder(
                 file_name_input,
@@ -141,9 +145,6 @@ class AlignedDataloader:
                 self.vocab_size,
                 text_encoder_type,
             )
-
-        self.corpus_input = _add_start_end_token(reversed(self.corpus_input))
-        self.corpus_target = _add_start_end_token(reversed(self.corpus_target))
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
