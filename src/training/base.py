@@ -19,7 +19,12 @@ class History(object):
 
     def __init__(self):
         """Initialize dictionaries."""
-        self.logs = {"train": [], "valid": []}
+        self.logs = {
+            "train_loss": [],
+            "valid_loss": [],
+            "train_bleu": [],
+            "valid_bleu": [],
+        }
 
     def record(self, name, value):
         """Stores value in the corresponding log."""
@@ -93,7 +98,7 @@ class BasicMachineTranslationTraining(Training):
         logger.info("Creating results directory...")
 
         directory = os.path.join(
-            "results" + self.model.title, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "results/" + self.model.title, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
         os.makedirs(directory, exist_ok=True)
 
@@ -118,28 +123,12 @@ class BasicMachineTranslationTraining(Training):
 
             valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
 
-            train_path = os.path.join(directory, f"train-{epoch}")
-            valid_path = os.path.join(directory, f"valid-{epoch}")
-
-            write_text(train_predictions, train_path)
-            write_text(valid_predictions, valid_path)
-
-            train_bleu = compute_bleu(
-                train_path, self.train_dataloader.file_name_target
-            )
-            valid_bleu = compute_bleu(
-                valid_path, self.valid_dataloader.file_name_target
-            )
-
+            self._record_bleu(epoch, train_predictions, valid_predictions, directory)
             self.model.save(epoch)
-            logger.info(
-                f"Epoch {epoch}: train bleu score: {train_bleu} valid bleu score: {valid_bleu}"
-            )
 
             self._update_progress(epoch)
             self.history.save(f"{self.model.title}-{epoch}")
 
-    @tf.function
     def _train_step(self, inputs, targets, batch, optimizer, loss_fn):
         train_predictions: List[str] = []
         with tf.GradientTape() as tape:
@@ -187,9 +176,26 @@ class BasicMachineTranslationTraining(Training):
         )
 
         # Reset the cumulative metrics after each epoch
-        self.history.record("train", train_metric.result())
+        self.history.record("train_loss", train_metric.result())
+        self.history.record("valid_loss", valid_metric.result())
         train_metric.reset_states()
         valid_metric.reset_states()
+
+    def _record_bleu(self, epoch, train_pred, valid_pred, directory):
+        train_path = os.path.join(directory, f"train-{epoch}")
+        valid_path = os.path.join(directory, f"valid-{epoch}")
+
+        write_text(train_pred, train_path)
+        write_text(valid_pred, valid_path)
+        train_bleu = compute_bleu(train_path, self.train_dataloader.file_name_target)
+        valid_bleu = compute_bleu(valid_path, self.valid_dataloader.file_name_target)
+
+        logger.info(
+            f"Epoch {epoch}: train bleu score: {train_bleu} valid bleu score: {valid_bleu}"
+        )
+
+        self.history.record("train_bleu", train_bleu)
+        self.history.record("valid_bleu", valid_bleu)
 
 
 def test(
@@ -214,7 +220,7 @@ def test(
     write_text(predictions, path)
 
     bleu = compute_bleu(path, dataloader.file_name_target)
-    print(f"Bleu score {bleu}")
+    logger.info(f"Bleu score {bleu}")
 
 
 def _generate_predictions(model, dataset, encoder, batch_size, loss_fn):
