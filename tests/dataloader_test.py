@@ -65,8 +65,18 @@ class DataloaderTest(unittest.TestCase):
 
     def test_word_encoder(self):
         sample = "a battle"
-        text_encoder = dataloader.WordEncoder(4, CORPUS)
+        text_encoder = dataloader.WordEncoder(10, CORPUS)
         ids = text_encoder.encode(sample)
         out = text_encoder.decode(ids)
 
         self.assertEqual(out, sample)
+
+    def test_words_encoder_start_of_sentence_token(self):
+        encoder = dataloader.WordEncoder(4, CORPUS)
+        ids = encoder.encode(dataloader.START_OF_SAMPLE_TOKEN + " battle")
+        self.assertEqual(ids[0], dataloader.START_OF_SAMPLE_TOKEN_INDEX)
+
+    def test_words_encoder_end_of_sentence_token(self):
+        encoder = dataloader.WordEncoder(4, CORPUS)
+        ids = encoder.encode(dataloader.END_OF_SAMPLE_TOKEN + " battle")
+        self.assertEqual(ids[0], dataloader.END_OF_SAMPLE_TOKEN_INDEX)
