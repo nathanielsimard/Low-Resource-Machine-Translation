@@ -33,20 +33,6 @@ class DataloaderTest(unittest.TestCase):
 
         self.assertEqual(out, sample)
 
-    def test_encoder_start_of_sentence_token(self):
-        encoder = dataloader.create_subword_encoder(
-            CORPUS, 258, cache_file="/tmp/cachetest"
-        )
-        ids = encoder.encode(dataloader.START_OF_SAMPLE_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.START_OF_SAMPLE_TOKEN_INDEX)
-
-    def test_encoder_end_of_sentence_token(self):
-        encoder = dataloader.create_subword_encoder(
-            CORPUS, 258, cache_file="/tmp/cachetest"
-        )
-        ids = encoder.encode(dataloader.END_OF_SAMPLE_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.END_OF_SAMPLE_TOKEN_INDEX)
-
     def test_create_dataset(self):
         dl = dataloader.AlignedDataloader(
             "tests/sample1.txt",
@@ -70,13 +56,3 @@ class DataloaderTest(unittest.TestCase):
         out = text_encoder.decode(ids)
 
         self.assertEqual(out, sample)
-
-    def test_words_encoder_start_of_sentence_token(self):
-        encoder = dataloader.WordEncoder(4, CORPUS)
-        ids = encoder.encode(dataloader.START_OF_SAMPLE_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.START_OF_SAMPLE_TOKEN_INDEX)
-
-    def test_words_encoder_end_of_sentence_token(self):
-        encoder = dataloader.WordEncoder(4, CORPUS)
-        ids = encoder.encode(dataloader.END_OF_SAMPLE_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.END_OF_SAMPLE_TOKEN_INDEX)

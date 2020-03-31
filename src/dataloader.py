@@ -7,13 +7,10 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 OUT_OF_SAMPLE_TOKEN = "<out>"
-START_OF_SAMPLE_TOKEN_INDEX = 1
 
-START_OF_SAMPLE_TOKEN = "<start>"
-START_OF_SAMPLE_TOKEN_INDEX = 2
+START_OF_SAMPLE_TOKEN = "startofsampletoken"
 
-END_OF_SAMPLE_TOKEN = "<end>"
-END_OF_SAMPLE_TOKEN_INDEX = 3
+END_OF_SAMPLE_TOKEN = "endofsampletoken"
 
 
 class TextEncoderType(enum.Enum):
@@ -68,14 +65,12 @@ class UnalignedDataloader:
             for i in self.corpus:
                 if self.max_seq_lenght is not None:
                     drop_char_len = len(i) - self.max_seq_lenght
-                    i = i[: self.max_seq_lenght]
 
                     if drop_char_len > 0:
+                        i = i[: self.max_seq_lenght] + " " + END_OF_SAMPLE_TOKEN
                         print(f"{drop_char_len} characters were cut from the line.")
 
-                yield self.encoder.encode(
-                    START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
-                )
+                yield self.encoder.encode(i)
 
         return tf.data.Dataset.from_generator(gen, tf.int64)
 
@@ -156,13 +151,13 @@ class AlignedDataloader:
                     o_drop_char_len = len(o) - self.max_seq_lenght
 
                     if i_drop_char_len > 0:
-                        i = i[: self.max_seq_lenght] + END_OF_SAMPLE_TOKEN
+                        i = i[: self.max_seq_lenght] + " " + END_OF_SAMPLE_TOKEN
                         print(
                             f"{i_drop_char_len} characters were cut from the input line."
                         )
 
                     if o_drop_char_len > 0:
-                        o = o[: self.max_seq_lenght] + END_OF_SAMPLE_TOKEN
+                        o = o[: self.max_seq_lenght] + " " + END_OF_SAMPLE_TOKEN
                         print(
                             f"{o_drop_char_len} characters were cut from the output line."
                         )
