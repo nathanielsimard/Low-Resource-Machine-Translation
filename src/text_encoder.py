@@ -50,7 +50,9 @@ class TextEncoder(abc.ABC):
 
     def save_to_file(self, file_name: str):
         """Save the encoder to disk."""
-        file_name = os.path.join(self.type().value, file_name)
+        suffix = self.cls.type().value
+        file_name = f"{file_name}.{suffix}"
+
         print(f"Saving text encoder to file {file_name}.")
 
         with open(file_name, "wb") as file:
@@ -59,7 +61,9 @@ class TextEncoder(abc.ABC):
     @classmethod
     def load_from_file(cls, file_name: str):
         """Load the encoder from disk."""
-        file_name = os.path.join(cls.type(), file_name)
+        suffix = cls.type().value
+        file_name = f"{file_name}.{suffix}"
+
         print(f"Loading text encoder of type {cls} from file {file_name}.")
         with open(file_name, "rb") as file:
             return pickle.load(file)
@@ -76,12 +80,17 @@ class WordTextEncoder(TextEncoder):
         )
         self.tokenizer.fit_on_texts(corpus)
         self._vocab_size = vocab_size
+        self.cls = WordTextEncoder
 
     def encode(self, text: str) -> List[int]:
         return self.tokenizer.texts_to_sequences([text])[0]
 
     def decode(self, sequences: List[int]) -> str:
         return self.tokenizer.sequences_to_texts([sequences])[0]
+
+    @classmethod
+    def type(cls):
+        return TextEncoderType.WORD
 
     @property
     def vocab_size(self):
@@ -109,12 +118,17 @@ class SubWordTextEncoder(TextEncoder):
             target_vocab_size=vocab_size,
             reserved_tokens=[preprocessing.OUT_OF_SAMPLE_TOKEN],
         )
+        self.cls = SubWordTextEncoder
 
     def encode(self, text: str) -> List[int]:
         return self._encoder.encode(text)
 
     def decode(self, sequences: List[int]) -> str:
         return self._encoder.decode(sequences)
+
+    @classmethod
+    def type(cls):
+        return TextEncoderType.SUBWORD
 
     @property
     def vocab_size(self):
