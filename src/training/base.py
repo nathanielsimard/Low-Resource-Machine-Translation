@@ -3,11 +3,38 @@ import os
 import subprocess
 from datetime import datetime
 from typing import List
+import pickle
 
 import tensorflow as tf
 
 from src.dataloader import AlignedDataloader
 from src.model import base
+from src import logging
+
+logger = logging.create_logger(__name__)
+
+
+class History(object):
+    """Keeps track of the different losses."""
+
+    def __init__(self):
+        """Initialize dictionaries."""
+        self.logs = {"train": [], "valid": []}
+
+    def record(self, name, value):
+        """Stores value in the corresponding log."""
+        self.logs[name].append(value)
+
+    def save(self, file_name):
+        """Save file."""
+        with open(file_name, "wb") as file:
+            pickle.dump(self, file)
+
+    @staticmethod
+    def load(file_name):
+        """Load file."""
+        with open(file_name, "rb") as file:
+            return pickle.load(file)
 
 
 class Training(abc.ABC):
@@ -39,6 +66,12 @@ class BasicMachineTranslationTraining(Training):
         self.model = model
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
+        self.metrics = {
+            "train": tf.keras.metrics.Mean("train_loss", tf.float32),
+            "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
+        }
+
+        self.history = History()
 
     def run(
         self,
@@ -49,14 +82,18 @@ class BasicMachineTranslationTraining(Training):
         checkpoint=None,
     ):
         """Training session."""
+
+        logger.info("Creating datasets...")
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
 
         train_dataset = self.model.preprocessing(train_dataset)
         valid_dataset = self.model.preprocessing(valid_dataset)
 
+        logger.info("Creating results directory...")
+
         directory = os.path.join(
-            "results", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "results" + self.model.title, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
         os.makedirs(directory, exist_ok=True)
 
@@ -69,33 +106,17 @@ class BasicMachineTranslationTraining(Training):
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
 
-            for inputs, targets in train_dataset.padded_batch(
-                batch_size, padded_shapes=self.model.padded_shapes
+            for i, (inputs, targets) in enumerate(
+                train_dataset.padded_batch(
+                    batch_size, padded_shapes=self.model.padded_shapes
+                )
             ):
-                with tf.GradientTape() as tape:
-                    outputs = self.model(inputs, training=True)
 
-                    # Calculate the training prediction tokens
-                    predictions = self.model.predictions(
-                        outputs, self.train_dataloader.encoder_target
-                    )
-                    train_predictions += predictions
+                train_predictions = self._train_step(
+                    inputs, targets, i, optimizer, loss_fn
+                )
 
-                    # Calculate the loss and update the parameters
-                    loss = loss_fn(targets, outputs)
-                    print(f"Training loss {loss}")
-
-                    gradients = tape.gradient(loss, self.model.trainable_variables)
-                    optimizer.apply_gradients(
-                        zip(gradients, self.model.trainable_variables)
-                    )
-
-            valid_predictions = _generate_predictions(
-                self.model,
-                valid_dataset,
-                self.valid_dataloader.encoder_target,
-                batch_size,
-            )
+            valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
 
             train_path = os.path.join(directory, f"train-{epoch}")
             valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -111,9 +132,64 @@ class BasicMachineTranslationTraining(Training):
             )
 
             self.model.save(epoch)
-            print(
+            logger.info(
                 f"Epoch {epoch}: train bleu score: {train_bleu} valid bleu score: {valid_bleu}"
             )
+
+            self._update_progress(epoch)
+            self.history.save(f"{self.model.title}-{epoch}")
+
+    @tf.function
+    def _train_step(self, inputs, targets, batch, optimizer, loss_fn):
+        train_predictions: List[str] = []
+        with tf.GradientTape() as tape:
+            outputs = self.model(inputs, training=True)
+            # Calculate the training prediction tokens
+            predictions = self.model.predictions(
+                outputs, self.train_dataloader.encoder_target
+            )
+            train_predictions += predictions
+
+            # Calculate the loss and update the parameters
+            loss = loss_fn(targets, outputs)
+            metric = self.metrics["train"]
+            metric(loss)
+
+            logger.info(f"Batch #{batch} : training loss {metric.result()}")
+            gradients = tape.gradient(loss, self.model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+
+        return train_predictions
+
+    def _valid_step(self, dataset, loss_fn, batch_size):
+        valid_predictions: List[str] = []
+        for i, (inputs, targets) in enumerate(
+            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
+        ):
+            outputs = self.model(inputs, training=False)
+            valid_predictions += self.model.predictions(
+                outputs, self.valid_dataloader.encoder_target
+            )
+
+            loss = loss_fn(targets, outputs)
+            metric = self.metrics["valid"]
+            metric(loss)
+            logger.info(f"Batch #{i} : validation loss {metric.result()}")
+
+        return valid_predictions
+
+    def _update_progress(self, epoch):
+        train_metric = self.metrics["train"]
+        valid_metric = self.metrics["valid"]
+
+        logger.info(
+            f"Epoch: {epoch}, Train loss: {train_metric.result()}, Valid loss: {valid_metric.result()} "
+        )
+
+        # Reset the cumulative metrics after each epoch
+        self.history.record("train", train_metric.result())
+        train_metric.reset_states()
+        valid_metric.reset_states()
 
 
 def test(
@@ -128,8 +204,8 @@ def test(
     dataset = model.preprocessing(dataset)
     model.load(str(checkpoint))
 
-    predictions = _generate_predictions(
-        model, dataset, dataloader.encoder_target, batch_size
+    predictions, _ = _generate_predictions(
+        model, dataset, dataloader.encoder_target, batch_size, loss_fn
     )
 
     directory = os.path.join("results/test", model.title)
@@ -141,7 +217,7 @@ def test(
     print(f"Bleu score {bleu}")
 
 
-def _generate_predictions(model, dataset, encoder, batch_size):
+def _generate_predictions(model, dataset, encoder, batch_size, loss_fn):
     predictions = []
     for inputs, targets in dataset.padded_batch(
         batch_size, padded_shapes=model.padded_shapes
@@ -149,7 +225,9 @@ def _generate_predictions(model, dataset, encoder, batch_size):
         outputs = model(inputs, training=False)
         predictions += model.predictions(outputs, encoder)
 
-    return predictions
+        loss = loss_fn(targets, outputs)
+
+    return predictions, loss
 
 
 def write_text(sentences, output_file):

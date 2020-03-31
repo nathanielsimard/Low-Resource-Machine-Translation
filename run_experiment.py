@@ -3,11 +3,13 @@ import random
 
 import tensorflow as tf
 
-from src import dataloader
+from src import dataloader, logging
 from src.model import gru_attention, lstm, transformer
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
+
+logger = logging.create_logger(__name__)
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
@@ -165,19 +167,19 @@ def basic_training(args, loss_fn):
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
     optim = tf.keras.optimizers.Adam(args.lr)
-    print("Creating training unaligned dataloader ...")
+    logger.info("Creating training unaligned dataloader ...")
     train_dl = dataloader.UnalignedDataloader(
         "data/unaligned.en", args.vocab_size, max_seq_lenght=args.max_seq_lenght,
     )
-    print(f"English vocab size: {train_dl.encoder.vocab_size}")
+    logger.info(f"English vocab size: {train_dl.encoder.vocab_size}")
 
-    print("Creating reversed training unaligned dataloader ...")
+    logger.info("Creating reversed training unaligned dataloader ...")
     train_dl_reverse = dataloader.UnalignedDataloader(
         "data/unaligned.fr", args.vocab_size, max_seq_lenght=args.max_seq_lenght,
     )
-    print(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
+    logger.info(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
-    print("Creating training aligned dataloader ...")
+    logger.info("Creating training aligned dataloader ...")
     aligned_train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",
@@ -187,7 +189,7 @@ def back_translation_training(args, loss_fn):
         max_seq_lenght=args.max_seq_lenght,
     )
 
-    print("Creating reversed training aligned dataloader ...")
+    logger.info("Creating reversed training aligned dataloader ...")
     aligned_train_dl_reverse = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.fr",
         file_name_target="data/splitted_data/sorted_train_token.en",
@@ -197,7 +199,7 @@ def back_translation_training(args, loss_fn):
         max_seq_lenght=args.max_seq_lenght,
     )
 
-    print("Creating valid aligned dataloader ...")
+    logger.info("Creating valid aligned dataloader ...")
     aligned_valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
         file_name_target="data/splitted_data/sorted_val_token.fr",
@@ -207,7 +209,7 @@ def back_translation_training(args, loss_fn):
         max_seq_lenght=args.max_seq_lenght,
     )
 
-    print("Creating reversed valid aligned dataloader ...")
+    logger.info("Creating reversed valid aligned dataloader ...")
     aligned_valid_dl_reverse = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.fr",
         file_name_target="data/splitted_data/sorted_val_token.en",
