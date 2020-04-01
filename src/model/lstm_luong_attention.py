@@ -91,7 +91,7 @@ class Decoder(tf.keras.Model):
         x = self.embedding(x)
 
         # passing the concatenated vector to the lstm
-        output, state_h, state_c = self.lstm(x)
+        output, state_h, state_c = self.lstm(x, initial_state=hidden)
 
         # enc_output shape == (batch_size, seq_lenght, hidden_size)
         context_vector, alignment = self.attention(output, enc_output)
