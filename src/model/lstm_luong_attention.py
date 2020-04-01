@@ -117,9 +117,9 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
 
-        self.encoder = Encoder(input_vocab_size, 256, 1024)
+        self.encoder = Encoder(input_vocab_size, 256, 512)
         self.attention_layer = LuongAttention(10)
-        self.decoder = Decoder(output_vocab_size, 256, 1024)
+        self.decoder = Decoder(output_vocab_size, 256, 512)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
@@ -138,7 +138,7 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
             decoder_input = tf.expand_dims(previous_target_word, 1)
 
             # Call the decoder and update the decoder hidden state
-            decoder_output, decoder_state_h, decoder_state_c = self.decoder(
+            decoder_output, decoder_state_h, decoder_state_c,_ = self.decoder(
                 decoder_input, (decoder_state_h, decoder_state_c), encoder_output
             )
 
