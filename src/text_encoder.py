@@ -18,7 +18,10 @@ class TextEncoderType(enum.Enum):
 
 
 class TextEncoder(abc.ABC):
-    """Abstract Text Enoder to encoder and decode text into and from numbers."""
+    """Abstract Text Enoder to encoder and decode text into and from numbers.
+
+    Indexes start at 0 and end at vocab_size [0, vocab_size).
+    """
 
     @abc.abstractmethod
     def encode(self, texts: str) -> List[int]:
@@ -144,11 +147,15 @@ class SubWordTextEncoder(TextEncoder):
 
     def encode(self, text: str) -> List[int]:
         """Encode a text into numbers."""
-        return self._encoder.encode(text)
+        # This encoder's index start at one, but
+        # must start at 0 to work with argmax.
+        return [i - 1 for i in self._encoder.encode(text)]
 
     def decode(self, sequences: List[int]) -> str:
         """Decode numbers into text."""
-        return self._encoder.decode(sequences)
+        # This encoder's index start at one, but
+        # must start at 0 to work with argmax.
+        return self._encoder.decode([i + 1 for i in sequences])
 
     @classmethod
     def type(cls):
@@ -163,12 +170,12 @@ class SubWordTextEncoder(TextEncoder):
     @property
     def start_of_sample_index(self) -> int:
         """The index representing the start of sample token."""
-        return self._encoder.encode(preprocessing.START_OF_SAMPLE_TOKEN)[0]
+        return self._encoder.encode(preprocessing.START_OF_SAMPLE_TOKEN)[0] - 1
 
     @property
     def end_of_sample_index(self) -> int:
         """The index representing the end of sample token."""
-        return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0]
+        return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0] - 1
 
 
 def create_encoder(

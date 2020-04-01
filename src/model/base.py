@@ -58,8 +58,7 @@ class MachineTranslationModel(Model, abc.ABC):
         if logit:
             sentences = np.argmax(sentences.numpy(), axis=2)
 
-        # Index from the encoder must start at 1, so we need to add 1 here.
-        sentences = [encoder.decode(sentence + 1) for sentence in sentences]
+        sentences = [encoder.decode(sentence) for sentence in sentences]
 
         return _clean_tokens(sentences)
 
