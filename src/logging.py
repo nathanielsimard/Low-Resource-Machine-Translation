@@ -1,22 +1,27 @@
 import logging
 import os
 import sys
+from datetime import datetime
 
-try:
-    LEVEL = logging.INFO
-    if "DEBUG" in os.environ:
-        if os.environ["DEBUG"] == "1":
-            LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 
-except KeyError:
-    LEVEL = logging.INFO
+if "DEBUG" in os.environ:
+    if os.environ["DEBUG"] == "1":
+        LEVEL = logging.DEBUG
+
+
+directory = os.path.join(
+    "$HOME/project2-logs", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+)
+os.makedirs(directory, exist_ok=True)
+file_name = os.path.join(directory, "experiment.log")
 
 
 def create_logger(name: str) -> logging.Logger:
     """Create a logger with default configuration and formatter."""
     logger = logging.getLogger(name)
     formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
-    handler = logging.StreamHandler(stream=sys.stdout)
+    handler = logging.StreamHandler(stream=file_name)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(LEVEL)
