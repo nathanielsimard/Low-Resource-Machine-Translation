@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 from datetime import datetime
 
 LEVEL = logging.INFO
@@ -10,9 +9,7 @@ if "DEBUG" in os.environ:
         LEVEL = logging.DEBUG
 
 
-directory = os.path.join(
-    "$HOME/project2-logs", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-)
+directory = os.path.join("logging", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 os.makedirs(directory, exist_ok=True)
 file_name = os.path.join(directory, "experiment.log")
 file = open(file_name, "w")
