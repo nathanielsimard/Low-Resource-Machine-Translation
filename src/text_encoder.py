@@ -45,12 +45,13 @@ class TextEncoder(abc.ABC):
         pass
 
     @abc.abstractclassmethod
-    def type(cls):
+    def type(cls) -> TextEncoderType:
+        """Type of the text encoder."""
         pass
 
     def save_to_file(self, file_name: str):
         """Save the encoder to disk."""
-        suffix = self.cls.type().value
+        suffix = self.cls.type().value  # type: ignore
         file_name = f"{file_name}.{suffix}"
 
         print(f"Saving text encoder to file {file_name}.")
@@ -61,7 +62,7 @@ class TextEncoder(abc.ABC):
     @classmethod
     def load_from_file(cls, file_name: str):
         """Load the encoder from disk."""
-        suffix = cls.type().value
+        suffix = cls.type().value  # type: ignore
         file_name = f"{file_name}.{suffix}"
 
         print(f"Loading text encoder of type {cls} from file {file_name}.")
@@ -79,21 +80,33 @@ class WordTextEncoder(TextEncoder):
             num_words=vocab_size, oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN
         )
         self.tokenizer.fit_on_texts(corpus)
+        self._update_word(
+            preprocessing.START_OF_SAMPLE_TOKEN[1:-1],
+            preprocessing.START_OF_SAMPLE_TOKEN,
+        )
+
+        self._update_word(
+            preprocessing.END_OF_SAMPLE_TOKEN[1:-1], preprocessing.END_OF_SAMPLE_TOKEN,
+        )
         self._vocab_size = vocab_size
         self.cls = WordTextEncoder
 
     def encode(self, text: str) -> List[int]:
+        """Encode a text into numbers."""
         return self.tokenizer.texts_to_sequences([text])[0]
 
     def decode(self, sequences: List[int]) -> str:
+        """Decode numbers into text."""
         return self.tokenizer.sequences_to_texts([sequences])[0]
 
     @classmethod
     def type(cls):
+        """Type of the text encoder."""
         return TextEncoderType.WORD
 
     @property
     def vocab_size(self):
+        """The vocabulary size handled by the encoder."""
         return self._vocab_size
 
     @property
@@ -106,6 +119,11 @@ class WordTextEncoder(TextEncoder):
         """The index representing the end of sample token."""
         return self.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN]
 
+    def _update_word(self, old_word, new_word):
+        index = self.tokenizer.word_index[old_word]
+        self.tokenizer.word_index[new_word] = index
+        self.tokenizer.index_word[index] = new_word
+
 
 class SubWordTextEncoder(TextEncoder):
     """Text Encoder where most popular subwords become tokens."""
@@ -116,22 +134,30 @@ class SubWordTextEncoder(TextEncoder):
         self._encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
             (sentence for sentence in corpus),
             target_vocab_size=vocab_size,
-            reserved_tokens=[preprocessing.OUT_OF_SAMPLE_TOKEN],
+            reserved_tokens=[
+                preprocessing.OUT_OF_SAMPLE_TOKEN,
+                preprocessing.START_OF_SAMPLE_TOKEN,
+                preprocessing.END_OF_SAMPLE_TOKEN,
+            ],
         )
         self.cls = SubWordTextEncoder
 
     def encode(self, text: str) -> List[int]:
+        """Encode a text into numbers."""
         return self._encoder.encode(text)
 
     def decode(self, sequences: List[int]) -> str:
+        """Decode numbers into text."""
         return self._encoder.decode(sequences)
 
     @classmethod
     def type(cls):
+        """Type of the text encoder."""
         return TextEncoderType.SUBWORD
 
     @property
     def vocab_size(self):
+        """The vocabulary size handled by the encoder."""
         return self._encoder.vocab_size
 
     @property
