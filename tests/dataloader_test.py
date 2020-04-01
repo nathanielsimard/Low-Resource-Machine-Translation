@@ -1,9 +1,11 @@
 import unittest
 
-from src import dataloader
+from src import dataloader, text_encoder
 
 ANY_TEXT_FILE = "data/train.lang1"
-CORPUS = ["a against", "battle", "pandemy"]
+
+NUM_SAMPLES = 25
+VOCAB_SIZE = 300
 
 
 class DataloaderTest(unittest.TestCase):
@@ -13,46 +15,33 @@ class DataloaderTest(unittest.TestCase):
         self.assertTrue(len(output) >= 1)
         self.assertTrue(len(output[0]) >= 1)
 
-    def test_create_encoder_from_sentences(self):
-        sample = "a battle"
-        encoder = dataloader.create_encoder(CORPUS, 258)
+    def test_create_unaligned_dataset(self):
+        dl = dataloader.UnalignedDataloader(
+            "tests/sample1.txt", VOCAB_SIZE, text_encoder.TextEncoderType.SUBWORD,
+        )
 
-        ids = encoder.encode(sample)
-        out = encoder.decode(ids)
-
-        self.assertEqual(out, sample)
-
-    def test_create_encoder_from_sentences_with_cache(self):
-        sample = "a battle"
-        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
-
-        ids = encoder.encode(sample)
-        out = encoder.decode(ids)
-
-        self.assertEqual(out, sample)
-
-    def test_encoder_empty_token(self):
-        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
-        ids = encoder.encode(dataloader.EMPTY_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.EMPTY_TOKEN_INDEX)
-
-    def test_encoder_start_of_sentence_token(self):
-        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
-        ids = encoder.encode(dataloader.START_OF_SAMPLE_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.START_OF_SAMPLE_TOKEN_INDEX)
-
-    def test_encoder_end_of_sentence_token(self):
-        encoder = dataloader.create_encoder(CORPUS, 258, cache_file="/tmp/cachetest")
-        ids = encoder.encode(dataloader.END_OF_SAMPLE_TOKEN + " battle")
-        self.assertEqual(ids[0], dataloader.END_OF_SAMPLE_TOKEN_INDEX)
-
-    def test_create_dataset(self):
-        dl = dataloader.AlignedDataloader("tests/sample1.txt", "tests/sample2.txt", 300)
         dataset = dl.create_dataset()
 
+        samples_num = self._count_entries(dataset, ([None]))
+        self.assertEqual(NUM_SAMPLES, samples_num)
+
+    def test_create_aligned_dataset(self):
+        dl = dataloader.AlignedDataloader(
+            "tests/sample1.txt",
+            "tests/sample2.txt",
+            VOCAB_SIZE,
+            text_encoder.TextEncoderType.SUBWORD,
+        )
+
+        dataset = dl.create_dataset()
+
+        samples_num = self._count_entries(dataset, ([None], [None]))
+        self.assertEqual(NUM_SAMPLES, samples_num)
+
+    def _count_entries(self, dataset, padded_shapes):
         samples_num = 0
-        for sample in dataset.padded_batch(1, padded_shapes=([None], [None])):
+        for sample in dataset.padded_batch(1, padded_shapes):
             samples_num += 1
             self.assertTrue(sample is not None)
 
-        self.assertEqual(25, samples_num)
+        return samples_num

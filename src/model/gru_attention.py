@@ -3,6 +3,7 @@ from typing import Tuple
 import tensorflow as tf
 
 from src.model import base
+from src.text_encoder import TextEncoder
 
 NAME = "gru-attention"
 
@@ -158,7 +159,7 @@ class GRU(base.MachineTranslationModel):
 
         return predictions
 
-    def translate(self, x: tf.Tensor) -> tf.Tensor:
+    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input."""
         pass
 

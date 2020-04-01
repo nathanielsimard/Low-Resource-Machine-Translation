@@ -5,15 +5,18 @@ import tensorflow as tf
 
 from src import dataloader, logging
 from src.model import gru_attention, lstm, transformer
+from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
 
 logger = logging.create_logger(__name__)
+# Embedding for models have to be vocab size + 1 because of the
+# extras index from the padding not in the text encoder's vocab_size.
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
-    return lstm.Lstm(input_vocab_size, target_vocab_size)
+    return lstm.Lstm(input_vocab_size + 1, target_vocab_size + 1)
 
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
@@ -22,17 +25,17 @@ def create_transformer(args, input_vocab_size, target_vocab_size):
         num_heads=8,
         dff=512,
         d_model=256,
-        input_vocab_size=input_vocab_size,
-        target_vocab_size=target_vocab_size,
-        pe_input=input_vocab_size,
-        pe_target=target_vocab_size,
+        input_vocab_size=input_vocab_size + 1,
+        target_vocab_size=target_vocab_size + 1,
+        pe_input=input_vocab_size + 1,
+        pe_target=target_vocab_size + 1,
         rate=0.1,
     )
     return model
 
 
 def create_gru_attention(args, input_vocab_size, target_vocab_size):
-    return gru_attention.GRU(input_vocab_size, target_vocab_size)
+    return gru_attention.GRU(input_vocab_size + 1, target_vocab_size + 1)
 
 
 MODELS = {
@@ -81,6 +84,9 @@ def parse_args():
         type=int,
     )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
+    parser.add_argument(
+        "--text_encoder", help="Text Encoder type", default="word", type=str
+    )
     parser.add_argument(
         "--model",
         help=f"Name of the model to run, available models are:\n{list(MODELS.keys())}",
@@ -134,17 +140,21 @@ def main():
 
 def basic_training(args, loss_fn):
     """Train the model."""
+    text_encoder_type = TextEncoderType(args.text_encoder)
+
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
         vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
         vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         max_seq_lenght=args.max_seq_lenght,
@@ -164,16 +174,24 @@ def basic_training(args, loss_fn):
 
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
+    text_encoder_type = TextEncoderType(args.text_encoder)
+
     optim = tf.keras.optimizers.Adam(args.lr)
     logger.info("Creating training unaligned dataloader ...")
     train_dl = dataloader.UnalignedDataloader(
-        "data/unaligned.en", args.vocab_size, max_seq_lenght=args.max_seq_lenght,
+        "data/unaligned.en",
+        args.vocab_size,
+        text_encoder_type=text_encoder_type,
+        max_seq_lenght=args.max_seq_lenght,
     )
     logger.info(f"English vocab size: {train_dl.encoder.vocab_size}")
 
     logger.info("Creating reversed training unaligned dataloader ...")
     train_dl_reverse = dataloader.UnalignedDataloader(
-        "data/unaligned.fr", args.vocab_size, max_seq_lenght=args.max_seq_lenght,
+        "data/unaligned.fr",
+        args.vocab_size,
+        text_encoder_type=text_encoder_type,
+        max_seq_lenght=args.max_seq_lenght,
     )
     logger.info(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
@@ -184,6 +202,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder,
         encoder_target=train_dl_reverse.encoder,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
 
@@ -194,6 +213,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_target,
         encoder_target=aligned_train_dl.encoder_input,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
 
@@ -204,6 +224,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_input,
         encoder_target=aligned_train_dl.encoder_target,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
 
@@ -214,6 +235,7 @@ def back_translation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl_reverse.encoder_input,
         encoder_target=aligned_train_dl_reverse.encoder_target,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
 
@@ -251,11 +273,13 @@ def back_translation_training(args, loss_fn):
 
 def test(args, loss_fn):
     """Test the model."""
+    text_encoder_type = TextEncoderType(args.text_encoder)
     # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_train_token.fr",
         vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
     test_dl = dataloader.AlignedDataloader(
@@ -264,6 +288,7 @@ def test(args, loss_fn):
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
+        text_encoder_type=text_encoder_type,
         max_seq_lenght=args.max_seq_lenght,
     )
     model = MODELS[args.model](

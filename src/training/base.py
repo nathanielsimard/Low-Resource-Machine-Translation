@@ -1,15 +1,15 @@
 import abc
 import os
+import pickle
 import subprocess
 from datetime import datetime
 from typing import List
-import pickle
 
 import tensorflow as tf
 
+from src import logging
 from src.dataloader import AlignedDataloader
 from src.model import base
-from src import logging
 
 logger = logging.create_logger(__name__)
 
@@ -102,7 +102,7 @@ class BasicMachineTranslationTraining(Training):
         os.makedirs(directory, exist_ok=True)
 
         if checkpoint is not None:
-            print(f"Loading model {checkpoint}")
+            logger.info(f"Loading model {checkpoint}")
             self.model.load(str(checkpoint))
         else:
             checkpoint = 0
