@@ -203,4 +203,3 @@ def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=Non
     except FileNotFoundError:
         encoder = clazz(vocab_size, text)
         encoder.save_to_file(cache_file)
-
