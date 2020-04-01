@@ -5,6 +5,7 @@ import tensorflow as tf
 
 from src import dataloader
 from src.model import gru_attention, lstm, transformer
+from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
@@ -135,7 +136,7 @@ def main():
 
 def basic_training(args, loss_fn):
     """Train the model."""
-    text_encoder_type = dataloader.TextEncoderType(args.text_encoder)
+    text_encoder_type = TextEncoderType(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(
         learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
@@ -171,7 +172,7 @@ def basic_training(args, loss_fn):
 
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
-    text_encoder_type = dataloader.TextEncoderType(args.text_encoder)
+    text_encoder_type = TextEncoderType(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(args.lr)
     print("Creating training unaligned dataloader ...")
@@ -270,7 +271,7 @@ def back_translation_training(args, loss_fn):
 
 def test(args, loss_fn):
     """Test the model."""
-    text_encoder_type = dataloader.TextEncoderType(args.text_encoder)
+    text_encoder_type = TextEncoderType(args.text_encoder)
     # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
