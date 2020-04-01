@@ -5,7 +5,7 @@ import tensorflow as tf
 from src.model import base
 from src.text_encoder import TextEncoder
 
-NAME = "seq2seq-attention"
+NAME = "seq2seq_attention"
 
 
 class Encoder(tf.keras.Model):
@@ -108,7 +108,7 @@ class Decoder(tf.keras.Model):
         return logits, state_h, state_c, alignment
 
 
-class GRU(base.MachineTranslationModel):
+class SEQ2SEQ(base.MachineTranslationModel):
     """Gru with Bahdanau attention."""
 
     def __init__(self, input_vocab_size: int, output_vocab_size: int):
