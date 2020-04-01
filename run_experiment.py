@@ -19,9 +19,9 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
 def create_transformer(args, input_vocab_size, target_vocab_size):
     model = transformer.Transformer(
         num_layers=4,
-        num_heads=2,
+        num_heads=8,
         dff=512,
-        d_model=128,
+        d_model=256,
         input_vocab_size=input_vocab_size,
         target_vocab_size=target_vocab_size,
         pe_input=input_vocab_size,
@@ -134,9 +134,7 @@ def main():
 
 def basic_training(args, loss_fn):
     """Train the model."""
-    optim = tf.keras.optimizers.Adam(
-        learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
-    )
+    optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",

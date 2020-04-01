@@ -126,7 +126,7 @@ class BasicMachineTranslationTraining(Training):
             self.model.save(epoch)
 
             self._update_progress(epoch)
-            self.history.save(directory + f"{self.model.title}-{epoch}")
+            self.history.save(directory + "/history-{epoch}")
 
     def _train_step(self, inputs, targets, batch, optimizer, loss_fn):
         train_predictions: List[str] = []
