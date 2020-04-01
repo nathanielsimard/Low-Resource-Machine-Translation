@@ -15,13 +15,14 @@ directory = os.path.join(
 )
 os.makedirs(directory, exist_ok=True)
 file_name = os.path.join(directory, "experiment.log")
+file = open(file_name, "w")
 
 
 def create_logger(name: str) -> logging.Logger:
     """Create a logger with default configuration and formatter."""
     logger = logging.getLogger(name)
     formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
-    handler = logging.StreamHandler(stream=file_name)
+    handler = logging.StreamHandler(stream=file)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(LEVEL)
