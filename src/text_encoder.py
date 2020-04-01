@@ -195,12 +195,12 @@ def create_encoder(
 
 
 def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=None):
-    if cache_file is not None and os.path.isfile(cache_file):
+    if cache_file is None:
+        return clazz(vocab_size, text)
+
+    try:
         return clazz.load_from_file(cache_file)
-
-    encoder = clazz(vocab_size, text)
-
-    if cache_file is not None:
+    except FileNotFoundError:
+        encoder = clazz(vocab_size, text)
         encoder.save_to_file(cache_file)
 
-    return encoder
