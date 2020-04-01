@@ -58,6 +58,7 @@ class TextEncoderTest(abc.ABC):
             self.assertEqual(token, v)
 
     def test_decode_0_should_be_out(self):
+        # Even if 0 is not in the vocabulary, it needs to be translated.
         encoder = self.create_encoder()
         word = encoder.decode([0])
         self.assertEqual(word, preprocessing.OUT_OF_SAMPLE_TOKEN)
@@ -74,7 +75,7 @@ class TextEncoderTest(abc.ABC):
 class WordTextEncoderTest(TextEncoderTest, unittest.TestCase):
     def test_vocab_size(self):
         encoder = WordTextEncoder(
-            1000, preprocessing.add_start_end_token(["this is four words"])
+            A_VOCAB_SIZE, preprocessing.add_start_end_token(["this is four words"])
         )
         # 4 word from the corpus, 3 for <out>, <sost> and <eost>
         self.assertEqual(4 + 3, encoder.vocab_size)

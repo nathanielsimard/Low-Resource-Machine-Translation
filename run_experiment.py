@@ -10,6 +10,9 @@ from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
 
+# Embedding for models have to be vocab size + 1 because of the
+# extras index from the padding not in the text encoder's vocab_size.
+
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
     return lstm.Lstm(input_vocab_size + 1, target_vocab_size + 1)
