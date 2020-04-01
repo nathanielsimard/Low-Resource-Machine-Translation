@@ -15,7 +15,7 @@ os.makedirs(directory, exist_ok=True)
 
 file_name = os.path.join(directory, "experiment.log")
 
-formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 # Create a handler that rotate files each 512mb
 handler = RotatingFileHandler(
     file_name, mode="a", maxBytes=536_870_912, backupCount=4, encoding=None
