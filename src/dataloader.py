@@ -1,8 +1,11 @@
 import os
 from typing import List
+from src import logging
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
+
+logger = logging.create_logger(__name__)
 
 EMPTY_TOKEN = "<empty>"
 EMPTY_TOKEN_INDEX = 1
@@ -54,7 +57,7 @@ class UnalignedDataloader:
                 if self.max_seq_lenght is not None:
                     drop_char_len = len(i) - self.max_seq_lenght
                     i = i[: self.max_seq_lenght]
-                    print(f'{drop_char_len} characters were cut from the line.')
+                    logger.info(f"{drop_char_len} characters were cut from the line.")
 
                 yield self.encoder.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
@@ -130,8 +133,12 @@ class AlignedDataloader:
                     o_drop_char_len = len(o) - self.max_seq_lenght
                     i = i[: self.max_seq_lenght]
                     o = o[: self.max_seq_lenght]
-                    print(f'{i_drop_char_len} characters where cut from the input line.')
-                    print(f'{o_drop_char_len} characters where cut from the output line.')
+                    logger.info(
+                        f"{i_drop_char_len} characters where cut from the input line."
+                    )
+                    logger.info(
+                        f"{o_drop_char_len} characters where cut from the output line."
+                    )
 
                 encoder_input = self.encoder_input.encode(
                     START_OF_SAMPLE_TOKEN + " " + i + " " + END_OF_SAMPLE_TOKEN
@@ -158,7 +165,7 @@ def _create_cached_encoder(file_name, corpus, cache_dir, vocab_size):
 
 def read_file(file_name: str) -> List[str]:
     """Read file and returns paragraphs."""
-    print(f"Reading file {file_name}")
+    logger.info(f"Reading file {file_name}")
     output = []
     with open(file_name, "r") as stream:
         for line in stream:
@@ -172,10 +179,10 @@ def create_encoder(
 ) -> tfds.features.text.TextEncoder:
     """Create the encoder from sentences."""
     if cache_file is not None and os.path.isfile(cache_file + ".subwords"):
-        print(f"Loading cache encoder {cache_file}")
+        logger.info(f"Loading cache encoder {cache_file}")
         return tfds.features.text.SubwordTextEncoder.load_from_file(cache_file)
 
-    print("Creating new encoder")
+    logger.info("Creating new encoder")
     # The empty token must be at first because the padded batch
     # add zero padding, which will be understood by the network as
     # empty words.
@@ -186,7 +193,7 @@ def create_encoder(
     )
 
     if cache_file is not None:
-        print(f"Saving encoder {cache_file}")
+        logger.info(f"Saving encoder {cache_file}")
         encoder.save_to_file(cache_file)
 
     return encoder
