@@ -72,6 +72,13 @@ class TextEncoderTest(abc.ABC):
 
 
 class WordTextEncoderTest(TextEncoderTest, unittest.TestCase):
+    def test_vocab_size(self):
+        encoder = WordTextEncoder(
+            1000, preprocessing.add_start_end_token(["this is four words"])
+        )
+        # 4 word from the corpus, 3 for <out>, <sost> and <eost>
+        self.assertEqual(4 + 3, encoder.vocab_size)
+
     def create_encoder(self) -> TextEncoder:
         return WordTextEncoder(A_VOCAB_SIZE, CORPUS)
 
