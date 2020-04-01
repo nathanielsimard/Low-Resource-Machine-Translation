@@ -2,8 +2,10 @@
 import abc
 import unittest
 
-from src import preprocessing
+from src import logging, preprocessing
 from src.text_encoder import SubWordTextEncoder, TextEncoder, WordTextEncoder
+
+logger = logging.create_logger(__name__)
 
 CORPUS = preprocessing.add_start_end_token(
     ["a against", "battle", "pandemy covid-19 not easy"]
@@ -50,7 +52,6 @@ class TextEncoderTest(abc.ABC):
     def test_encode_decode_vocabulary(self):
         encoder = self.create_encoder()
         for v in encoder.vocabulary():
-            print(v)
             index = encoder.encode(v)
             token = encoder.decode(index)
             # 0 is reserved for padding.

@@ -7,7 +7,9 @@ from typing import Any, List
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from src import preprocessing
+from src import logging, preprocessing
+
+logger = logging.create_logger(__name__)
 
 
 class TextEncoderType(enum.Enum):
@@ -57,7 +59,7 @@ class TextEncoder(abc.ABC):
         suffix = self.cls.type().value  # type: ignore
         file_name = f"{file_name}.{suffix}"
 
-        print(f"Saving text encoder to file {file_name}.")
+        logger.info(f"Saving text encoder to file {file_name}.")
 
         with open(file_name, "wb") as file:
             pickle.dump(self, file)
@@ -68,7 +70,7 @@ class TextEncoder(abc.ABC):
         suffix = cls.type().value  # type: ignore
         file_name = f"{file_name}.{suffix}"
 
-        print(f"Loading text encoder of type {cls} from file {file_name}.")
+        logger.info(f"Loading text encoder of type {cls} from file {file_name}.")
         with open(file_name, "rb") as file:
             return pickle.load(file)
 
@@ -83,7 +85,7 @@ class WordTextEncoder(TextEncoder):
 
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder using the keras tokenizer."""
-        print("Creating new word text encoder.")
+        logger.info("Creating new word text encoder.")
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
             num_words=vocab_size, oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN
         )
@@ -150,7 +152,7 @@ class SubWordTextEncoder(TextEncoder):
 
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder using the tensorflow dataset corpus utilities."""
-        print("Creating new subword text encoder.")
+        logger.info("Creating new subword text encoder.")
         self._encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
             (sentence for sentence in corpus),
             target_vocab_size=vocab_size,
@@ -170,7 +172,7 @@ class SubWordTextEncoder(TextEncoder):
         """Decode numbers into text."""
         # Handle 0 index as 1 for <out>
         sequences = [1 if i == 0 else i for i in sequences]
-        print(sequences)
+        logger.info(sequences)
         return self._encoder.decode(sequences)
 
     @classmethod

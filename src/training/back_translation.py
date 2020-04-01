@@ -2,8 +2,11 @@ import copy
 
 import tensorflow as tf
 
+from src import logging
 from src.dataloader import AlignedDataloader
 from src.training import base
+
+logger = logging.create_logger(__name__)
 
 
 class BackTranslationTraining(base.Training):
@@ -50,13 +53,13 @@ class BackTranslationTraining(base.Training):
         self.model_1.title = self.model_1.title + "-model-1"
         self.model_2.title = self.model_2.title + "-model-2"
 
-        print("Training first model on aligned dataset.")
+        logger.info("Training first model on aligned dataset.")
         training = base.BasicMachineTranslationTraining(
             self.model_1, self.aligned_dataloader, self.aligned_valid_dataloader
         )
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
-        print("Training second model on reversed aligned dataset.")
+        logger.info("Training second model on reversed aligned dataset.")
         training = base.BasicMachineTranslationTraining(
             self.model_2,
             self.aligned_dataloader_reversed,
@@ -65,7 +68,7 @@ class BackTranslationTraining(base.Training):
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         for epoch in range(1, num_epoch + 1):
-            print(
+            logger.info(
                 "Creating updated dataloader by generating new samples "
                 + "with model2 for lang1 -> lang2"
             )
@@ -78,7 +81,7 @@ class BackTranslationTraining(base.Training):
                 * batch_size,  # Batch size can be higher because it is one word after the other (seq of 1)
             )
 
-            print(
+            logger.info(
                 "Creating updated dataloader by generating new samples "
                 + "with model1 for lang2 -> lang1"
             )
@@ -91,14 +94,14 @@ class BackTranslationTraining(base.Training):
                 * batch_size,  # Batch size can be higher because it is one word after the other (seq of 1)
             )
 
-            print("Training first model on augmented aligned dataset.")
+            logger.info("Training first model on augmented aligned dataset.")
             training = base.BasicMachineTranslationTraining(
                 self.model_1, updated_dataloader, self.aligned_valid_dataloader
             )
             training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
             self.model_1.save(str(epoch))
 
-            print("Training second model on reversed augmented aligned dataset.")
+            logger.info("Training second model on reversed augmented aligned dataset.")
             training = base.BasicMachineTranslationTraining(
                 self.model_2,
                 updated_dataloader_reverse,
@@ -153,7 +156,7 @@ def create_updated_dataloader(
 def _generate_predictions_unaligned(model, dataset, encoder, batch_size, num_samples):
     predictions = []
     for i, inputs in enumerate(dataset.padded_batch(batch_size, padded_shapes=[None])):
-        print(f"Generating samples, progression {i*batch_size}/{num_samples}")
+        logger.info(f"Generating samples, progression {i*batch_size}/{num_samples}")
         outputs = model.translate(inputs)
         predictions += model.predictions(outputs, encoder, logit=False)
 
