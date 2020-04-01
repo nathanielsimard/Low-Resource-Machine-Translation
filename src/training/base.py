@@ -116,7 +116,7 @@ class BasicMachineTranslationTraining(Training):
                 )
             ):
 
-                train_predictions = self._train_step(
+                train_predictions += self._train_step(
                     inputs, targets, i, optimizer, loss_fn
                 )
 
@@ -126,28 +126,33 @@ class BasicMachineTranslationTraining(Training):
             self.model.save(epoch)
 
             self._update_progress(epoch)
-            self.history.save(directory + "/history-{epoch}")
+            self.history.save(directory + f"/history-{epoch}")
 
-    def _train_step(self, inputs, targets, batch, optimizer, loss_fn):
-        train_predictions: List[str] = []
+    def _train_step(
+        self,
+        inputs,
+        targets,
+        batch: int,
+        optimizer: tf.keras.optimizers,
+        loss_fn: tf.keras.losses,
+    ):
         with tf.GradientTape() as tape:
             outputs = self.model(inputs, training=True)
             # Calculate the training prediction tokens
             predictions = self.model.predictions(
                 outputs, self.train_dataloader.encoder_target
             )
-            train_predictions += predictions
-
             # Calculate the loss and update the parameters
             loss = loss_fn(targets, outputs)
-            metric = self.metrics["train"]
-            metric(loss)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-            logger.info(f"Batch #{batch} : training loss {metric.result()}")
-            gradients = tape.gradient(loss, self.model.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+        metric = self.metrics["train"]
+        metric(loss)
 
-        return train_predictions
+        logger.info(f"Batch #{batch} : training loss {metric.result()}")
+
+        return predictions
 
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
