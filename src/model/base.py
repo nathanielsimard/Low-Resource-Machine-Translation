@@ -3,9 +3,9 @@ from typing import List
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_datasets as tfds
 
-from src.dataloader import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
+from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
+from src.text_encoder import TextEncoder
 
 MODEL_BASE_DIR = "models"
 
@@ -50,7 +50,7 @@ class MachineTranslationModel(Model, abc.ABC):
     """
 
     def predictions(
-        self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder, logit=True
+        self, outputs: tf.Tensor, encoder: TextEncoder, logit=True
     ) -> List[str]:
         """Generate prediction tokens from the outputs from the last layer."""
         sentences = outputs
@@ -64,12 +64,12 @@ class MachineTranslationModel(Model, abc.ABC):
         return _clean_tokens(sentences)
 
     @abc.abstractmethod
-    def translate(self, x: tf.Tensor) -> tf.Tensor:
+    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input.
 
         Example::
-            >>> translated = model.translate(x)
-            >>> predictions = model.predictions(translated, encoder, logit=False)
+            >>> translated = model.translate(x, target_encoder)
+            >>> predictions = model.predictions(translated, target_encoder, logit=False)
 
         Returns the indexes corresponding to each vocabulary word.
         """

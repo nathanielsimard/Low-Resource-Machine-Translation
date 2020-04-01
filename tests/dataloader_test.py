@@ -1,9 +1,11 @@
 import unittest
 
-from src import dataloader
+from src import dataloader, text_encoder
 
 ANY_TEXT_FILE = "data/train.lang1"
-CORPUS = dataloader._add_start_end_token(["a against", "battle", "pandemy"])
+
+NUM_SAMPLES = 25
+VOCAB_SIZE = 300
 
 
 class DataloaderTest(unittest.TestCase):
@@ -13,46 +15,33 @@ class DataloaderTest(unittest.TestCase):
         self.assertTrue(len(output) >= 1)
         self.assertTrue(len(output[0]) >= 1)
 
-    def test_create_encoder_from_sentences(self):
-        sample = "a battle"
-        encoder = dataloader.create_subword_encoder(CORPUS, 258)
-
-        ids = encoder.encode(sample)
-        out = encoder.decode(ids)
-
-        self.assertEqual(out, sample)
-
-    def test_create_encoder_from_sentences_with_cache(self):
-        sample = "a battle"
-        encoder = dataloader.create_subword_encoder(
-            CORPUS, 258, cache_file="/tmp/cachetest"
+    def test_create_unaligned_dataset(self):
+        dl = dataloader.UnalignedDataloader(
+            "tests/sample1.txt", VOCAB_SIZE, text_encoder.TextEncoderType.SUBWORD,
         )
 
-        ids = encoder.encode(sample)
-        out = encoder.decode(ids)
+        dataset = dl.create_dataset()
 
-        self.assertEqual(out, sample)
+        samples_num = self._count_entries(dataset, ([None]))
+        self.assertEqual(NUM_SAMPLES, samples_num)
 
-    def test_create_dataset(self):
+    def test_create_aligned_dataset(self):
         dl = dataloader.AlignedDataloader(
             "tests/sample1.txt",
             "tests/sample2.txt",
-            300,
-            dataloader.TextEncoderType.SUBWORD,
+            VOCAB_SIZE,
+            text_encoder.TextEncoderType.SUBWORD,
         )
+
         dataset = dl.create_dataset()
 
+        samples_num = self._count_entries(dataset, ([None], [None]))
+        self.assertEqual(NUM_SAMPLES, samples_num)
+
+    def _count_entries(self, dataset, padded_shapes):
         samples_num = 0
-        for sample in dataset.padded_batch(1, padded_shapes=([None], [None])):
+        for sample in dataset.padded_batch(1, padded_shapes):
             samples_num += 1
             self.assertTrue(sample is not None)
 
-        self.assertEqual(25, samples_num)
-
-    def test_word_encoder(self):
-        sample = "a battle"
-        text_encoder = dataloader.WordEncoder(10, CORPUS)
-        ids = text_encoder.encode(sample)
-        out = text_encoder.decode(ids)
-
-        self.assertEqual(out, sample)
+        return samples_num

@@ -1,10 +1,11 @@
-import tensorflow as tf
-import numpy as np
-from tensorflow.keras import layers
-from src.model import base
 from typing import Tuple
 
-from src.dataloader import END_OF_SAMPLE_TOKEN_INDEX, START_OF_SAMPLE_TOKEN_INDEX
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers
+
+from src.model import base
+from src.text_encoder import TextEncoder
 
 # DISCLAIMER: This module is taken as is from the tensorflow documentation, under the Creative Commons 4.0 License.
 # It is thus available for free adaptation and sharing.
@@ -75,11 +76,13 @@ class Transformer(base.MachineTranslationModel):
 
         return final_output
 
-    def translate(self, x: tf.Tensor):
+    def translate(self, x: tf.Tensor, encoder: TextEncoder):
         """Translation function for the test set."""
         batch_size = x.shape[0]
         # The first words of each sentence in the batch is the start of sample token.
-        words = tf.zeros([batch_size, 1], dtype=tf.int64) + START_OF_SAMPLE_TOKEN_INDEX
+        words = (
+            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
+        )
         words = tf.expand_dims(words, 0)
 
         decoder_input = [self.target_vocab_size]
@@ -99,7 +102,7 @@ class Transformer(base.MachineTranslationModel):
 
             end_of_sample = (
                 np.zeros([batch_size, words.shape[1], 1], dtype=np.int64)
-                + END_OF_SAMPLE_TOKEN_INDEX
+                + encoder.end_of_sample_index
             )
 
             has_finish_predicting = np.array_equal(predicted_id.numpy(), end_of_sample)
