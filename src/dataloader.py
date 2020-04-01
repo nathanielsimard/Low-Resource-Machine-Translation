@@ -2,7 +2,18 @@ from typing import List
 
 import tensorflow as tf
 
-from src import preprocessing, text_encoder
+from src import logging, preprocessing, text_encoder
+
+logger = logging.create_logger(__name__)
+
+EMPTY_TOKEN = "<empty>"
+EMPTY_TOKEN_INDEX = 1
+
+START_OF_SAMPLE_TOKEN = "<start>"
+START_OF_SAMPLE_TOKEN_INDEX = 2
+
+END_OF_SAMPLE_TOKEN = "<end>"
+END_OF_SAMPLE_TOKEN_INDEX = 3
 
 
 class UnalignedDataloader:
@@ -50,14 +61,15 @@ class UnalignedDataloader:
             for i in self.corpus:
                 if self.max_seq_lenght is not None:
                     drop_char_len = len(i) - self.max_seq_lenght
-
                     if drop_char_len > 0:
                         i = (
                             i[: self.max_seq_lenght]
                             + " "
                             + preprocessing.END_OF_SAMPLE_TOKEN
                         )
-                        print(f"{drop_char_len} characters were cut from the line.")
+                        logger.info(
+                            f"{drop_char_len} characters were cut from the line."
+                        )
 
                 yield self.encoder.encode(i)
 
@@ -150,7 +162,7 @@ class AlignedDataloader:
                             + " "
                             + preprocessing.END_OF_SAMPLE_TOKEN
                         )
-                        print(
+                        logger.info(
                             f"{i_drop_char_len} characters were cut from the input line."
                         )
 
@@ -160,7 +172,7 @@ class AlignedDataloader:
                             + " "
                             + preprocessing.END_OF_SAMPLE_TOKEN
                         )
-                        print(
+                        logger.info(
                             f"{o_drop_char_len} characters were cut from the output line."
                         )
 
@@ -174,7 +186,7 @@ class AlignedDataloader:
 
 def read_file(file_name: str) -> List[str]:
     """Read file and returns paragraphs."""
-    print(f"Reading file {file_name}")
+    logger.info(f"Reading file {file_name}")
     output = []
     with open(file_name, "r") as stream:
         for line in stream:
