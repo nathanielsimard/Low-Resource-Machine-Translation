@@ -16,7 +16,7 @@ SAMPLE = "a pandemy"
 class TextEncoderTest(abc.ABC):
     def test_can_save_load(self):
         encoder = self.create_encoder()
-        file_name = "text_ecoder"
+        file_name = "/tmp/text_ecoder"
 
         encoder.save_to_file(file_name)
         loaded_encoder = self.load_encoder(file_name)

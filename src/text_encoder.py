@@ -20,7 +20,7 @@ class TextEncoderType(enum.Enum):
 class TextEncoder(abc.ABC):
     """Abstract Text Enoder to encoder and decode text into and from numbers.
 
-    Indexes start at 0 and end at vocab_size [0, vocab_size).
+    Indexes start at 1 and end at vocab_size included [1, vocab_size].
     """
 
     @abc.abstractmethod
@@ -96,11 +96,11 @@ class WordTextEncoder(TextEncoder):
 
     def encode(self, text: str) -> List[int]:
         """Encode a text into numbers."""
-        return self.tokenizer.texts_to_sequences([text])[0]
+        return [i + 1 for i in self.tokenizer.texts_to_sequences([text])[0]]
 
     def decode(self, sequences: List[int]) -> str:
         """Decode numbers into text."""
-        return self.tokenizer.sequences_to_texts([sequences])[0]
+        return self.tokenizer.sequences_to_texts([[i - 1 for i in sequences]])[0]
 
     @classmethod
     def type(cls):
@@ -115,12 +115,12 @@ class WordTextEncoder(TextEncoder):
     @property
     def start_of_sample_index(self) -> int:
         """The index representing the start of sample token."""
-        return self.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN]
+        return self.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN] + 1
 
     @property
     def end_of_sample_index(self) -> int:
         """The index representing the end of sample token."""
-        return self.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN]
+        return self.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN] + 1
 
     def _update_word(self, old_word, new_word):
         index = self.tokenizer.word_index[old_word]
@@ -149,13 +149,13 @@ class SubWordTextEncoder(TextEncoder):
         """Encode a text into numbers."""
         # This encoder's index start at one, but
         # must start at 0 to work with argmax.
-        return [i - 1 for i in self._encoder.encode(text)]
+        return self._encoder.encode(text)
 
     def decode(self, sequences: List[int]) -> str:
         """Decode numbers into text."""
         # This encoder's index start at one, but
         # must start at 0 to work with argmax.
-        return self._encoder.decode([i + 1 for i in sequences])
+        return self._encoder.decode(sequences)
 
     @classmethod
     def type(cls):
@@ -170,12 +170,12 @@ class SubWordTextEncoder(TextEncoder):
     @property
     def start_of_sample_index(self) -> int:
         """The index representing the start of sample token."""
-        return self._encoder.encode(preprocessing.START_OF_SAMPLE_TOKEN)[0] - 1
+        return self._encoder.encode(preprocessing.START_OF_SAMPLE_TOKEN)[0]
 
     @property
     def end_of_sample_index(self) -> int:
         """The index representing the end of sample token."""
-        return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0] - 1
+        return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0]
 
 
 def create_encoder(
