@@ -87,7 +87,6 @@ class BasicMachineTranslationTraining(Training):
         checkpoint=None,
     ):
         """Training session."""
-
         logger.info("Creating datasets...")
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
@@ -127,7 +126,7 @@ class BasicMachineTranslationTraining(Training):
             self.model.save(epoch)
 
             self._update_progress(epoch)
-            self.history.save(f"{self.model.title}-{epoch}")
+            self.history.save(directory + f"{self.model.title}-{epoch}")
 
     def _train_step(self, inputs, targets, batch, optimizer, loss_fn):
         train_predictions: List[str] = []
