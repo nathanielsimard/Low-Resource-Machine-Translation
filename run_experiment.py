@@ -12,7 +12,7 @@ from src.training.base import BasicMachineTranslationTraining
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
-    return lstm.Lstm(input_vocab_size, target_vocab_size)
+    return lstm.Lstm(input_vocab_size + 1, target_vocab_size + 1)
 
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
@@ -21,17 +21,17 @@ def create_transformer(args, input_vocab_size, target_vocab_size):
         num_heads=2,
         dff=512,
         d_model=128,
-        input_vocab_size=input_vocab_size,
-        target_vocab_size=target_vocab_size,
-        pe_input=input_vocab_size,
-        pe_target=target_vocab_size,
+        input_vocab_size=input_vocab_size + 1,
+        target_vocab_size=target_vocab_size + 1,
+        pe_input=input_vocab_size + 1,
+        pe_target=target_vocab_size + 1,
         rate=0.1,
     )
     return model
 
 
 def create_gru_attention(args, input_vocab_size, target_vocab_size):
-    return gru_attention.GRU(input_vocab_size, target_vocab_size)
+    return gru_attention.GRU(input_vocab_size + 1, target_vocab_size + 1)
 
 
 MODELS = {
