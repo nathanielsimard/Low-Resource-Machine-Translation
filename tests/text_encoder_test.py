@@ -47,6 +47,21 @@ class TextEncoderTest(abc.ABC):
         self.assertEqual(1, len(ids))
         self.assertEqual(encoder.end_of_sample_index, ids[0])
 
+    def test_encode_decode_vocabulary(self):
+        encoder = self.create_encoder()
+        for v in encoder.vocabulary():
+            print(v)
+            index = encoder.encode(v)
+            token = encoder.decode(index)
+            # 0 is reserved for padding.
+            self.assertNotEqual(index, 0)
+            self.assertEqual(token, v)
+
+    def test_decode_0_should_be_out(self):
+        encoder = self.create_encoder()
+        word = encoder.decode([0])
+        self.assertEqual(word, preprocessing.OUT_OF_SAMPLE_TOKEN)
+
     @abc.abstractmethod
     def create_encoder(self) -> TextEncoder:
         pass

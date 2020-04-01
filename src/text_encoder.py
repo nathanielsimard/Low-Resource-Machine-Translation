@@ -72,6 +72,11 @@ class TextEncoder(abc.ABC):
         with open(file_name, "rb") as file:
             return pickle.load(file)
 
+    @abc.abstractmethod
+    def vocabulary(self) -> List[str]:
+        """Return all the word tokens in the vocabulary."""
+        pass
+
 
 class WordTextEncoder(TextEncoder):
     """Text Encoder where most popular words become tokens."""
@@ -91,16 +96,21 @@ class WordTextEncoder(TextEncoder):
         self._update_word(
             preprocessing.END_OF_SAMPLE_TOKEN[1:-1], preprocessing.END_OF_SAMPLE_TOKEN,
         )
+
         self._vocab_size = vocab_size
+        max_vocab_size = len(self.tokenizer.index_word.keys())
+        if self._vocab_size > max_vocab_size:
+            self._vocab_size = max_vocab_size
+
         self.cls = WordTextEncoder
 
     def encode(self, text: str) -> List[int]:
         """Encode a text into numbers."""
-        return [i + 1 for i in self.tokenizer.texts_to_sequences([text])[0]]
+        return self.tokenizer.texts_to_sequences([text])[0]
 
     def decode(self, sequences: List[int]) -> str:
         """Decode numbers into text."""
-        return self.tokenizer.sequences_to_texts([[i - 1 for i in sequences]])[0]
+        return self.tokenizer.sequences_to_texts([sequences])[0]
 
     @classmethod
     def type(cls):
@@ -115,12 +125,19 @@ class WordTextEncoder(TextEncoder):
     @property
     def start_of_sample_index(self) -> int:
         """The index representing the start of sample token."""
-        return self.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN] + 1
+        return self.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN]
 
     @property
     def end_of_sample_index(self) -> int:
         """The index representing the end of sample token."""
-        return self.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN] + 1
+        return self.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN]
+
+    def vocabulary(self) -> List[str]:
+        """Return all the word tokens in the vocabulary."""
+        word_tokens = []
+        for i in range(1, self.vocab_size + 1):
+            word_tokens.append(self.tokenizer.index_word[i])
+        return word_tokens
 
     def _update_word(self, old_word, new_word):
         index = self.tokenizer.word_index[old_word]
@@ -147,14 +164,13 @@ class SubWordTextEncoder(TextEncoder):
 
     def encode(self, text: str) -> List[int]:
         """Encode a text into numbers."""
-        # This encoder's index start at one, but
-        # must start at 0 to work with argmax.
         return self._encoder.encode(text)
 
     def decode(self, sequences: List[int]) -> str:
         """Decode numbers into text."""
-        # This encoder's index start at one, but
-        # must start at 0 to work with argmax.
+        # Handle 0 index as 1 for <out>
+        sequences = [1 if i == 0 else i for i in sequences]
+        print(sequences)
         return self._encoder.decode(sequences)
 
     @classmethod
@@ -176,6 +192,10 @@ class SubWordTextEncoder(TextEncoder):
     def end_of_sample_index(self) -> int:
         """The index representing the end of sample token."""
         return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0]
+
+    def vocabulary(self) -> List[str]:
+        """Return all the word tokens in the vocabulary."""
+        return self._encoder._subwords
 
 
 def create_encoder(
