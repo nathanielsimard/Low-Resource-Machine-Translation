@@ -87,7 +87,7 @@ class WordTextEncoderTest(TextEncoderTest, unittest.TestCase):
     def load_encoder(self, file_name) -> TextEncoder:
         return WordTextEncoder.load_from_file(file_name)
 
-    def reserved_token_exists(self):
+    def test_reserved_token_exists(self):
         encoder = WordTextEncoder(
             A_VOCAB_SIZE, preprocessing.add_start_end_token(["Adding reserved token"])
         )
