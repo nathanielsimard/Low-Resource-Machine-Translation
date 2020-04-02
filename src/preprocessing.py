@@ -2,8 +2,8 @@
 OUT_OF_SAMPLE_TOKEN = "<out>"
 # The word inside < > must be unique
 # for start and end of sample token.
-START_OF_SAMPLE_TOKEN = "<sost>"
-END_OF_SAMPLE_TOKEN = "<eost>"
+START_OF_SAMPLE_TOKEN = "<start>"
+END_OF_SAMPLE_TOKEN = "<end>"
 
 
 def add_start_end_token(corpus):

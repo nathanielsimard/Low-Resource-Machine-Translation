@@ -6,15 +6,6 @@ from src import logging, preprocessing, text_encoder
 
 logger = logging.create_logger(__name__)
 
-EMPTY_TOKEN = "<empty>"
-EMPTY_TOKEN_INDEX = 1
-
-START_OF_SAMPLE_TOKEN = "<start>"
-START_OF_SAMPLE_TOKEN_INDEX = 2
-
-END_OF_SAMPLE_TOKEN = "<end>"
-END_OF_SAMPLE_TOKEN_INDEX = 3
-
 
 class UnalignedDataloader:
     """Dataloader used for a single unaligned dataset."""

@@ -87,17 +87,9 @@ class WordTextEncoder(TextEncoder):
         """Create the encoder using the keras tokenizer."""
         logger.info("Creating new word text encoder.")
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
-            num_words=vocab_size, oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN
+            num_words=vocab_size, oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN, filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n'
         )
         self.tokenizer.fit_on_texts(corpus)
-        self._update_word(
-            preprocessing.START_OF_SAMPLE_TOKEN[1:-1],
-            preprocessing.START_OF_SAMPLE_TOKEN,
-        )
-
-        self._update_word(
-            preprocessing.END_OF_SAMPLE_TOKEN[1:-1], preprocessing.END_OF_SAMPLE_TOKEN,
-        )
 
         self._vocab_size = vocab_size
         max_vocab_size = len(self.tokenizer.index_word.keys())
@@ -140,11 +132,6 @@ class WordTextEncoder(TextEncoder):
         for i in range(1, self.vocab_size + 1):
             word_tokens.append(self.tokenizer.index_word[i])
         return word_tokens
-
-    def _update_word(self, old_word, new_word):
-        index = self.tokenizer.word_index[old_word]
-        self.tokenizer.word_index[new_word] = index
-        self.tokenizer.index_word[index] = new_word
 
 
 class SubWordTextEncoder(TextEncoder):
