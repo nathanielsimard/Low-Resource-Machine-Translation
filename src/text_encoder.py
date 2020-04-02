@@ -87,7 +87,9 @@ class WordTextEncoder(TextEncoder):
         """Create the encoder using the keras tokenizer."""
         logger.info("Creating new word text encoder.")
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
-            num_words=vocab_size, oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN, filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n'
+            num_words=vocab_size,
+            oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN,
+            filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
         )
         self.tokenizer.fit_on_texts(corpus)
 
