@@ -1,4 +1,5 @@
 import abc
+import math
 from typing import List
 
 import numpy as np
@@ -56,7 +57,8 @@ class MachineTranslationModel(Model, abc.ABC):
         sentences = outputs
 
         if logit:
-            sentences = np.argmax(sentences.numpy(), axis=2)
+            #sentences = np.argmax(sentences.numpy(), axis=2)
+            sentences = [_beam_search_decoder(sentence) for sentence in sentences.numpy()]
 
         sentences = [encoder.decode(sentence) for sentence in sentences]
 
@@ -73,6 +75,28 @@ class MachineTranslationModel(Model, abc.ABC):
         Returns the indexes corresponding to each vocabulary word.
         """
         pass
+
+
+def _beam_search_decoder(sentences):
+    sequences = [[list(), 1.0]]
+    # walk over each step in sequence
+    for row in sentences:
+        all_candidates = list()
+        # expand each current candidate
+        for i in range(len(sequences)):
+            seq, score = sequences[i]
+            for j in range(len(row)):
+                candidate = [seq + [j], score * - math.log(row[j])]
+                all_candidates.append(candidate)
+        # order all candidates by score
+        ordered = sorted(all_candidates, key=lambda tup: tup[1])
+        # select k best
+    print('Ordered')
+    print(ordered)
+    sequences = ordered[0][0]
+    print('Sequence!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print(sequences)
+    return sequences
 
 
 def _clean_tokens(sentences):
