@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import numpy as np
 import tensorflow as tf
 
 from src.model import base
@@ -8,10 +9,13 @@ from src.text_encoder import TextEncoder
 NAME = "gru-attention"
 
 
+MAX_SEQ_LENGHT = 250
+
+
 class Encoder(tf.keras.Model):
     """Encoder of the gru with attention model."""
 
-    def __init__(self, vocab_size, embedding_dim, enc_units):
+    def __init__(self, vocab_size, embedding_dim, enc_units, dropout):
         """Create the encoder."""
         super(Encoder, self).__init__()
         self.enc_units = enc_units
@@ -21,6 +25,7 @@ class Encoder(tf.keras.Model):
             return_sequences=True,
             return_state=True,
             recurrent_initializer="glorot_uniform",
+            dropout=dropout,
         )
 
     def call(self, x, hidden):
@@ -73,7 +78,7 @@ class BahdanauAttention(tf.keras.layers.Layer):
 class Decoder(tf.keras.Model):
     """Decoder of the gru with attention model."""
 
-    def __init__(self, vocab_size, embedding_dim, dec_units):
+    def __init__(self, vocab_size, embedding_dim, dec_units, dropout):
         """Create the decoder."""
         super(Decoder, self).__init__()
         self.dec_units = dec_units
@@ -83,6 +88,7 @@ class Decoder(tf.keras.Model):
             return_sequences=True,
             return_state=True,
             recurrent_initializer="glorot_uniform",
+            dropout=dropout,
         )
         self.fc = tf.keras.layers.Dense(vocab_size)
 
@@ -124,9 +130,9 @@ class GRU(base.MachineTranslationModel):
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
 
-        self.encoder = Encoder(input_vocab_size, 256, 1024)
+        self.encoder = Encoder(input_vocab_size, 256, 512, 0.3)
         self.attention_layer = BahdanauAttention(10)
-        self.decoder = Decoder(output_vocab_size, 256, 1024)
+        self.decoder = Decoder(output_vocab_size, 256, 512, 0.3)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
@@ -161,7 +167,40 @@ class GRU(base.MachineTranslationModel):
 
     def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input."""
-        pass
+        batch_size = x.shape[0]
+
+        encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
+        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden)
+        decoder_hidden = encoder_hidden
+
+        # The first words of each sentence in the batch is the start of sample token.
+        words = (
+            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
+        )
+        last_words = words
+
+        has_finish_predicting = False
+        reach_max_seq_lenght = False
+
+        while not (has_finish_predicting or reach_max_seq_lenght):
+            # Call the decoder and update the decoder hidden state
+            decoder_output, decoder_hidden, _ = self.decoder(
+                last_words, decoder_hidden, encoder_output
+            )
+            last_words = tf.expand_dims(decoder_output, 1)
+            last_words = tf.math.argmax(last_words, axis=2)
+
+            # Append the newly predicted words into words.
+            words = tf.concat([words, last_words], 1)
+
+            # Compute the end condition of the while loop.
+            end_of_sample = (
+                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
+            )
+            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+
+        return words
 
     @property
     def padded_shapes(self):
@@ -170,7 +209,7 @@ class GRU(base.MachineTranslationModel):
 
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
-
+        # Teacher forcing.
         def preprocess(input_sentence, output_sentence):
             return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
 
