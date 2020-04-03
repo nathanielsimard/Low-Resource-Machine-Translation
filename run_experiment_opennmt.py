@@ -16,6 +16,7 @@ import logging
 import tensorflow as tf
 import tensorflow_addons as tfa
 import opennmt as onmt
+from tmp_helpers.metrics import compute_bleu
 
 tf.get_logger().setLevel(logging.INFO)
 
@@ -64,6 +65,7 @@ def train(
     save_every=1000,
     report_every=100,
     validation_file=None,
+    validate_every=3000,
 ):
     """Runs the training loop.
   Args:
@@ -137,12 +139,19 @@ def train(
         if step % save_every == 0:
             tf.get_logger().info("Saving checkpoint for step %d", step)
             checkpoint_manager.save(checkpoint_number=step)
+
+        if step % validate_every == 0:
             output_file_name = f"predictions.{step}.txt"
             if validation_file is not None:
                 tf.get_logger().info(
                     f"Saving validation predictions from {validation_file} to {output_file_name}"
                 )
                 translate(validation_file, output_file=output_file_name)
+                per_sentence_score, mean_score = compute_bleu(
+                    output_file_name, validation_file
+                )
+                print(f"Raw BLEU score {mean_score}")
+
         if step == train_steps:
             break
 
