@@ -1,4 +1,7 @@
 import argparse
+from src import logging
+
+#from run_experiment import MODELS, TASK
 
 
 def parse_args():
@@ -13,7 +16,7 @@ def parse_args():
     )
     parser.add_argument(
         "--task",
-        help=f"Task to execute, possible ones are:\n{list(TASK.keys())}",
+        help=f"Task to execute, possible ones are:\n",
         default="default-training",
         type=str,
     )
@@ -37,7 +40,7 @@ def parse_args():
     )
     parser.add_argument(
         "--model",
-        help=f"Name of the model to run, available models are:\n{list(MODELS.keys())}",
+        help=f"Name of the model to run, available models are:\n",
         type=str,
         required=True,
     )
@@ -48,8 +51,10 @@ def parse_args():
     parser.add_argument(
         "--vocab_size", help="Size of the vocabulary", default=30000, type=int
     )
-    # initLogger()
-    return parser.parse_args()
+    args = parser.parse_args()
+    logger = logging.initialise_logger(args)
+
+    return args, logger
 
 
-args = parse_args()
+args, logger = parse_args()

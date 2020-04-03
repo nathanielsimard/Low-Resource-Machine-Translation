@@ -11,8 +11,6 @@ from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
 
 logger = logging.create_logger(__name__)
-# Embedding for models have to be vocab size + 1 because of the
-# extras index from the padding not in the text encoder's vocab_size.
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
@@ -265,8 +263,16 @@ TASK = {
 }
 
 
+def _log_args(args):
+    args_output = 'Arguments Value: \n'
+    for arg in vars(args):
+        args_output += f'{arg}:  {getattr(args, arg)}\n'
+    logger.info(args_output)
+
+
 def main():
-    args = argument_parser.parse_args()
+    args = argument_parser.args
+    _log_args(args)
 
     if not args.random_seed:
         random.seed(args.seed)
