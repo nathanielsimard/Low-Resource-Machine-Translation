@@ -3,14 +3,12 @@ import os
 import pickle
 import subprocess
 from datetime import datetime
-from typing import List
-
 import tensorflow as tf
 
 from src import logging
 from src.dataloader import AlignedDataloader
 from src.model import base
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 logger = logging.create_logger(__name__)
 
@@ -18,11 +16,11 @@ logger = logging.create_logger(__name__)
 class History(object):
     """Keeps track of the different losses."""
 
-    def __init__(self, *args: str):
+    def __init__(self, other_metrics: List[str]):
         """Initialize dictionaries."""
         tmp_logs: Dict[str, Any] = {"train_loss": [], "valid_loss": []}
-        for i in range(len(args)):
-            tmp_logs.update({args[i]: []})
+        for i in range(len(other_metrics)):
+            tmp_logs.update({other_metrics[i]: []})
         self.logs = tmp_logs
 
     def record(self, name, value):
@@ -75,7 +73,7 @@ class BasicMachineTranslationTraining(Training):
             "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
 
-        self.history = History("train_bleu", "valid_bleu")
+        self.history = History(["train_bleu", "valid_bleu"])
 
     def run(
         self,

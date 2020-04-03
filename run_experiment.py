@@ -151,24 +151,11 @@ def basic_training(args, loss_fn):
     text_encoder_type = TextEncoderType(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
-    """
-    train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_train_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
-    )
-    valid_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_val_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        encoder_input=train_dl.encoder_input,
-        encoder_target=train_dl.encoder_target,
-        max_seq_lenght=args.max_seq_lenght,
-    )
-    """
+    # "data/splitted_data/sorted_train_token.en"
+    # "data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr"
+
+    # "data/splitted_data/sorted_val_token.en"
+    # "data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr"
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_train.en",
         file_name_target="data/splitted_english_data/sorted_target_train.en",
