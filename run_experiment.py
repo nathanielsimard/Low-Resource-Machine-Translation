@@ -21,7 +21,7 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
     model = transformer.Transformer(
-        num_layers=4,
+        num_layers=2,
         num_heads=8,
         dff=512,
         d_model=256,
@@ -39,7 +39,9 @@ def create_gru_attention(args, input_vocab_size, target_vocab_size):
 
 
 def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
-    return lstm_luong_attention.LSTM_ATTENTION(input_vocab_size + 1, target_vocab_size + 1)
+    return lstm_luong_attention.LSTM_ATTENTION(
+        input_vocab_size + 1, target_vocab_size + 1
+    )
 
 
 MODELS = {
@@ -148,6 +150,7 @@ def basic_training(args, loss_fn):
     text_encoder_type = TextEncoderType(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
+    """
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
@@ -158,6 +161,23 @@ def basic_training(args, loss_fn):
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_val_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
+        encoder_input=train_dl.encoder_input,
+        encoder_target=train_dl.encoder_target,
+        max_seq_lenght=args.max_seq_lenght,
+    )
+    """
+    train_dl = dataloader.AlignedDataloader(
+        file_name_input="data/splitted_english_data/sorted_clean_train.en",
+        file_name_target="data/splitted_english_data/sorted_target_train.en",
+        vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
+        max_seq_lenght=args.max_seq_lenght,
+    )
+    valid_dl = dataloader.AlignedDataloader(
+        file_name_input="data/splitted_english_data/sorted_clean_valid.en",
+        file_name_target="data/splitted_english_data/sorted_target_valid.en",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,

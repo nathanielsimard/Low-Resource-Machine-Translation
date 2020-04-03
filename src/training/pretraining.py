@@ -37,5 +37,24 @@ class Pretraining(base.Training):
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
 
-        train_dataset = self.model.preprocessing(train_dataset,)
-        valid_dataset = self.model.preprocessing(valid_dataset)
+        logger.info("Creating results directory...")
+
+        directory = os.path.join(
+            "results/" + self.model.title + "_mono",
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
+        os.makedirs(directory, exist_ok=True)
+
+        if checkpoint is not None:
+            logger.info(f"Loading model {checkpoint}")
+            self.model.load(str(checkpoint))
+        else:
+            checkpoint = 0
+
+        for epoch in range(checkpoint + 1, num_epoch + 1):
+
+            for i, minibatch in enumerate(
+                train_dataset.padded_batch(batch_size, padded_shapes=([None]))
+            ):
+                inputs = minibatch[:-1]
+                targets = minibatch[1:]
