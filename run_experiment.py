@@ -23,8 +23,8 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
 def create_transformer(args, input_vocab_size, target_vocab_size):
     model = transformer.Transformer(
         num_layers=2,
-        num_heads=8,
-        dff=512,
+        num_heads=2,
+        dff=256,
         d_model=256,
         input_vocab_size=input_vocab_size + 1,
         target_vocab_size=target_vocab_size + 1,
@@ -103,7 +103,10 @@ def parse_args():
     )
     parser.add_argument("--batch_size", help="Batch size", default=16, type=int)
     parser.add_argument(
-        "--max_seq_lenght", help="Max sequence lenght", default=None, type=int
+        "--max_seq_length",
+        help="Max sequence length(in terms of characters)",
+        default=None,
+        type=int,
     )
     parser.add_argument(
         "--vocab_size", help="Size of the vocabulary", default=80000, type=int
@@ -161,7 +164,7 @@ def basic_training(args, loss_fn):
         file_name_target="data/splitted_english_data/sorted_target_train.en",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_valid.en",
@@ -170,7 +173,7 @@ def basic_training(args, loss_fn):
         text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     model = MODELS[args.model](
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -195,7 +198,7 @@ def back_translation_training(args, loss_fn):
         "data/unaligned.en",
         args.vocab_size,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     logger.info(f"English vocab size: {train_dl.encoder.vocab_size}")
 
@@ -204,7 +207,7 @@ def back_translation_training(args, loss_fn):
         "data/unaligned.fr",
         args.vocab_size,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     logger.info(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
@@ -216,7 +219,7 @@ def back_translation_training(args, loss_fn):
         encoder_input=train_dl.encoder,
         encoder_target=train_dl_reverse.encoder,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
 
     logger.info("Creating reversed training aligned dataloader ...")
@@ -227,7 +230,7 @@ def back_translation_training(args, loss_fn):
         encoder_input=aligned_train_dl.encoder_target,
         encoder_target=aligned_train_dl.encoder_input,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
 
     logger.info("Creating valid aligned dataloader ...")
@@ -238,7 +241,7 @@ def back_translation_training(args, loss_fn):
         encoder_input=aligned_train_dl.encoder_input,
         encoder_target=aligned_train_dl.encoder_target,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
 
     logger.info("Creating reversed valid aligned dataloader ...")
@@ -249,7 +252,7 @@ def back_translation_training(args, loss_fn):
         encoder_input=aligned_train_dl_reverse.encoder_input,
         encoder_target=aligned_train_dl_reverse.encoder_target,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
 
     model = MODELS[args.model](
@@ -293,7 +296,7 @@ def test(args, loss_fn):
         file_name_target="data/splitted_data/sorted_train_token.fr",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     test_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_test_token.en",
@@ -302,7 +305,7 @@ def test(args, loss_fn):
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     model = MODELS[args.model](
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size

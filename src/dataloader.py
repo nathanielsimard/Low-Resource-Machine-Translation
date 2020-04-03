@@ -18,7 +18,7 @@ class UnalignedDataloader:
         cache_dir=".cache",
         encoder=None,
         corpus=None,
-        max_seq_lenght=None,
+        max_seq_length=None,
     ):
         """Create the UnalignedDataloader.
 
@@ -29,7 +29,7 @@ class UnalignedDataloader:
         self.cache_dir = cache_dir
         self.encoder = encoder
         self.corpus = corpus
-        self.max_seq_lenght = max_seq_lenght
+        self.max_seq_length = max_seq_length
 
         if self.corpus is None:
             self.corpus = read_file(file_name)
@@ -50,11 +50,11 @@ class UnalignedDataloader:
 
         def gen():
             for i in self.corpus:
-                if self.max_seq_lenght is not None:
-                    drop_char_len = len(i) - self.max_seq_lenght
+                if self.max_seq_length is not None:
+                    drop_char_len = len(i) - self.max_seq_length
                     if drop_char_len > 0:
                         i = (
-                            i[: self.max_seq_lenght]
+                            i[: self.max_seq_length]
                             + " "
                             + preprocessing.END_OF_SAMPLE_TOKEN
                         )
@@ -81,7 +81,7 @@ class AlignedDataloader:
         encoder_target=None,
         corpus_input=None,
         corpus_target=None,
-        max_seq_lenght=None,
+        max_seq_length=None,
     ):
         """Create dataset for translation.
 
@@ -95,7 +95,7 @@ class AlignedDataloader:
             encoder_target: French tokenizer.
             corpus_input: The corpus lang1,
             corpus_target: the corpus lang2,
-            max_seq_lenght: The maximum seuqnce lenght of a sample in both corpuses.
+            max_seq_length: The maximum seuqnce lenght of a sample in both corpuses.
         """
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
@@ -105,7 +105,7 @@ class AlignedDataloader:
         self.encoder_target = encoder_target
         self.corpus_input = corpus_input
         self.corpus_target = corpus_target
-        self.max_seq_lenght = max_seq_lenght
+        self.max_seq_length = max_seq_length
 
         if self.corpus_input is None:
             self.corpus_input = read_file(file_name_input)
@@ -143,13 +143,13 @@ class AlignedDataloader:
 
         def gen():
             for i, o in zip(self.corpus_input, self.corpus_target):
-                if self.max_seq_lenght is not None:
-                    i_drop_char_len = len(i) - self.max_seq_lenght
-                    o_drop_char_len = len(o) - self.max_seq_lenght
+                if self.max_seq_length is not None:
+                    i_drop_char_len = len(i) - self.max_seq_length
+                    o_drop_char_len = len(o) - self.max_seq_length
 
                     if i_drop_char_len > 0:
                         i = (
-                            i[: self.max_seq_lenght]
+                            i[: self.max_seq_length]
                             + " "
                             + preprocessing.END_OF_SAMPLE_TOKEN
                         )
@@ -159,7 +159,7 @@ class AlignedDataloader:
 
                     if o_drop_char_len > 0:
                         o = (
-                            o[: self.max_seq_lenght]
+                            o[: self.max_seq_length]
                             + " "
                             + preprocessing.END_OF_SAMPLE_TOKEN
                         )

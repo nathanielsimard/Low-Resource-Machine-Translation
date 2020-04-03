@@ -149,6 +149,7 @@ class SubWordTextEncoder(TextEncoder):
                 preprocessing.OUT_OF_SAMPLE_TOKEN,
                 preprocessing.START_OF_SAMPLE_TOKEN,
                 preprocessing.END_OF_SAMPLE_TOKEN,
+                preprocessing.MASK_TOKEN,
             ],
         )
         self.cls = SubWordTextEncoder
