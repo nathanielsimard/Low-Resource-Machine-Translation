@@ -1,0 +1,55 @@
+import argparse
+
+
+def parse_args():
+    """Parse the user's arguments.
+
+    The default arguments are to be used in order to reproduce
+    the original experiments.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--epochs", help="Number of epoch to default_training", default=25, type=int
+    )
+    parser.add_argument(
+        "--task",
+        help=f"Task to execute, possible ones are:\n{list(TASK.keys())}",
+        default="default-training",
+        type=str,
+    )
+    parser.add_argument(
+        "--seed", help="Seed for the experiment", default=1234, type=int
+    )
+    parser.add_argument(
+        "--random_seed",
+        help="Will overide the default seed and use a random one",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--checkpoint",
+        help="The checkpoint to load before training.",
+        default=None,
+        type=int,
+    )
+    parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
+    parser.add_argument(
+        "--text_encoder", help="Text Encoder type", default="word", type=str
+    )
+    parser.add_argument(
+        "--model",
+        help=f"Name of the model to run, available models are:\n{list(MODELS.keys())}",
+        type=str,
+        required=True,
+    )
+    parser.add_argument("--batch_size", help="Batch size", default=16, type=int)
+    parser.add_argument(
+        "--max_seq_lenght", help="Max sequence lenght", default=None, type=int
+    )
+    parser.add_argument(
+        "--vocab_size", help="Size of the vocabulary", default=30000, type=int
+    )
+    # initLogger()
+    return parser.parse_args()
+
+
+args = parse_args()
