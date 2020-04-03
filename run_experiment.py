@@ -4,7 +4,7 @@ import random
 import tensorflow as tf
 
 from src import dataloader, logging
-from src.model import gru_attention, lstm, transformer
+from src.model import gru_attention, lstm, transformer, lstm_luong_attention
 from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
@@ -38,10 +38,15 @@ def create_gru_attention(args, input_vocab_size, target_vocab_size):
     return gru_attention.GRU(input_vocab_size + 1, target_vocab_size + 1)
 
 
+def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
+    return lstm_luong_attention.LSTM_ATTENTION(input_vocab_size + 1, target_vocab_size + 1)
+
+
 MODELS = {
     lstm.NAME: create_lstm,
     transformer.NAME: create_transformer,
     gru_attention.NAME: create_gru_attention,
+    lstm_luong_attention.NAME: create_lstm_luong_attention,
 }
 
 
