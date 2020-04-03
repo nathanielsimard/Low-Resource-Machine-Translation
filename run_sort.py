@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-DATA_DIRECTORY = "/home/olivier/Documents/local_git/Low-Resource-Machine-Translation/data/splitted_data/"
+DATA_DIRECTORY = "/home/olivier/Documents/local_git/Low-Resource-Machine-Translation/data/splitted_english_data/"
 
 
 def main():
