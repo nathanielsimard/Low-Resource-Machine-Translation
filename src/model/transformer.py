@@ -88,18 +88,11 @@ class Transformer(base.MachineTranslationModel):
         has_finish_predicting = False
         reach_max_seq_lenght = False
 
-        # Always suse the same mask because the decoder alway decode
-        # One word at a time
+        # Always use the same mask because the decoder alway decode one word at a time.
         enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(
             x, last_words
         )
-        # print(f"X : {x}")
-        # print(f"Enc padding mask {enc_padding_mask}")
-        # print(f"Look ahead mask {look_ahead_mask}")
-        # print(f"Dec padding mask {dec_padding_mask}")
-        enc_output = self.encoder(
-            x, False, enc_padding_mask
-        )  # (batch_size, inp_seq_len, d_model)
+        enc_output = self.encoder(x, False, enc_padding_mask)
         while not (has_finish_predicting or reach_max_seq_lenght):
             dec_output, attention_weights = self.decoder(
                 last_words, enc_output, False, look_ahead_mask, dec_padding_mask
