@@ -12,7 +12,7 @@ from src.text_encoder import TextEncoder
 # The more detailed implementation can be found @ https://www.tensorflow.org/tutorials/text/transformer
 
 NAME = "transformer"
-MAX_SEQ_LENGTH = 100
+MAX_SEQ_LENGHT = 250
 
 
 class Transformer(base.MachineTranslationModel):
@@ -83,34 +83,32 @@ class Transformer(base.MachineTranslationModel):
         words = (
             tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
         )
-        words = tf.expand_dims(words, 0)
-
-        decoder_input = [self.target_vocab_size]
-        output = tf.expand_dims(decoder_input, 0)
+        last_words = words
 
         has_finish_predicting = False
         reach_max_seq_lenght = False
 
+        # Always use the same mask because the decoder alway decode one word at a time.
+        enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(
+            x, last_words
+        )
+        enc_output = self.encoder(x, False, enc_padding_mask)
         while not (has_finish_predicting or reach_max_seq_lenght):
-
-            # predictions.shape == (batch_size, seq_len, vocab_size)
-            predictions, attention_weights = self.call((words, output), training=False)
-            # select the last word from the seq_len dimension
-            predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
-
-            predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int64)
-
-            end_of_sample = (
-                np.zeros([batch_size, words.shape[1], 1], dtype=np.int64)
-                + encoder.end_of_sample_index
+            dec_output, attention_weights = self.decoder(
+                last_words, enc_output, False, look_ahead_mask, dec_padding_mask
             )
+            last_words = self.final_layer(dec_output)
+            last_words = tf.math.argmax(last_words, axis=2)
+            words = tf.concat([words, last_words], 1)
 
-            has_finish_predicting = np.array_equal(predicted_id.numpy(), end_of_sample)
-            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGTH
+            # Compute the end condition of the while loop.
+            end_of_sample = (
+                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
+            )
+            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
 
-            output = tf.concat([output, predicted_id], axis=-1)
-
-        return tf.squeeze(output, axis=0)
+        return words
 
     @property
     def padded_shapes(self):
