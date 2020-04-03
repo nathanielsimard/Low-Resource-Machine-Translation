@@ -21,10 +21,10 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
     model = transformer.Transformer(
-        num_layers=4,
+        num_layers=6,
         num_heads=8,
         dff=512,
-        d_model=256,
+        d_model=2048,
         input_vocab_size=input_vocab_size + 1,
         target_vocab_size=target_vocab_size + 1,
         pe_input=input_vocab_size + 1,
