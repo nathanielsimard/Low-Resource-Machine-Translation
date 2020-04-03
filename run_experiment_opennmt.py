@@ -9,6 +9,7 @@ Producing a SOTA model is NOT a goal: this usually requires extra steps such as
 training a bigger model, using a larger batch size via multi GPU training and/or
 gradient accumulation, etc.
 """
+# https://github.com/OpenNMT/OpenNMT-tf/blob/master/examples/library/custom_transformer_training.py
 
 import argparse
 import logging
@@ -43,7 +44,7 @@ model = onmt.models.SequenceToSequence(
         ffn_dropout=0.1,
     ),
 )
-
+# model = onmt.models.TransformerBase()
 
 # Define the learning rate schedule and the optimizer.
 learning_rate = onmt.schedules.NoamDecay(scale=2.0, model_dim=512, warmup_steps=8000)

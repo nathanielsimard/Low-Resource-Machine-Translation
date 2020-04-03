@@ -22,5 +22,7 @@ cat /tmp/train_bpe.en /tmp/train_bpe.fr > /tmp/train_bpe.enfr
 onmt-build-vocab --size $VOCAB_SIZE --save_vocab /tmp/joint-vocab.txt /tmp/train_bpe.enfr
 
 #We're ready to roll
-python run_experiment_opennmt.py --src=/tmp/train.en --tgt=/tmp/train.fr --src_vocab=/tmp/joint-vocab.txt --tgt_vocab=/tmp/joint-vocab.txt train
+python run_experiment_opennmt.py --src=/tmp/train_bpe.en --tgt=/tmp/train_bpe.fr --src_vocab=/tmp/joint-vocab.txt --tgt_vocab=/tmp/joint-vocab.txt train
 
+#And we can evaluate the results. 
+#python run_experiment_opennmt.py --src=/tmp/valid.en --src_vocab=/tmp/joint-vocab.txt --tgt_vocab=/tmp/joint-vocab.txt translate
