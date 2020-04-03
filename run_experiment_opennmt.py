@@ -23,29 +23,29 @@ tf.get_logger().setLevel(logging.INFO)
 
 # Define the model. For the purpose of this example, the model components
 # (encoder, decoder, etc.) will be called separately.
-model = onmt.models.SequenceToSequence(
-    source_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
-    target_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
-    encoder=onmt.encoders.SelfAttentionEncoder(
-        num_layers=6,
-        num_units=512,
-        num_heads=8,
-        ffn_inner_dim=2048,
-        dropout=0.1,
-        attention_dropout=0.1,
-        ffn_dropout=0.1,
-    ),
-    decoder=onmt.decoders.SelfAttentionDecoder(
-        num_layers=6,
-        num_units=512,
-        num_heads=8,
-        ffn_inner_dim=2048,
-        dropout=0.1,
-        attention_dropout=0.1,
-        ffn_dropout=0.1,
-    ),
-)
-# model = onmt.models.TransformerBase()
+# model = onmt.models.SequenceToSequence(
+#    source_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
+#    target_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
+#    encoder=onmt.encoders.SelfAttentionEncoder(
+#        num_layers=6,
+#        num_units=512,
+#        num_heads=8,
+#        ffn_inner_dim=2048,
+#        dropout=0.1,
+#        attention_dropout=0.1,
+#        ffn_dropout=0.1,
+#    ),
+#    decoder=onmt.decoders.SelfAttentionDecoder(
+#        num_layers=6,
+#        num_units=512,
+#        num_heads=8,
+#        ffn_inner_dim=2048,
+#        dropout=0.1,
+#        attention_dropout=0.1,
+#        ffn_dropout=0.1,
+#    ),
+# )
+model = onmt.models.TransformerBase()
 
 # Define the learning rate schedule and the optimizer.
 learning_rate = onmt.schedules.NoamDecay(scale=2.0, model_dim=512, warmup_steps=8000)
@@ -64,7 +64,8 @@ def train(
     train_steps=100000,
     save_every=1000,
     report_every=100,
-    validation_file=None,
+    validation_source_file=None,
+    validation_target_file=None,
     validate_every=3000,
 ):
     """Runs the training loop.
@@ -142,15 +143,18 @@ def train(
 
         if step % validate_every == 0:
             output_file_name = f"predictions.{step}.txt"
-            if validation_file is not None:
+            if validation_source_file is not None:
                 tf.get_logger().info(
-                    f"Saving validation predictions from {validation_file} to {output_file_name}"
+                    f"Saving validation predictions from {validation_source_file} to {output_file_name}"
                 )
-                translate(validation_file, output_file=output_file_name)
+                translate(validation_source_file, output_file=output_file_name)
+                tf.get_logger().info(
+                    f"Computing BLEU between from {validation_target_file} to {output_file_name}"
+                )
                 per_sentence_score, mean_score = compute_bleu(
-                    output_file_name, validation_file
+                    output_file_name, validation_target_file
                 )
-                print(f"Raw BLEU score {mean_score}")
+                tf.get_logger().info(f"Raw BLEU score {mean_score}")
 
         if step == train_steps:
             break
@@ -224,7 +228,9 @@ def main():
     parser.add_argument("run", choices=["train", "translate"], help="Run type.")
     parser.add_argument("--src", required=True, help="Path to the source file.")
     parser.add_argument("--tgt", help="Path to the target file.")
-    parser.add_argument("--val", help="Path to the validation file.")
+    parser.add_argument("--valsrc", help="Path to the validation source file.")
+    parser.add_argument("--valtgt", help="Path to the validation target file.")
+
     parser.add_argument(
         "--src_vocab", required=True, help="Path to the source vocabulary."
     )
@@ -255,7 +261,13 @@ def main():
         checkpoint.restore(checkpoint_manager.latest_checkpoint)
 
     if args.run == "train":
-        train(args.src, args.tgt, checkpoint_manager, validation_file=args.val)
+        train(
+            args.src,
+            args.tgt,
+            checkpoint_manager,
+            validation_source_file=args.valsrc,
+            validation_target_file=args.valtgt,
+        )
     elif args.run == "translate":
         translate(args.src)
 
