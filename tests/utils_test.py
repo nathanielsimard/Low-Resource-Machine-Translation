@@ -40,7 +40,8 @@ class UtilsTest(unittest.TestCase):
             data = f.read().splitlines()
             self.assertEquals(
                 data[-1],
-                "Mais l’ Allemagne n’ a pas accumulé des réserves en devises étrangères comme la Chine .",
+                "Mais l’ Allemagne n’ a pas accumulé des réserves en devises"
+                + " étrangères comme la Chine .",
             )
             self.assertEquals(len(data), 10000)
 
@@ -48,7 +49,8 @@ class UtilsTest(unittest.TestCase):
             data = f.read().splitlines()
             self.assertEquals(
                 data[-1],
-                "the reshuffle last november that brought kanaan and others into the cabinet was seen to reflect assad ’s preferences",
+                "the reshuffle last november that brought kanaan and others into "
+                + "the cabinet was seen to reflect assad ’s preferences",
             )
             self.assertEquals(len(data), 500)
 
@@ -56,7 +58,8 @@ class UtilsTest(unittest.TestCase):
             data = f.read().splitlines()
             self.assertEquals(
                 data[-1],
-                "Le remaniement de novembre dernier qui mit au pouvoir Kanaan et d’ autres fut considéré comme la réflexion des préférences de M. Assad .",
+                "Le remaniement de novembre dernier qui mit au pouvoir Kanaan "
+                + "et d’ autres fut considéré comme la réflexion des préférences de M. Assad .",
             )
             self.assertEquals(len(data), 500)
 
@@ -64,7 +67,8 @@ class UtilsTest(unittest.TestCase):
             data = f.read().splitlines()
             self.assertEquals(
                 data[-1],
-                "i would like to stress the quality of the amendments tabled by the rapporteur and the need to make up for lost time",
+                "i would like to stress the quality of the amendments tabled "
+                + "by the rapporteur and the need to make up for lost time",
             )
             self.assertEquals(len(data), 500)
 
@@ -72,6 +76,7 @@ class UtilsTest(unittest.TestCase):
             data = f.read().splitlines()
             self.assertEquals(
                 data[-1],
-                "J' insiste sur la qualité des amendements soumis par le rapporteur et sur la nécessité de gagner du temps .",
+                "J' insiste sur la qualité des amendements soumis par"
+                + " le rapporteur et sur la nécessité de gagner du temps .",
             )
             self.assertEquals(len(data), 500)
