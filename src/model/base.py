@@ -3,14 +3,14 @@ from typing import List
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_datasets as tfds
 
-from src.dataloader import EMPTY_TOKEN, END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
+from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
+from src.text_encoder import TextEncoder
 
 MODEL_BASE_DIR = "models"
 
 
-class Model(tf.keras.Model, abc.ABC):
+class Model(tf.keras.Model):
     """All models will inherit from this class.
 
     Each model has full control over the preprocessing apply on the data.
@@ -43,33 +43,34 @@ class Model(tf.keras.Model, abc.ABC):
         return dataset
 
 
-class MachineTranslationModel(Model):
+class MachineTranslationModel(Model, abc.ABC):
     """Model used to do machine translation.
 
     Each model must implement the translate method.
     """
 
     def predictions(
-        self, outputs: tf.Tensor, encoder: tfds.features.text.TextEncoder, logit=False
+        self, outputs: tf.Tensor, encoder: TextEncoder, logit=True
     ) -> List[str]:
         """Generate prediction tokens from the outputs from the last layer."""
         sentences = outputs
 
-        if not logit:
+        if logit:
             sentences = np.argmax(sentences.numpy(), axis=2)
 
-        # Index from the encoder must start at 1, so we need to add 1 here.
-        sentences = [encoder.decode(sentence + 1) for sentence in sentences]
+        sentences = [encoder.decode(sentence) for sentence in sentences]
 
         return _clean_tokens(sentences)
 
     @abc.abstractmethod
-    def translate(self, x: tf.Tensor) -> tf.Tensor:
+    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input.
 
         Example::
-            >>> translated = model.translate(x)
-            >>> predictions = model.predict(translated, encoder, logit=True)
+            >>> translated = model.translate(x, target_encoder)
+            >>> predictions = model.predictions(translated, target_encoder, logit=False)
+
+        Returns the indexes corresponding to each vocabulary word.
         """
         pass
 
@@ -79,11 +80,7 @@ def _clean_tokens(sentences):
     for sentence in sentences:
         new_sentence = []
         for word in sentence.split():
-            if not (
-                EMPTY_TOKEN in word
-                or START_OF_SAMPLE_TOKEN in word
-                or END_OF_SAMPLE_TOKEN in word
-            ):
+            if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word):
                 new_sentence.append(word)
         result.append(" ".join(new_sentence))
 
