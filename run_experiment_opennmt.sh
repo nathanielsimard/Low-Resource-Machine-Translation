@@ -25,4 +25,4 @@ onmt-build-vocab --size $VOCAB_SIZE --save_vocab /tmp/joint-vocab.txt /tmp/train
 python run_experiment_opennmt.py --src=/tmp/train_bpe.en --tgt=/tmp/train_bpe.fr --src_vocab=/tmp/joint-vocab.txt --tgt_vocab=/tmp/joint-vocab.txt train
 
 #And we can evaluate the results. 
-#python run_experiment_opennmt.py --src=/tmp/valid.en --src_vocab=/tmp/joint-vocab.txt --tgt_vocab=/tmp/joint-vocab.txt translate
+#python run_experiment_opennmt.py --src=/tmp/valid_bpe.en --src_vocab=/tmp/joint-vocab.txt --tgt_vocab=/tmp/joint-vocab.txt translate

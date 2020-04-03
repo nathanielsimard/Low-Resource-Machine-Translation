@@ -63,6 +63,7 @@ def train(
     train_steps=100000,
     save_every=1000,
     report_every=100,
+    validation_file=None,
 ):
     """Runs the training loop.
   Args:
@@ -136,11 +137,17 @@ def train(
         if step % save_every == 0:
             tf.get_logger().info("Saving checkpoint for step %d", step)
             checkpoint_manager.save(checkpoint_number=step)
+            output_file_name = f"predictions.{step}.txt"
+            if validation_file is not None:
+                tf.get_logger().info(
+                    f"Saving validation predictions from {validation_file} to {output_file_name}"
+                )
+                translate(validation_file, output_file=output_file_name)
         if step == train_steps:
             break
 
 
-def translate(source_file, batch_size=32, beam_size=4):
+def translate(source_file, batch_size=32, beam_size=4, output_file=None):
     """Runs translation.
   Args:
     source_file: The source file.
@@ -151,7 +158,7 @@ def translate(source_file, batch_size=32, beam_size=4):
     # Create the inference dataset.
     dataset = model.examples_inputter.make_inference_dataset(source_file, batch_size)
 
-    @tf.function(input_signature=(dataset.element_spec,))
+    # @tf.function(input_signature=(dataset.element_spec,))
     def predict(source):
         # Run the encoder.
         source_length = source["length"]
@@ -185,11 +192,20 @@ def translate(source_file, batch_size=32, beam_size=4):
         )
         return target_tokens, target_lengths
 
+    f = None
+    if output_file is not None:
+        f = open(output_file, "w")
+
     for source in dataset:
         batch_tokens, batch_length = predict(source)
         for tokens, length in zip(batch_tokens.numpy(), batch_length.numpy()):
             sentence = b" ".join(tokens[0][: length[0]])
-            print(sentence.decode("utf-8"))
+            if f is not None:
+                f.write(sentence.decode("utf-8") + "\n")
+            else:
+                print(sentence.decode("utf-8"))
+    if output_file is not None:
+        f.close()
 
 
 def main():
@@ -199,6 +215,7 @@ def main():
     parser.add_argument("run", choices=["train", "translate"], help="Run type.")
     parser.add_argument("--src", required=True, help="Path to the source file.")
     parser.add_argument("--tgt", help="Path to the target file.")
+    parser.add_argument("--val", help="Path to the validation file.")
     parser.add_argument(
         "--src_vocab", required=True, help="Path to the source vocabulary."
     )
@@ -229,7 +246,7 @@ def main():
         checkpoint.restore(checkpoint_manager.latest_checkpoint)
 
     if args.run == "train":
-        train(args.src, args.tgt, checkpoint_manager)
+        train(args.src, args.tgt, checkpoint_manager, validation_file=args.val)
     elif args.run == "translate":
         translate(args.src)
 
