@@ -1,8 +1,8 @@
 import random
+import argument_parser
 
 import tensorflow as tf
 
-import argument_parser
 from src import dataloader, logging
 from src.model import gru_attention, lstm, lstm_luong_attention, transformer
 from src.text_encoder import TextEncoderType
