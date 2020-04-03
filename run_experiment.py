@@ -10,6 +10,7 @@ from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.base import BasicMachineTranslationTraining
 
+
 logger = logging.create_logger(__name__)
 # Embedding for models have to be vocab size + 1 because of the
 # extras index from the padding not in the text encoder's vocab_size.
