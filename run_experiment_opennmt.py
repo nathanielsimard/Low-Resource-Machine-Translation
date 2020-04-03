@@ -14,8 +14,16 @@ gradient accumulation, etc.
 import argparse
 import logging
 import tensorflow as tf
-import tensorflow_addons as tfa
+
+# import tensorflow_addons as tfa
+import tfa_subset as tfas
+from src.model.transformer_nmt_compatible import Encoder
+
+from tfa_subset.lazyadam import TfaLazyAdam
+from tfa_subset.beam_search_decoder import tile_batch
+
 import opennmt as onmt
+from src.model.transformer_nmt_compatible import SelfAttentionEncoder
 from tmp_helpers.metrics import compute_bleu
 
 tf.get_logger().setLevel(logging.INFO)
@@ -23,33 +31,53 @@ tf.get_logger().setLevel(logging.INFO)
 
 # Define the model. For the purpose of this example, the model components
 # (encoder, decoder, etc.) will be called separately.
-# model = onmt.models.SequenceToSequence(
-#    source_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
-#    target_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
-#    encoder=onmt.encoders.SelfAttentionEncoder(
-#        num_layers=6,
-#        num_units=512,
-#        num_heads=8,
-#        ffn_inner_dim=2048,
-#        dropout=0.1,
-#        attention_dropout=0.1,
-#        ffn_dropout=0.1,
-#    ),
-#    decoder=onmt.decoders.SelfAttentionDecoder(
-#        num_layers=6,
-#        num_units=512,
-#        num_heads=8,
-#        ffn_inner_dim=2048,
-#        dropout=0.1,
-#        attention_dropout=0.1,
-#        ffn_dropout=0.1,
-#    ),
-# )
+
+model = onmt.models.SequenceToSequence(
+    source_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
+    target_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
+    encoder=onmt.encoders.SelfAttentionEncoder(
+        num_layers=6,
+        num_units=512,
+        num_heads=8,
+        ffn_inner_dim=2048,
+        dropout=0.1,
+        attention_dropout=0.1,
+        ffn_dropout=0.1,
+    ),
+    # num_layers,
+    # num_heads,
+    # d_model,
+    # dff,
+    # input_vocab_size,
+    # maximum_position_encoding,
+    # rate=0.1,
+    # encoder=SelfAttentionEncoder(
+    #    num_layers=6,
+    #    num_heads=8,
+    #    num_units=512,
+    #    d_model=512
+    #    ffn_inner_dim=2048,
+    #    dropout=0.1,
+    #    attention_dropout=0.1,
+    #    ffn_dropout=0.1,
+    # ),
+    decoder=onmt.decoders.SelfAttentionDecoder(
+        num_layers=6,
+        num_units=512,
+        num_heads=8,
+        ffn_inner_dim=2048,
+        dropout=0.1,
+        attention_dropout=0.1,
+        ffn_dropout=0.1,
+    ),
+)
 model = onmt.models.TransformerBase()
 
 # Define the learning rate schedule and the optimizer.
 learning_rate = onmt.schedules.NoamDecay(scale=2.0, model_dim=512, warmup_steps=8000)
-optimizer = tfa.optimizers.LazyAdam(learning_rate)
+
+
+optimizer = TfaLazyAdam(learning_rate)
 
 # Track the model and optimizer weights.
 checkpoint = tf.train.Checkpoint(model=model, optimizer=optimizer)
@@ -181,8 +209,8 @@ def translate(source_file, batch_size=32, beam_size=4, output_file=None):
 
         # Prepare the decoding strategy.
         if beam_size > 1:
-            encoder_outputs = tfa.seq2seq.tile_batch(encoder_outputs, beam_size)
-            source_length = tfa.seq2seq.tile_batch(source_length, beam_size)
+            encoder_outputs = tile_batch(encoder_outputs, beam_size)
+            source_length = tile_batch(source_length, beam_size)
             decoding_strategy = onmt.utils.BeamSearch(beam_size)
         else:
             decoding_strategy = onmt.utils.GreedySearch()
