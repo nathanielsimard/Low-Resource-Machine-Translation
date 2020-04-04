@@ -7,20 +7,20 @@ handler = None
 level = None
 
 
-def initialize(args):
-    """Initialize the logging module based on the user's arguments.
+def initialize(experiment_name="experiment", debug=False):
+    """Initialize the logging module.
 
-    It must be called before any logger is created.
+    It can be called before any logger is created to change the default arguments.
     """
     directory = os.path.join(
-        "logging/" + args.model, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "logging/" + experiment_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     )
     os.makedirs(directory, exist_ok=True)
 
     file_name = os.path.join(directory, "experiment.log")
 
+    _initialize_level(debug)
     _initialize_handler(file_name)
-    _initialize_level(args.debug)
 
 
 def _initialize_handler(file_name):
@@ -45,6 +45,10 @@ def _initialize_level(debug):
 
 def create_logger(name: str) -> logging.Logger:
     """Create a logger with default configuration and formatter."""
+    initialized = level is not None and handler is not None
+    if not initialized:
+        initialize()
+
     logger = logging.getLogger(name)
     logger.addHandler(handler)  # type: ignore
     logger.setLevel(level)  # type: ignore

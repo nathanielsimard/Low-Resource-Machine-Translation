@@ -26,6 +26,7 @@ class UnalignedDataloader:
         """
         self.file_name = file_name
         self.vocab_size = vocab_size
+        self.text_encoder_type = text_encoder_type
         self.cache_dir = cache_dir
         self.encoder = encoder
         self.corpus = corpus
@@ -100,6 +101,7 @@ class AlignedDataloader:
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
         self.vocab_size = vocab_size
+        self.text_encoder_type = text_encoder_type
         self.cache_dir = cache_dir
         self.encoder_input = encoder_input
         self.encoder_target = encoder_target

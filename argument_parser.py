@@ -54,7 +54,7 @@ def parse_args():
         "--vocab_size", help="Size of the vocabulary", default=30000, type=int
     )
     args = parser.parse_args()
-    logger = logging.initialize(args)
+    logger = logging.initialize(experiment_name=args.model, debug=args.debug)
 
     return args, logger
 
