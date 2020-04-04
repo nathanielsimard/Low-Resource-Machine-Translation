@@ -1,7 +1,6 @@
 import argparse
-from src import logging
 
-#from run_experiment import MODELS, TASK
+from src import logging
 
 
 def parse_args():
@@ -22,6 +21,9 @@ def parse_args():
     )
     parser.add_argument(
         "--seed", help="Seed for the experiment", default=1234, type=int
+    )
+    parser.add_argument(
+        "--debug", help="Enable debug logging.", action="store_true",
     )
     parser.add_argument(
         "--random_seed",
@@ -52,7 +54,7 @@ def parse_args():
         "--vocab_size", help="Size of the vocabulary", default=30000, type=int
     )
     args = parser.parse_args()
-    logger = logging.initialise_logger(args)
+    logger = logging.initialize(args)
 
     return args, logger
 

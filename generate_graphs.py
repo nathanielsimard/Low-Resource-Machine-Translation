@@ -31,26 +31,26 @@ def parse_args():
 
 
 def plot_loss(training_loss, validation_loss, output_path):
-    plt.plot(training_loss, label='Training loss')
-    plt.plot(validation_loss, label='validation loss')
-    plt.title('Training and Validation loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
+    plt.plot(training_loss, label="Training loss")
+    plt.plot(validation_loss, label="validation loss")
+    plt.title("Training and Validation loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
     plt.legend()
     plt.grid()
-    plt.savefig(output_path + '/train_valid_loss.png')
+    plt.savefig(output_path + "/train_valid_loss.png")
     plt.close()
 
 
 def plot_bleu(training_bleu, validation_bleu, output_path):
-    plt.plot(training_bleu, label='Training bleu')
-    plt.plot(validation_bleu, label='validation bleu')
-    plt.title('Training and Validation bleu')
-    plt.xlabel('Epochs')
-    plt.ylabel('Bleu')
+    plt.plot(training_bleu, label="Training bleu")
+    plt.plot(validation_bleu, label="validation bleu")
+    plt.title("Training and Validation bleu")
+    plt.xlabel("Epochs")
+    plt.ylabel("Bleu")
     plt.legend()
     plt.grid()
-    plt.savefig(output_path + '/train_valid_bleu.png')
+    plt.savefig(output_path + "/train_valid_bleu.png")
     plt.close()
 
 
@@ -64,11 +64,11 @@ def main():
     history = History()
     history = history.load(args.history_path)
 
-    training_loss = history.logs['train_loss']
-    validation_loss = history.logs['valid_loss']
+    training_loss = history.logs["train_loss"]
+    validation_loss = history.logs["valid_loss"]
 
-    training_bleu = history.logs['train_bleu']
-    validation_bleu = history.logs['valid_bleu']
+    training_bleu = history.logs["train_bleu"]
+    validation_bleu = history.logs["valid_bleu"]
 
     plot_loss(training_loss, validation_loss, output_path)
     plot_bleu(training_bleu, validation_bleu, output_path)

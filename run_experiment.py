@@ -1,5 +1,6 @@
+import argument_parser  # isort:skip
+
 import random
-import argument_parser
 
 import tensorflow as tf
 
@@ -264,9 +265,9 @@ TASK = {
 
 
 def _log_args(args):
-    args_output = 'Arguments Value: \n'
+    args_output = "Arguments Value: \n"
     for arg in vars(args):
-        args_output += f'{arg}:  {getattr(args, arg)}\n'
+        args_output += f"{arg}:  {getattr(args, arg)}\n"
     logger.info(args_output)
 
 
