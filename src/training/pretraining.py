@@ -74,9 +74,8 @@ class Pretraining(base.Training):
                 loss = self._step(minibatch, loss_fn, "valid")
 
     def _step(self, inputs, loss_fn, name):
-        mask = self._create_mask(inputs, 0.15)
-        inputs = self._apply_mask_to_inputs(inputs, mask)
-        outputs = self.model(inputs, training=True)
+        masked_inputs, mask = self.create_and_apply_masks(inputs)
+        outputs = self.model(masked_inputs, training=True)
 
         def mlm_loss(real, pred):
             mask_targets = tf.cast(mask, dtype=tf.int64)
@@ -91,48 +90,37 @@ class Pretraining(base.Training):
 
         return mlm_loss(inputs, outputs)
 
-    def _create_mask(self, inputs, prob):
+    def create_and_apply_masks(self, inputs):
+        mask = (
+            tf.random.uniform(inputs.shape, minval=0, maxval=1, dtype=tf.dtypes.float32)
+            < 0.15
+        )
+
         random_tensor = tf.random.uniform(
             inputs.shape, minval=0, maxval=1, dtype=tf.dtypes.float32
-        )  # tensor of 0 and 1
-        mask = random_tensor < prob
-        return mask
-
-    def _apply_mask_to_inputs(self, inputs, mask):
-        random_tensor = tf.random.uniform(
-            inputs.shape, minval=0, maxval=1, dtype=tf.dtypes.float32
         )
-        mask_ = tf.cast(mask, dtype=tf.int64)
-
-        mask_index = (
-            tf.cast(random_tensor < 0.8, dtype=tf.int64)
-            * self.train_dataloader.encoder.mask_token_index
-            * mask_
-        )
-        unchanged_index = (
-            tf.cast(
-                tf.math.logical_and(random_tensor >= 0.8, random_tensor < 0.9),
-                dtype=tf.int64,
-            )
-            * inputs
-            * mask_
-        )
+        mask_index = random_tensor < 0.8
+        unchanged_index = tf.math.logical_and(random_tensor >= 0.8, random_tensor < 0.9)
 
         random_words = tf.random.uniform(
             inputs.shape,
             minval=5,
             maxval=self.train_dataloader.encoder.vocab_size,
-            dtype=tf.int64,
+            dtype=tf.int32,
         )
-        random_index = (
-            tf.cast(random_tensor >= 0.9, dtype=tf.int64) * random_words * mask_
+        random_index_mask = random_tensor >= 0.9
+
+        return (
+            self.apply_masks(
+                mask,
+                mask_index,
+                random_index_mask,
+                unchanged_index,
+                inputs,
+                random_words,
+            ),
+            mask,
         )
-
-        mask_inputs = tf.cast(tf.math.logical_not(mask), dtype=tf.int64)
-
-        inputs = inputs * mask_inputs
-
-        return inputs + unchanged_index + random_index + mask_index
 
     def apply_masks(
         self,
@@ -150,11 +138,8 @@ class Pretraining(base.Training):
             * self.train_dataloader.encoder.mask_token_index
             * mask_
         )
-        print(mask_index)
         unchanged_index = tf.cast(unchanged_mask, dtype=tf.int32) * inputs * mask_
-        print(unchanged_index)
         random_index = tf.cast(random_word_mask, dtype=tf.int32) * random_words * mask_
-        print(random_index)
 
         inputs = inputs * tf.cast(tf.math.logical_not(mask), dtype=tf.int32)
 
