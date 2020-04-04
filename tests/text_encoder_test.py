@@ -91,7 +91,9 @@ class WordTextEncoderTest(TextEncoderTest, unittest.TestCase):
         encoder = WordTextEncoder(
             A_VOCAB_SIZE, preprocessing.add_start_end_token(["Adding reserved token"])
         )
-        self.assertTrue(encoder.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN])
+        self.assertTrue(
+            encoder.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN]
+        )
         self.assertTrue(encoder.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN])
         self.assertTrue(encoder.tokenizer.word_index[preprocessing.OUT_OF_SAMPLE_TOKEN])
 

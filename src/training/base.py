@@ -1,14 +1,17 @@
 import abc
+import enum
 import os
 import pickle
 import subprocess
+from collections import defaultdict
 from datetime import datetime
+from typing import Dict, List
+
 import tensorflow as tf
 
 from src import logging
 from src.dataloader import AlignedDataloader
 from src.model import base
-from typing import Dict, Any, List
 
 logger = logging.create_logger(__name__)
 
@@ -16,12 +19,9 @@ logger = logging.create_logger(__name__)
 class History(object):
     """Keeps track of the different losses."""
 
-    def __init__(self, other_metrics: List[str]):
+    def __init__(self):
         """Initialize dictionaries."""
-        tmp_logs: Dict[str, Any] = {"train_loss": [], "valid_loss": []}
-        for i in range(len(other_metrics)):
-            tmp_logs.update({other_metrics[i]: []})
-        self.logs = tmp_logs
+        self.logs: Dict[str, List[float]] = defaultdict(lambda: [])
 
     def record(self, name, value):
         """Stores value in the corresponding log."""
@@ -55,6 +55,15 @@ class Training(abc.ABC):
         pass
 
 
+class Metrics(enum.Enum):
+    """Supported metrics to calculate after each epoch.
+
+    Each metric will be calculated for the train/valid datasets.
+    """
+
+    BLEU = "bleu"
+
+
 class BasicMachineTranslationTraining(Training):
     """Train a machine translation model with only aligned datasets."""
 
@@ -63,17 +72,19 @@ class BasicMachineTranslationTraining(Training):
         model,
         train_dataloader: AlignedDataloader,
         valid_dataloader: AlignedDataloader,
+        metrics: List[Metrics],
     ):
         """Create BasicMachineTranslationTraining."""
         self.model = model
         self.train_dataloader = train_dataloader
         self.valid_dataloader = valid_dataloader
-        self.metrics = {
+        self.metrics = metrics
+        self.recorded_losses = {
             "train": tf.keras.metrics.Mean("train_loss", tf.float32),
             "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
 
-        self.history = History(["train_bleu", "valid_bleu"])
+        self.history = History()
 
     def run(
         self,
@@ -119,10 +130,18 @@ class BasicMachineTranslationTraining(Training):
 
             valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
 
-            self._record_bleu(epoch, train_predictions, valid_predictions, directory)
-            self.model.save(epoch)
+            train_path = os.path.join(directory, f"train-{epoch}")
+            valid_path = os.path.join(directory, f"valid-{epoch}")
+
+            write_text(train_predictions, train_path)
+            write_text(valid_predictions, valid_path)
+
+            if Metrics.BLEU in self.metrics:
+                self._record_bleu(epoch, train_path, valid_path)
 
             self._update_progress(epoch)
+
+            self.model.save(epoch)
             self.history.save(directory + f"/history-{epoch}")
 
     def _train_step(
@@ -144,7 +163,7 @@ class BasicMachineTranslationTraining(Training):
         gradients = tape.gradient(loss, self.model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        metric = self.metrics["train"]
+        metric = self.recorded_losses["train"]
         metric(loss)
 
         logger.info(f"Batch #{batch} : training loss {metric.result()}")
@@ -162,32 +181,27 @@ class BasicMachineTranslationTraining(Training):
             )
 
             loss = loss_fn(targets, outputs)
-            metric = self.metrics["valid"]
+            metric = self.recorded_losses["valid"]
             metric(loss)
             logger.info(f"Batch #{i} : validation loss {metric.result()}")
 
         return valid_predictions
 
     def _update_progress(self, epoch):
-        train_metric = self.metrics["train"]
-        valid_metric = self.metrics["valid"]
+        train_metric = self.recorded_losses["train"]
+        valid_metric = self.recorded_losses["valid"]
 
         logger.info(
             f"Epoch: {epoch}, Train loss: {train_metric.result()}, Valid loss: {valid_metric.result()} "
         )
 
-        # Reset the cumulative metrics after each epoch
+        # Reset the cumulative recorded_losses after each epoch
         self.history.record("train_loss", train_metric.result())
         self.history.record("valid_loss", valid_metric.result())
         train_metric.reset_states()
         valid_metric.reset_states()
 
-    def _record_bleu(self, epoch, train_pred, valid_pred, directory):
-        train_path = os.path.join(directory, f"train-{epoch}")
-        valid_path = os.path.join(directory, f"valid-{epoch}")
-
-        write_text(train_pred, train_path)
-        write_text(valid_pred, valid_path)
+    def _record_bleu(self, epoch, train_path, valid_path):
         train_bleu = compute_bleu(train_path, self.train_dataloader.file_name_target)
         valid_bleu = compute_bleu(valid_path, self.valid_dataloader.file_name_target)
 

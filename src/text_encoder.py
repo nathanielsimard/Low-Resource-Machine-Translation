@@ -162,7 +162,6 @@ class SubWordTextEncoder(TextEncoder):
         """Decode numbers into text."""
         # Handle 0 index as 1 for <out>
         sequences = [1 if i == 0 else i for i in sequences]
-        logger.info(sequences)
         return self._encoder.decode(sequences)
 
     @classmethod
