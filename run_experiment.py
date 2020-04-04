@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 
 from src import dataloader, logging
-from src.model import gru_attention, lstm, lstm_luong_attention, transformer
+from src.model import gru_attention, lstm, lstm_luong_attention, transformer, masked_lm
 from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
@@ -43,11 +43,24 @@ def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
     )
 
 
+def create_demi_bert(args, input_vocab_size, target_vocab_size):
+    return masked_lm.DemiBERT(
+        num_layers=2,
+        embedding_size=256,
+        num_heads=4,
+        dff=256,
+        vocab_size=input_vocab_size,
+        max_pe=input_vocab_size,
+        dropout=0.1,
+    )
+
+
 MODELS = {
     lstm.NAME: create_lstm,
     transformer.NAME: create_transformer,
     gru_attention.NAME: create_gru_attention,
     lstm_luong_attention.NAME: create_lstm_luong_attention,
+    masked_lm.NAME: create_demi_bert,
 }
 
 
@@ -130,6 +143,7 @@ def default_training(args, loss_fn):
         checkpoint=args.checkpoint,
     )
 
+def pretraining
 
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
@@ -261,6 +275,7 @@ TASK = {
     "punctuation-training": punctuation_training,
     "back-translation-training": back_translation_training,
     "test": test,
+    "pretraining": pretraining,
 }
 
 

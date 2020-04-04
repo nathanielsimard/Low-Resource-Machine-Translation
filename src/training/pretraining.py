@@ -22,7 +22,7 @@ class Pretraining(base.Training):
         self.model = model
         self.train_dataloader = train_monolingual_dataloader
         self.valid_dataloader = valid_monolingual_dataloader
-        self.metrics = {
+        self.losses = {
             "train": tf.keras.metrics.Mean("train_loss", tf.float32),
             "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
@@ -59,21 +59,29 @@ class Pretraining(base.Training):
         for epoch in range(checkpoint + 1, num_epoch + 1):
 
             for i, minibatch in enumerate(
-                train_dataset.padded_batch(batch_size, padded_shapes=([None]))
+                train_dataset.padded_batch(
+                    batch_size, padded_shapes=self.model.padded_shapes
+                )
             ):
                 with tf.GradientTape() as tape:
-                    loss = self._step(minibatch, loss_fn, "train")
+                    loss = self._step(minibatch, i, loss_fn, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
                     optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
                     )
+            self.history.record("train_loss", self.losses["train"].result())
 
             for i, minibatch in enumerate(
                 valid_dataset.padded_batch(batch_size, padded_shapes=([None]))
             ):
-                loss = self._step(minibatch, loss_fn, "valid")
+                loss = self._step(minibatch, i, loss_fn, "valid")
 
-    def _step(self, inputs, loss_fn, name):
+            self.history.record("valid_loss", self.losses["valid"].result())
+
+            self.losses["train"].reset_states()
+            self.losses["valid"].reset_states()
+
+    def _step(self, inputs, batch, loss_fn, name):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
         outputs = self.model(masked_inputs, training=True)
 
@@ -86,9 +94,11 @@ class Pretraining(base.Training):
 
             return tf.reduce_mean(loss_)
 
-        self.metrics[name](mlm_loss(inputs, outputs))
+        loss = mlm_loss(inputs, outputs)
+        self.losses[name](loss)
+        logger.info(f"Batch {batch} : {name} loss: {loss}")
 
-        return mlm_loss(inputs, outputs)
+        return loss
 
     def create_and_apply_masks(self, inputs):
         mask = (
