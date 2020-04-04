@@ -47,10 +47,11 @@ class Transformer(base.MachineTranslationModel):
         self.target_vocab_size = target_vocab_size
 
         self.encoder = Encoder(num_layers, d_model, num_heads, input_vocab_size, pe_input)
+        self.encoder_output, _ = self.encoder(tf.constant([[1, 2, 3, 0, 0]]))
 
         self.decoder = Decoder(num_layers, d_model, num_heads, target_vocab_size, pe_target)
-
-        #self.final_layer = tf.keras.layers.Dense(target_vocab_size)
+        self.decoder_output, _, _ = self.decoder(tf.constant([[14, 24, 36, 0, 0]]), self.encoder_output)
+       # self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Forward pass of the Transformer."""
@@ -139,7 +140,7 @@ class Decoder(layers.Layer):
         """Forward pass in the Decoder module."""
         embed_out = self.embedding(x)
 
-        embed_out *= tf.math.sqrt(tf.cast(self.model_size, tf.float32))
+        embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
         embed_out += self.pes[:x.shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
@@ -236,11 +237,11 @@ class Encoder(layers.Layer):
 
         self.pes = _positional_encoding(maximum_position_encoding, d_model)
 
-    def call(self, x, training=True, mask=None):
+    def call(self, x, training=True, encoder_mask=None):
         """Forward pass in the Encoder."""
         embed_out = self.embedding(x)
 
-        embed_out *= tf.math.sqrt(tf.cast(self.model_size, tf.float32))
+        embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
         embed_out += self.pes[:x.shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
@@ -248,7 +249,7 @@ class Encoder(layers.Layer):
         alignments = []
 
         for i in range(self.num_layers):
-            sub_out, alignment = self.attention[i](sub_in, sub_in, mask)
+            sub_out, alignment = self.attention[i](sub_in, sub_in, encoder_mask)
             sub_out = self.attention_dropout[i](sub_out, training=training)
             sub_out = sub_in + sub_out
             sub_out = self.attention_norm[i](sub_out)
@@ -300,14 +301,14 @@ class MultiHeadAttention(layers.Layer):
 
         # Originally, query has shape (batch, query_len, model_size)
         # We need to reshape to (batch, query_len, h, key_size)
-        query = tf.reshape(query, [batch_size, -1, self.h, self.key_size])
+        query = tf.reshape(query, [batch_size, -1, self.num_heads, self.key_size])
         # In order to compute matmul, the dimensions must be transposed to (batch, h, query_len, key_size)
         query = tf.transpose(query, [0, 2, 1, 3])
 
         # Do the same for key and value
-        key = tf.reshape(key, [batch_size, -1, self.h, self.key_size])
+        key = tf.reshape(key, [batch_size, -1, self.num_heads, self.key_size])
         key = tf.transpose(key, [0, 2, 1, 3])
-        value = tf.reshape(value, [batch_size, -1, self.h, self.key_size])
+        value = tf.reshape(value, [batch_size, -1, self.num_heads, self.key_size])
         value = tf.transpose(value, [0, 2, 1, 3])
 
         # Compute the dot score
@@ -321,6 +322,8 @@ class MultiHeadAttention(layers.Layer):
         # - Padding mask (batch, 1, 1, value_len): to prevent attention being drawn to padded token (i.e. 0)
         # - Look-left mask (batch, 1, query_len, value_len): to prevent decoder to draw attention to tokens to the right
         if mask is not None:
+            print('mask::::::::::::::')
+            print(mask.shape)
             score *= mask
 
             # We want the masked out values to be zeros when applying softmax
@@ -335,7 +338,7 @@ class MultiHeadAttention(layers.Layer):
 
         # Finally, do the opposite to have a tensor of shape (batch, query_len, model_size)
         context = tf.transpose(context, [0, 2, 1, 3])
-        context = tf.reshape(context, [batch_size, -1, self.key_size * self.h])
+        context = tf.reshape(context, [batch_size, -1, self.key_size * self.num_heads])
 
         # Apply one last full connected layer (WO)
         heads = self.wo(context)
