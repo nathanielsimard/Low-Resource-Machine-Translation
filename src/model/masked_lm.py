@@ -1,8 +1,8 @@
 import tensorflow as tf
-from src.model.transformer import Encoder
-from src.model import base
 from tensorflow.keras import layers
-from typing import Tuple
+
+from src.model import base
+from src.model.transformer import Encoder, _create_padding_mask
 
 NAME = "demi-bert"
 
@@ -24,22 +24,15 @@ class DemiBERT(base.Model):
         )
         self.dense = layers.Dense(embedding_size)
 
-    def call(self, x: Tuple[tf.Tensor], training=False):
-        x = x[0]
-        x = self.encoder(x, training)
+    def call(self, x: tf.Tensor, training=False):
+        padding_mask = _create_padding_mask(x)
+        x = self.encoder(x, training, padding_mask)
         x = self.dense(x)
         x = tf.linalg.matmul(x, self.encoder.embedding.embeddings, transpose_b=True)
         x = tf.keras.activations.softmax(x)
 
         return x
 
+    @property
     def padded_shapes(self):
-        return ([None],)
-
-    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
-
-        def preprocess(input_sentence):
-            return (input_sentence,)
-
-        return dataset.map(preprocess)
+        return [None]
