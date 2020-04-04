@@ -46,10 +46,10 @@ def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
 
 def create_demi_bert(args, input_vocab_size, target_vocab_size):
     return masked_lm.DemiBERT(
-        num_layers=2,
+        num_layers=6,
         embedding_size=256,
-        num_heads=4,
-        dff=256,
+        num_heads=8,
+        dff=512,
         vocab_size=input_vocab_size,
         max_pe=input_vocab_size,
         dropout=0.1,

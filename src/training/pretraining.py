@@ -11,7 +11,7 @@ logger = create_logger(__name__)
 
 
 class Pretraining(base.Training):
-    """Pretraining using a BERT-like Masked Language Model"""
+    """Pretraining using a BERT-like Masked Language Model."""
 
     def __init__(
         self,
@@ -19,6 +19,7 @@ class Pretraining(base.Training):
         train_monolingual_dataloader: UnalignedDataloader,
         valid_monolingual_dataloader: UnalignedDataloader,
     ):
+        """Initialize the pretraining session."""
         self.model = model
         self.train_dataloader = train_monolingual_dataloader
         self.valid_dataloader = valid_monolingual_dataloader
@@ -63,14 +64,11 @@ class Pretraining(base.Training):
 
         for epoch in range(checkpoint + 1, num_epoch + 1):
 
-            logger.debug("Whatever")
-
             for i, minibatch in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                logger.debug("Whatever #2")
                 with tf.GradientTape() as tape:
                     loss = self._step(minibatch, i, loss_fn, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
@@ -100,21 +98,27 @@ class Pretraining(base.Training):
         outputs = self.model(masked_inputs, training=True)
 
         def mlm_loss(real, pred):
-            mask_targets = tf.cast(mask, dtype=tf.int64)
+            mask_targets = tf.cast(mask, dtype=tf.int32)
             loss_ = loss_fn(real, pred)
 
             mask_targets = tf.cast(mask_targets, dtype=loss_.dtype)
             loss_ *= mask_targets
 
+            logger.debug(f"loss : {loss_}")
+
+            logger.debug(f"mask target: {mask_targets}")
+            logger.debug(f"preds : {pred}")
+
             return tf.reduce_mean(loss_)
 
         loss = mlm_loss(inputs, outputs)
         self.losses[name](loss)
-        logger.info(f"Batch {batch} : {name} loss: {loss}")
+        logger.info(f"Batch {batch} : {name} loss: {self.losses[name].result()}")
 
         return loss
 
     def create_and_apply_masks(self, inputs):
+        """Create masks, then apply them to the inputs."""
         mask = (
             tf.random.uniform(inputs.shape, minval=0, maxval=1, dtype=tf.dtypes.float32)
             < 0.15
@@ -155,6 +159,7 @@ class Pretraining(base.Training):
         inputs,
         random_words,
     ):
+        """Apply masks."""
         mask_ = tf.cast(mask, dtype=tf.int32)
 
         mask_index = (

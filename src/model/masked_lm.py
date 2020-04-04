@@ -8,9 +8,12 @@ NAME = "demi-bert"
 
 
 class DemiBERT(base.Model):
+    """D E M I B E R T."""
+
     def __init__(
         self, num_layers, embedding_size, num_heads, dff, vocab_size, max_pe, dropout
     ):
+        """Initialize D E M I B E R T."""
         super().__init__(f"{NAME}")
 
         self.encoder = Encoder(
@@ -25,6 +28,7 @@ class DemiBERT(base.Model):
         self.dense = layers.Dense(embedding_size)
 
     def call(self, x: tf.Tensor, training=False):
+        """Performs a forward pass."""
         padding_mask = _create_padding_mask(x)
         x = self.encoder(x, training, padding_mask)
         x = self.dense(x)
@@ -35,4 +39,5 @@ class DemiBERT(base.Model):
 
     @property
     def padded_shapes(self):
+        """Padded shapes for the minibatch."""
         return [None]
