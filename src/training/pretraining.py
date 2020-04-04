@@ -61,7 +61,7 @@ class Pretraining(base.Training):
                 train_dataset.padded_batch(batch_size, padded_shapes=([None]))
             ):
                 with tf.GradientTape() as tape:
-                    loss = self._step(minibatch)
+                    loss = self._step(minibatch, loss_fn, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
                     optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
@@ -70,9 +70,9 @@ class Pretraining(base.Training):
             for i, minibatch in enumerate(
                 valid_dataset.padded_batch(batch_size, padded_shapes=([None]))
             ):
-                loss = self._step(minibatch)
+                loss = self._step(minibatch, loss_fn, "valid")
 
-    def _step(self, inputs):
+    def _step(self, inputs, loss_fn, name):
         mask = self._create_mask(inputs, 0.15)
         inputs = self._apply_mask_to_inputs(inputs, mask)
         outputs = self.model(inputs, training=True)
@@ -86,7 +86,9 @@ class Pretraining(base.Training):
 
             return tf.reduce_mean(loss_)
 
-        return mlm_loss(minibatch, outputs)
+        self.metrics[name](mlm_loss(inputs, outputs))
+
+        return mlm_loss(inputs, outputs)
 
     def _create_mask(self, inputs, prob):
         random_tensor = tf.random.uniform(
@@ -128,5 +130,31 @@ class Pretraining(base.Training):
         mask_inputs = tf.cast(tf.math.logical_not(mask), dtype=tf.int64)
 
         inputs = inputs * mask_inputs
+
+        return inputs + unchanged_index + random_index + mask_index
+
+    def apply_masks(
+        self,
+        mask,
+        masked_word_mask,
+        random_word_mask,
+        unchanged_mask,
+        inputs,
+        random_words,
+    ):
+        mask_ = tf.cast(mask, dtype=tf.int64)
+        print(self.train_dataloader.encoder)
+        print(self.train_dataloader)
+        print(self.train_dataloader.encoder.mask_token_index)
+
+        print(mask_)
+
+        mask_index = (
+            masked_word_mask * self.train_dataloader.encoder.mask_token_index * mask_
+        )
+        unchanged_index = unchanged_mask * inputs * mask
+        random_index = random_word_mask * random_words * mask_
+
+        inputs = inputs * tf.cast(tf.math.logical_not(mask), dtype=tf.int64)
 
         return inputs + unchanged_index + random_index + mask_index
