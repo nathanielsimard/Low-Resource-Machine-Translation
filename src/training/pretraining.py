@@ -3,12 +3,15 @@ from src.dataloader import UnalignedDataloader
 import tensorflow as tf
 from datetime import datetime
 from src.training import base
+import os
 from src.logging import create_logger
 
 logger = create_logger(__name__)
 
 
 class Pretraining(base.Training):
+    """Pretraining using a BERT-like Masked Language Model"""
+
     def __init__(
         self,
         model,
@@ -33,7 +36,7 @@ class Pretraining(base.Training):
         num_epoch: int,
         checkpoint=None,
     ):
-        """Training session."""
+        """Pretraining session."""
         logger.info("Creating datasets...")
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
@@ -58,24 +61,32 @@ class Pretraining(base.Training):
                 train_dataset.padded_batch(batch_size, padded_shapes=([None]))
             ):
                 with tf.GradientTape() as tape:
-                    mask = self._create_mask(minibatch, 0.15)
-                    inputs = self._apply_mask_to_inputs(minibatch, mask)
-                    outputs = self.model(inputs, training=True)
+                    loss = self._step(minibatch)
+                    gradients = tape.gradient(loss, self.model.trainable_variables)
+                    optimizer.apply_gradients(
+                        zip(gradients, self.model.trainable_variables)
+                    )
 
-                    def mlm_loss(real, pred):
-                        mask_targets = tf.cast(mask, dtype=tf.int64)
-                        loss_ = loss_fn(real, pred)
+            for i, minibatch in enumerate(
+                valid_dataset.padded_batch(batch_size, padded_shapes=([None]))
+            ):
+                loss = self._step(minibatch)
 
-                        mask_targets = tf.cast(mask_targets, dtype=loss_.dtype)
-                        loss_ *= mask_targets
+    def _step(self, inputs):
+        mask = self._create_mask(inputs, 0.15)
+        inputs = self._apply_mask_to_inputs(inputs, mask)
+        outputs = self.model(inputs, training=True)
 
-                        return tf.reduce_mean(loss_)
+        def mlm_loss(real, pred):
+            mask_targets = tf.cast(mask, dtype=tf.int64)
+            loss_ = loss_fn(real, pred)
 
-                    loss = mlm_loss(minibatch, outputs)
-                gradients = tape.gradient(loss, self.model.trainable_variables)
-                optimizer.apply_gradients(
-                    zip(gradients, self.model.trainable_variables)
-                )
+            mask_targets = tf.cast(mask_targets, dtype=loss_.dtype)
+            loss_ *= mask_targets
+
+            return tf.reduce_mean(loss_)
+
+        return mlm_loss(minibatch, outputs)
 
     def _create_mask(self, inputs, prob):
         random_tensor = tf.random.uniform(
