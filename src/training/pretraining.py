@@ -1,10 +1,11 @@
-from src.training import base
-from src.dataloader import UnalignedDataloader
-import tensorflow as tf
-from datetime import datetime
-from src.training import base
 import os
+from datetime import datetime
+
+import tensorflow as tf
+
+from src.dataloader import UnalignedDataloader
 from src.logging import create_logger
+from src.training import base
 
 logger = create_logger(__name__)
 
@@ -142,19 +143,19 @@ class Pretraining(base.Training):
         inputs,
         random_words,
     ):
-        mask_ = tf.cast(mask, dtype=tf.int64)
-        print(self.train_dataloader.encoder)
-        print(self.train_dataloader)
-        print(self.train_dataloader.encoder.mask_token_index)
-
-        print(mask_)
+        mask_ = tf.cast(mask, dtype=tf.int32)
 
         mask_index = (
-            masked_word_mask * self.train_dataloader.encoder.mask_token_index * mask_
+            tf.cast(masked_word_mask, dtype=tf.int32)
+            * self.train_dataloader.encoder.mask_token_index
+            * mask_
         )
-        unchanged_index = unchanged_mask * inputs * mask
-        random_index = random_word_mask * random_words * mask_
+        print(mask_index)
+        unchanged_index = tf.cast(unchanged_mask, dtype=tf.int32) * inputs * mask_
+        print(unchanged_index)
+        random_index = tf.cast(random_word_mask, dtype=tf.int32) * random_words * mask_
+        print(random_index)
 
-        inputs = inputs * tf.cast(tf.math.logical_not(mask), dtype=tf.int64)
+        inputs = inputs * tf.cast(tf.math.logical_not(mask), dtype=tf.int32)
 
         return inputs + unchanged_index + random_index + mask_index
