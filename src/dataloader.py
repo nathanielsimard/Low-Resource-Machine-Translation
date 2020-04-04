@@ -62,10 +62,10 @@ class UnalignedDataloader:
                         logger.info(
                             f"{drop_char_len} characters were cut from the line."
                         )
-
+                logger.debug(i)
                 yield self.encoder.encode(i)
 
-        return tf.data.Dataset.from_generator(gen, tf.int64)
+        return tf.data.Dataset.from_generator(gen, tf.int32)
 
 
 class AlignedDataloader:

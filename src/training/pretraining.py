@@ -42,6 +42,9 @@ class Pretraining(base.Training):
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
 
+        train_dataset = self.model.preprocessing(train_dataset)
+        valid_dataset = self.model.preprocessing(valid_dataset)
+
         logger.info("Creating results directory...")
 
         directory = os.path.join(
@@ -56,27 +59,38 @@ class Pretraining(base.Training):
         else:
             checkpoint = 0
 
+        logger.info("Beginning pretraining session...")
+
         for epoch in range(checkpoint + 1, num_epoch + 1):
+
+            logger.debug("Whatever")
 
             for i, minibatch in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
+                logger.debug("Whatever #2")
                 with tf.GradientTape() as tape:
                     loss = self._step(minibatch, i, loss_fn, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
                     optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
                     )
+            logger.debug("Saving training loss")
             self.history.record("train_loss", self.losses["train"].result())
 
             for i, minibatch in enumerate(
-                valid_dataset.padded_batch(batch_size, padded_shapes=([None]))
+                valid_dataset.padded_batch(
+                    batch_size, padded_shapes=self.model.padded_shapes
+                )
             ):
                 loss = self._step(minibatch, i, loss_fn, "valid")
 
+            logger.debug("Saving validation loss")
             self.history.record("valid_loss", self.losses["valid"].result())
+
+            self.model.save(epoch)
 
             self.losses["train"].reset_states()
             self.losses["valid"].reset_states()
