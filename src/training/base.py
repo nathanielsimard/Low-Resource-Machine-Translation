@@ -29,14 +29,12 @@ class History(object):
 
     def save(self, file_name):
         """Save file."""
-        with open(file_name, "wb") as file:
-            pickle.dump(self, file)
+        pass
 
     @staticmethod
     def load(file_name):
         """Load file."""
-        with open(file_name, "rb") as file:
-            return pickle.load(file)
+        pass
 
 
 class Training(abc.ABC):
@@ -142,7 +140,7 @@ class BasicMachineTranslationTraining(Training):
             self._update_progress(epoch)
 
             self.model.save(epoch)
-            self.history.save(directory + f"/history-{epoch}")
+            #self.history.save(directory + f"/history-{epoch}")
 
     def _train_step(
         self,
