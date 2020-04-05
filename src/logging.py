@@ -45,6 +45,9 @@ def _initialize_level(debug):
 
 def create_logger(name: str) -> logging.Logger:
     """Create a logger with default configuration and formatter."""
+    global level
+    global debug
+
     initialized = level is not None and handler is not None
     if not initialized:
         initialize()

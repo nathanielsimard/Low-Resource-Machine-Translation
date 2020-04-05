@@ -48,7 +48,7 @@ def parse_args():
     )
     parser.add_argument("--batch_size", help="Batch size", default=16, type=int)
     parser.add_argument(
-        "--max_seq_lenght", help="Max sequence lenght", default=None, type=int
+        "--max_seq_length", help="Max sequence length", default=None, type=int
     )
     parser.add_argument(
         "--vocab_size", help="Size of the vocabulary", default=30000, type=int
