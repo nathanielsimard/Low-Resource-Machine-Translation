@@ -9,7 +9,7 @@ from src.model import gru_attention, lstm, lstm_luong_attention, transformer
 from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
-from src.training.base import BasicMachineTranslationTraining
+from src.training.default import Training
 
 logger = logging.create_logger(__name__)
 
@@ -85,7 +85,7 @@ def punctuation_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = BasicMachineTranslationTraining(model, train_dl, valid_dl, [])
+    training = Training(model, train_dl, valid_dl, [])
     training.run(
         loss_fn,
         optim,
@@ -119,9 +119,7 @@ def default_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = BasicMachineTranslationTraining(
-        model, train_dl, valid_dl, [base.Metrics.BLEU]
-    )
+    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
     training.run(
         loss_fn,
         optim,
