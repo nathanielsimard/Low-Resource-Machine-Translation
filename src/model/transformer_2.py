@@ -38,9 +38,7 @@ class Transformer(base.MachineTranslationModel):
             input_vocab_size: size of the vocabulary of the input language.
             target_vocab_size: size of the vocabulary of the target language.
             maximum_position_encoding: cap on the positional encoding values.
-            pe_input: positional encodings of the input.
-            pe_target: positional encodings of the target.
-            rate: dropout rate.
+            pe_input: positional encodings of the input.decoder
         """
         super(Transformer, self).__init__(f"{NAME}")
         self.input_vocab_size = input_vocab_size
@@ -48,6 +46,8 @@ class Transformer(base.MachineTranslationModel):
 
         self.encoder = Encoder(num_layers, d_model, num_heads, input_vocab_size, pe_input)
         self.encoder_output, _ = self.encoder(tf.constant([[1, 2, 3, 0, 0]]))
+        print('decoder mask:')
+        print(self.encoder_output.shape)
 
         self.decoder = Decoder(num_layers, d_model, num_heads, target_vocab_size, pe_target)
         self.decoder_output, _, _ = self.decoder(tf.constant([[14, 24, 36, 0, 0]]), self.encoder_output)
@@ -60,6 +60,8 @@ class Transformer(base.MachineTranslationModel):
         encoder_mask = tf.expand_dims(encoder_mask, axis=1)
         encoder_output, _ = self.encoder(x[0], encoder_mask=encoder_mask)
 
+        print('decoder mask:')
+        print(encoder_mask.shape)
         decoder_output, _, _ = self.decoder(
             x[1], encoder_output, encoder_mask=encoder_mask)
 
@@ -138,10 +140,10 @@ class Decoder(layers.Layer):
 
     def call(self, x, enc_output, training=True, encoder_mask=None):
         """Forward pass in the Decoder module."""
-        embed_out = self.embedding(x)
+        embed_out = self.embedding(x[0])
 
         embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        embed_out += self.pes[:x.shape[1], :]
+        embed_out += self.pes[:x[0].shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
         bot_sub_in = embed_out
@@ -156,6 +158,8 @@ class Decoder(layers.Layer):
                 mask = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
             else:
                 mask = None
+            print('bot mask')
+            print(mask.shape)
             bot_sub_out, bot_alignment = self.attention_bot[i](bot_sub_in, bot_sub_in, mask)
             bot_sub_out = self.attention_bot_dropout[i](bot_sub_out, training=training)
             bot_sub_out = bot_sub_in + bot_sub_out
@@ -165,7 +169,9 @@ class Decoder(layers.Layer):
 
             # MIDDLE MULTIHEAD SUB LAYER
             mid_sub_in = bot_sub_out
-
+            if encoder_mask is not None:
+                print('mid mask')
+                print(encoder_mask.shape)
             mid_sub_out, mid_alignment = self.attention_mid[i](
                 mid_sub_in, enc_output, encoder_mask)
             mid_sub_out = self.attention_mid_dropout[i](mid_sub_out, training=training)
@@ -239,10 +245,10 @@ class Encoder(layers.Layer):
 
     def call(self, x, training=True, encoder_mask=None):
         """Forward pass in the Encoder."""
-        embed_out = self.embedding(x)
+        embed_out = self.embedding(x[0])
 
         embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        embed_out += self.pes[:x.shape[1], :]
+        embed_out += self.pes[:x[0].shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
         sub_in = embed_out
@@ -279,14 +285,6 @@ class MultiHeadAttention(layers.Layer):
         self.wk = tf.keras.layers.Dense(d_model)  # [tf.keras.layers.Dense(key_size) for _ in range(h)]
         self.wv = tf.keras.layers.Dense(d_model)  # [tf.keras.layers.Dense(value_size) for _ in range(h)]
         self.wo = tf.keras.layers.Dense(d_model)
-
-    def split_heads(self, x, batch_size):
-        """Split the last dimension into (num_heads, depth).
-
-        Transpose the result such that the shape is (batch_size, num_heads, seq_len, depth)
-        """
-        x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
-        return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def call(self, v, q, mask):
         """Forward pass in the attention module."""
