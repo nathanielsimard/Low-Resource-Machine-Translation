@@ -30,7 +30,8 @@ class History(object):
     def save(self, file_name):
         """Save file."""
         with open(file_name, "wb") as file:
-            pickle.dump(self, file)
+            pass
+            #pickle.dump(self, file)
 
     @staticmethod
     def load(file_name):
@@ -144,6 +145,7 @@ class BasicMachineTranslationTraining(Training):
             self.model.save(epoch)
             self.history.save(directory + f"/history-{epoch}")
 
+    #@tf.function
     def _train_step(
         self,
         inputs,
