@@ -46,8 +46,6 @@ class Transformer(base.MachineTranslationModel):
 
         self.encoder = Encoder(num_layers, d_model, num_heads, input_vocab_size, pe_input)
         self.encoder_output, _ = self.encoder(tf.constant([[1, 2, 3, 0, 0]]))
-        print('decoder mask:')
-        print(self.encoder_output.shape)
 
         self.decoder = Decoder(num_layers, d_model, num_heads, target_vocab_size, pe_target)
         self.decoder_output, _, _ = self.decoder(tf.constant([[14, 24, 36, 0, 0]]), self.encoder_output)
@@ -60,8 +58,6 @@ class Transformer(base.MachineTranslationModel):
         encoder_mask = tf.expand_dims(encoder_mask, axis=1)
         encoder_output, _ = self.encoder(x[0], encoder_mask=encoder_mask)
 
-        print('decoder mask:')
-        print(encoder_mask.shape)
         decoder_output, _, _ = self.decoder(
             x[1], encoder_output, encoder_mask=encoder_mask)
 
@@ -140,10 +136,10 @@ class Decoder(layers.Layer):
 
     def call(self, x, enc_output, training=True, encoder_mask=None):
         """Forward pass in the Decoder module."""
-        embed_out = self.embedding(x[0])
+        embed_out = self.embedding(x)
 
         embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        embed_out += self.pes[:x[0].shape[1], :]
+        embed_out += self.pes[:x.shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
         bot_sub_in = embed_out
@@ -158,8 +154,7 @@ class Decoder(layers.Layer):
                 mask = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
             else:
                 mask = None
-            print('bot mask')
-            print(mask.shape)
+
             bot_sub_out, bot_alignment = self.attention_bot[i](bot_sub_in, bot_sub_in, mask)
             bot_sub_out = self.attention_bot_dropout[i](bot_sub_out, training=training)
             bot_sub_out = bot_sub_in + bot_sub_out
@@ -169,9 +164,6 @@ class Decoder(layers.Layer):
 
             # MIDDLE MULTIHEAD SUB LAYER
             mid_sub_in = bot_sub_out
-            if encoder_mask is not None:
-                print('mid mask')
-                print(encoder_mask.shape)
             mid_sub_out, mid_alignment = self.attention_mid[i](
                 mid_sub_in, enc_output, encoder_mask)
             mid_sub_out = self.attention_mid_dropout[i](mid_sub_out, training=training)
@@ -245,10 +237,10 @@ class Encoder(layers.Layer):
 
     def call(self, x, training=True, encoder_mask=None):
         """Forward pass in the Encoder."""
-        embed_out = self.embedding(x[0])
+        embed_out = self.embedding(x)
 
         embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        embed_out += self.pes[:x[0].shape[1], :]
+        embed_out += self.pes[:x.shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
         sub_in = embed_out
@@ -286,7 +278,7 @@ class MultiHeadAttention(layers.Layer):
         self.wv = tf.keras.layers.Dense(d_model)  # [tf.keras.layers.Dense(value_size) for _ in range(h)]
         self.wo = tf.keras.layers.Dense(d_model)
 
-    def call(self, v, q, mask):
+    def call(self, q, v, mask):
         """Forward pass in the attention module."""
         # query has shape (batch, query_len, model_size)
         # value has shape (batch, value_len, model_size)
@@ -320,8 +312,6 @@ class MultiHeadAttention(layers.Layer):
         # - Padding mask (batch, 1, 1, value_len): to prevent attention being drawn to padded token (i.e. 0)
         # - Look-left mask (batch, 1, query_len, value_len): to prevent decoder to draw attention to tokens to the right
         if mask is not None:
-            print('mask::::::::::::::')
-            print(mask.shape)
             score *= mask
 
             # We want the masked out values to be zeros when applying softmax
