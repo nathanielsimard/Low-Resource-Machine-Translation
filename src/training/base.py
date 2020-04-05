@@ -175,7 +175,7 @@ class BasicMachineTranslationTraining(Training):
         for i, (inputs, targets) in enumerate(
             dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
         ):
-            outputs = self.model(inputs, targets, training=False)
+            outputs = self.model.translate(inputs, self.encoder)
             valid_predictions += self.model.predictions(
                 outputs, self.valid_dataloader.encoder_target
             )
@@ -243,7 +243,7 @@ def _generate_predictions(model, dataset, encoder, batch_size, loss_fn):
     for inputs, targets in dataset.padded_batch(
         batch_size, padded_shapes=model.padded_shapes
     ):
-        outputs = model(inputs, training=False)
+        outputs = model.translate(inputs, encoder)
         predictions += model.predictions(outputs, encoder)
 
         loss = loss_fn(targets, outputs)
