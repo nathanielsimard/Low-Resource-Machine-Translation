@@ -94,6 +94,7 @@ class BasicMachineTranslationTraining(Training):
     ):
         """Training session."""
         logger.info("Creating datasets...")
+
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
 
@@ -152,7 +153,7 @@ class BasicMachineTranslationTraining(Training):
         loss_fn: tf.keras.losses,
     ):
         with tf.GradientTape() as tape:
-            outputs = self.model(inputs, training=True)
+            outputs = self.model(inputs, targets, training=True)
             # Calculate the training prediction tokens
             predictions = self.model.predictions(
                 outputs, self.train_dataloader.encoder_target
@@ -174,7 +175,7 @@ class BasicMachineTranslationTraining(Training):
         for i, (inputs, targets) in enumerate(
             dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
         ):
-            outputs = self.model(inputs, training=False)
+            outputs = self.model(inputs, targets, training=False)
             valid_predictions += self.model.predictions(
                 outputs, self.valid_dataloader.encoder_target
             )

@@ -58,22 +58,22 @@ class Transformer(base.MachineTranslationModel):
 
     # self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
-    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
+    def call(self, input_sequence: tf.Tensor, target_sequence: tf.Tensor, training=False):
         """Forward pass of the Transformer."""
-        encoder_mask = 1 - tf.cast(tf.equal(x[0], 0), dtype=tf.float32)
+        encoder_mask = 1 - tf.cast(tf.equal(input_sequence, 0), dtype=tf.float32)
         encoder_mask = tf.expand_dims(encoder_mask, axis=1)
         encoder_mask = tf.expand_dims(encoder_mask, axis=1)
-        encoder_output, _ = self.encoder(x[0], encoder_mask=encoder_mask)
+        encoder_output, _ = self.encoder(input_sequence, encoder_mask=encoder_mask)
 
         decoder_output, _, _ = self.decoder(
-            x[1], encoder_output, encoder_mask=encoder_mask
+            target_sequence, encoder_output, encoder_mask=encoder_mask
         )
 
         return decoder_output
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder):
+    def translate(self, input_sequence: tf.Tensor, encoder: TextEncoder):
         """Translation function for the test set."""
-        batch_size = x.shape[0]
+        batch_size = input_sequence.shape[0]
         # The first words of each sentence in the batch is the start of sample token.
         words = (
             tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
@@ -84,7 +84,7 @@ class Transformer(base.MachineTranslationModel):
         reach_max_seq_lenght = False
 
         # Always use the same mask because the decoder alway decode one word at a time.
-        en_output, en_alignments = encoder(tf.constant(x), training=False)
+        en_output, en_alignments = encoder(tf.constant(input_sequence), training=False)
         de_input = tf.constant([[encoder.start_of_sample_index]], dtype=tf.int64)
         while not (has_finish_predicting or reach_max_seq_lenght):
             dec_output, de_bot_alignments, de_mid_alignments = self.decoder(
@@ -106,13 +106,13 @@ class Transformer(base.MachineTranslationModel):
     @property
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
-        return (([None], [None]), [None])
+        return ([None], [None])
 
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
 
         def preprocess(input_sentence, output_sentence):
-            return ((input_sentence, output_sentence), output_sentence)
+            return (input_sentence, output_sentence)
 
         return dataset.map(preprocess)
 
@@ -182,12 +182,12 @@ class Decoder(layers.Layer):
 
         self.pes = _positional_encoding(maximum_position_encoding, d_model)
 
-    def call(self, x, enc_output, training=True, encoder_mask=None):
+    def call(self, input_sequence, enc_output, training=True, encoder_mask=None):
         """Forward pass in the Decoder module."""
-        embed_out = self.embedding(x)
+        embed_out = self.embedding(input_sequence)
 
         embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        embed_out += self.pes[: x.shape[1], :]
+        embed_out += self.pes[: input_sequence.shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
         bot_sub_in = embed_out
@@ -293,12 +293,12 @@ class Encoder(layers.Layer):
 
         self.pes = _positional_encoding(maximum_position_encoding, d_model)
 
-    def call(self, x, training=True, encoder_mask=None):
+    def call(self, input_sequence, training=True, encoder_mask=None):
         """Forward pass in the Encoder."""
-        embed_out = self.embedding(x)
+        embed_out = self.embedding(input_sequence)
 
         embed_out *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        embed_out += self.pes[: x.shape[1], :]
+        embed_out += self.pes[: input_sequence.shape[1], :]
         embed_out = self.embedding_dropout(embed_out)
 
         sub_in = embed_out
