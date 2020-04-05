@@ -9,7 +9,7 @@ from src.model import gru_attention, lstm, lstm_luong_attention, transformer, ma
 from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
-from src.training.base import BasicMachineTranslationTraining
+from src.training.default import Training
 from src.training.pretraining import Pretraining
 
 logger = logging.create_logger(__name__)
@@ -85,7 +85,7 @@ def punctuation_training(args, loss_fn):
         file_name_target="data/splitted_english_data/sorted_target_train.en",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_valid.en",
@@ -94,12 +94,12 @@ def punctuation_training(args, loss_fn):
         text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
-        max_seq_lenght=args.max_seq_lenght,
+        max_seq_length=args.max_seq_length,
     )
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = BasicMachineTranslationTraining(model, train_dl, valid_dl, [])
+    training = Training(model, train_dl, valid_dl, [])
     training.run(
         loss_fn,
         optim,
@@ -133,9 +133,7 @@ def default_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = BasicMachineTranslationTraining(
-        model, train_dl, valid_dl, [base.Metrics.BLEU]
-    )
+    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
     training.run(
         loss_fn,
         optim,
