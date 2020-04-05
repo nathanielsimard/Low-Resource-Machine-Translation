@@ -142,6 +142,7 @@ class BasicMachineTranslationTraining(Training):
             self.model.save(epoch)
             #self.history.save(directory + f"/history-{epoch}")
 
+    # @tf.function
     def _train_step(
         self,
         inputs,
