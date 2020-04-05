@@ -5,8 +5,13 @@ import random
 import tensorflow as tf
 
 from src import dataloader, logging
-from src.model import (gru_attention, lstm, lstm_luong_attention, transformer,
-                       transformer_2)
+from src.model import (
+    gru_attention,
+    lstm,
+    lstm_luong_attention,
+    transformer,
+    transformer_2,
+)
 from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
@@ -110,11 +115,38 @@ def punctuation_training(args, loss_fn):
     )
 
 
+class WarmupThenDecaySchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    """ Learning schedule for training the Transformer
+    Attributes:
+        model_size: d_model in the paper (depth size of the model)
+        warmup_steps: number of warmup steps at the beginning
+    """
+
+    def __init__(self, model_size, warmup_steps=4000):
+        super(WarmupThenDecaySchedule, self).__init__()
+
+        self.model_size = model_size
+        self.model_size = tf.cast(self.model_size, tf.float32)
+
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+        step_term = tf.math.rsqrt(step)
+        warmup_term = step * (self.warmup_steps ** -1.5)
+
+        return tf.math.rsqrt(self.model_size) * tf.math.minimum(step_term, warmup_term)
+
+
 def default_training(args, loss_fn):
     """Train the model."""
     text_encoder_type = TextEncoderType(args.text_encoder)
 
-    optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
+    lr = WarmupThenDecaySchedule(model_size=128)
+
+    optim = tf.keras.optimizers.Adam(
+        learning_rate=lr, beta_1=0.9, beta_2=0.98, epsilon=1e-9
+    )
+
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
