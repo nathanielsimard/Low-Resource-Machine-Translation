@@ -171,7 +171,7 @@ class GRU(base.MachineTranslationModel):
         batch_size = x.shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden)
+        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden, False)
         decoder_hidden = encoder_hidden
 
         # The first words of each sentence in the batch is the start of sample token.
@@ -186,7 +186,7 @@ class GRU(base.MachineTranslationModel):
         while not (has_finish_predicting or reach_max_seq_lenght):
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_hidden, _ = self.decoder(
-                last_words, decoder_hidden, encoder_output
+                last_words, decoder_hidden, encoder_output, False
             )
             last_words = tf.expand_dims(decoder_output, 1)
             last_words = tf.math.argmax(last_words, axis=2)
