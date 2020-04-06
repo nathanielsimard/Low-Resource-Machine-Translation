@@ -28,10 +28,10 @@ class Encoder(tf.keras.Model):
             dropout=dropout,
         )
 
-    def call(self, x, hidden):
+    def call(self, x, hidden, training):
         """Call the foward past."""
         x = self.embedding(x)
-        output, state = self.gru(x, initial_state=hidden)
+        output, state = self.gru(x, initial_state=hidden, training=training)
         return output, state
 
     def initialize_hidden_state(self, batch_size):
@@ -95,7 +95,7 @@ class Decoder(tf.keras.Model):
         # used for attention
         self.attention = BahdanauAttention(self.dec_units)
 
-    def call(self, x, hidden, enc_output):
+    def call(self, x, hidden, enc_output, training):
         """Call the foward past.
 
         Note that the call must be for one caracter/word at a time.
@@ -110,7 +110,7 @@ class Decoder(tf.keras.Model):
         x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
 
         # passing the concatenated vector to the GRU
-        output, state = self.gru(x)
+        output, state = self.gru(x, training=training)
 
         # output shape == (batch_size * seq_lenght, hidden_size)
         output = tf.reshape(output, (-1, output.shape[2]))
@@ -130,16 +130,16 @@ class GRU(base.MachineTranslationModel):
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
 
-        self.encoder = Encoder(input_vocab_size, 256, 512, 0.3)
+        self.encoder = Encoder(input_vocab_size, 256, 256, 0.5)
         self.attention_layer = BahdanauAttention(10)
-        self.decoder = Decoder(output_vocab_size, 256, 512, 0.3)
+        self.decoder = Decoder(output_vocab_size, 256, 256, 0.5)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
         batch_size = x[0].shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden)
+        encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden, training)
 
         decoder_hidden = encoder_hidden
         predictions = None
@@ -152,7 +152,7 @@ class GRU(base.MachineTranslationModel):
 
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_hidden, _ = self.decoder(
-                decoder_input, decoder_hidden, encoder_output
+                decoder_input, decoder_hidden, encoder_output, training
             )
 
             # The predictions are concatenated on the time axis
@@ -163,7 +163,8 @@ class GRU(base.MachineTranslationModel):
                 decoder_output = tf.expand_dims(decoder_output, 1)
                 predictions = tf.concat([predictions, decoder_output], axis=1)
 
-        return predictions
+        return tf.keras.activations.softmax(predictions, axis=-1)
+        # return predictions
 
     def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input."""
