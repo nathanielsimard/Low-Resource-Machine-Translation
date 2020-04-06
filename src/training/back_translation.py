@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from src import logging
 from src.dataloader import AlignedDataloader
-from src.training import base
+from src.training import base, default
 
 logger = logging.create_logger(__name__)
 
@@ -54,7 +54,7 @@ class BackTranslationTraining(base.Training):
         self.model_2.title = self.model_2.title + "-model-2"
 
         logger.info("Training first model on aligned dataset.")
-        training = base.BasicMachineTranslationTraining(
+        training = default.Training(
             self.model_1,
             self.aligned_dataloader,
             self.aligned_valid_dataloader,
@@ -63,7 +63,7 @@ class BackTranslationTraining(base.Training):
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
         logger.info("Training second model on reversed aligned dataset.")
-        training = base.BasicMachineTranslationTraining(
+        training = default.Training(
             self.model_2,
             self.aligned_dataloader_reversed,
             self.aligned_valid_dataloader_reverse,
@@ -99,7 +99,7 @@ class BackTranslationTraining(base.Training):
             )
 
             logger.info("Training first model on augmented aligned dataset.")
-            training = base.BasicMachineTranslationTraining(
+            training = default.Training(
                 self.model_1,
                 updated_dataloader,
                 self.aligned_valid_dataloader,
@@ -109,7 +109,7 @@ class BackTranslationTraining(base.Training):
             self.model_1.save(str(epoch))
 
             logger.info("Training second model on reversed augmented aligned dataset.")
-            training = base.BasicMachineTranslationTraining(
+            training = default.Training(
                 self.model_2,
                 updated_dataloader_reverse,
                 self.aligned_valid_dataloader_reverse,
