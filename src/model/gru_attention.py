@@ -170,8 +170,7 @@ class GRU(base.MachineTranslationModel):
                 decoder_output = tf.expand_dims(decoder_output, 1)
                 predictions = tf.concat([predictions, decoder_output], axis=1)
 
-        return tf.keras.activations.softmax(predictions, axis=-1)
-        # return predictions
+        return predictions
 
     def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input."""
