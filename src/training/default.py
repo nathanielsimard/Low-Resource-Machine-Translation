@@ -50,12 +50,7 @@ class Training(base.Training):
         self.history = base.History()
 
     def run(
-        self,
-        loss_fn: tf.keras.losses,
-        optimizer: tf.keras.optimizers,
-        batch_size: int,
-        num_epoch: int,
-        checkpoint=None,
+        self, batch_size: int, num_epoch: int, checkpoint=None,
     ):
         """Training session."""
         logger.info("Creating datasets...")
@@ -85,11 +80,18 @@ class Training(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                predictions, loss = self._train_step(inputs, targets, i, batch_size)
+                outputs, predictions, loss = self._train_step(
+                    inputs, targets, i, batch_size
+                )
                 train_predictions += predictions
                 metric = self.recorded_losses["train"]
                 metric(loss)
                 logger.info(f"Batch #{i} : training loss: {metric.result()}")
+
+                if base.Metrics.ABSOLUTE_ACC in self.metrics:
+                    other_metric = self.accuracies["train"]
+                    acc = self._record_abs_acc(outputs, targets, i, batch_size, "train")
+                    other_metric(acc)
 
             valid_predictions: List[str] = []
             for i, (inputs, targets) in enumerate(
@@ -98,11 +100,15 @@ class Training(base.Training):
                 )
             ):
 
-                predictions, loss = self._valid_step(valid_dataset, loss_fn, batch_size)
+                outputs, predictions, loss = self._valid_step(inputs, targets)
                 valid_predictions += predictions
                 metric = self.recorded_losses["valid"]
                 metric(loss)
                 logger.info(f"Batch #{i} : validation loss {metric.result()}")
+                if base.Metrics.ABSOLUTE_ACC in self.metrics:
+                    other_metric = self.accuracies["valid"]
+                    acc = self._record_abs_acc(outputs, targets, i, batch_size, "valid")
+                    other_metric(acc)
 
             train_path = os.path.join(directory, f"train-{epoch}")
             valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -133,17 +139,17 @@ class Training(base.Training):
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        return predictions, loss
+        return outputs, predictions, loss
 
     @tf.function(input_signature=train_step_signature)
-    def _valid_step(self, inputs, targets, loss_fn):
+    def _valid_step(self, inputs, targets):
         outputs = self.model(inputs, training=False)
         valid_predictions = self.model.predictions(
             outputs, self.valid_dataloader.encoder_target
         )
         loss = self.loss_fn(targets, outputs)
 
-        return valid_predictions, loss
+        return outputs, valid_predictions, loss
 
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]

@@ -6,8 +6,6 @@ import subprocess
 from collections import defaultdict
 from typing import Dict, List
 
-import tensorflow as tf
-
 from src import logging
 from src.dataloader import AlignedDataloader
 from src.model import base
@@ -47,12 +45,7 @@ class Training(abc.ABC):
 
     @abc.abstractmethod
     def run(
-        self,
-        loss_fn: tf.keras.losses,
-        optimizer: tf.keras.optimizers,
-        batch_size: int,
-        num_epoch: int,
-        checkpoint=None,
+        self, batch_size: int, num_epoch: int, checkpoint=None,
     ):
         """Each training sub-class must implement their own run method."""
         pass

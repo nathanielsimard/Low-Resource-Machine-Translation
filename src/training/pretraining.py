@@ -18,6 +18,8 @@ class Pretraining(base.Training):
         model,
         train_monolingual_dataloader: UnalignedDataloader,
         valid_monolingual_dataloader: UnalignedDataloader,
+        optim: tf.keras.optimizers,
+        loss_fn: tf.keras.losses,
     ):
         """Initialize the pretraining session."""
         self.model = model
@@ -27,16 +29,13 @@ class Pretraining(base.Training):
             "train": tf.keras.metrics.Mean("train_loss", tf.float32),
             "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
+        self.optimizer = optim
+        self.loss_fn = loss_fn
 
         self.history = base.History()
 
     def run(
-        self,
-        loss_fn: tf.keras.losses,
-        optimizer: tf.keras.optimizers,
-        batch_size: int,
-        num_epoch: int,
-        checkpoint=None,
+        self, batch_size: int, num_epoch: int, checkpoint=None,
     ):
         """Pretraining session."""
         logger.info("Creating datasets...")
@@ -70,9 +69,9 @@ class Pretraining(base.Training):
                 )
             ):
                 with tf.GradientTape() as tape:
-                    loss = self._step(minibatch, i, loss_fn, "train")
+                    loss = self._step(minibatch, i, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
-                    optimizer.apply_gradients(
+                    self.optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
                     )
             logger.debug("Saving training loss")
@@ -83,7 +82,7 @@ class Pretraining(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                loss = self._step(minibatch, i, loss_fn, "valid")
+                loss = self._step(minibatch, i, "valid")
 
             logger.debug("Saving validation loss")
             self.history.record("valid_loss", self.losses["valid"].result())
@@ -93,13 +92,13 @@ class Pretraining(base.Training):
             self.losses["train"].reset_states()
             self.losses["valid"].reset_states()
 
-    def _step(self, inputs, batch, loss_fn, name):
+    def _step(self, inputs, batch, name):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
         outputs = self.model(masked_inputs, training=True)
 
         def mlm_loss(real, pred):
             mask_targets = tf.cast(mask, dtype=tf.int32)
-            loss_ = loss_fn(real, pred)
+            loss_ = self.loss_fn(real, pred)
 
             mask_targets = tf.cast(mask_targets, dtype=loss_.dtype)
             loss_ *= mask_targets
