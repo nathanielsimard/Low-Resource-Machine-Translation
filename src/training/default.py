@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List
 
 import tensorflow as tf
+import numpy as np
 
 from src import logging
 from src.dataloader import AlignedDataloader
@@ -113,6 +114,14 @@ class Training(base.Training):
         metric = self.recorded_losses["train"]
         metric(loss)
 
+        if base.Metrics.ABSOLUTE_ACC in self.metrics:
+            sentences = np.argmax(outputs.numpy(), axis=2)
+            absolute_accuracy = tf.math.reduce_mean(
+                tf.cast(sentences == targets, dtype=tf.int64), axis=1
+            )
+            self.history.record("train_abs_acc", absolute_accuracy)
+            logger.info(f"Batch #{batch} : train accuracy {absolute_accuracy}")
+
         logger.info(f"Batch #{batch} : training loss {metric.result()}")
 
         return predictions
@@ -130,6 +139,15 @@ class Training(base.Training):
             loss = loss_fn(targets, outputs)
             metric = self.recorded_losses["valid"]
             metric(loss)
+
+            if base.Metrics.ABSOLUTE_ACC in self.metrics:
+                sentences = np.argmax(outputs.numpy(), axis=2)
+                absolute_accuracy = tf.math.reduce_mean(
+                    tf.cast(sentences == targets, dtype=tf.int64), axis=1
+                )
+                self.history.record("valid_abs_acc", absolute_accuracy)
+                logger.info(f"Batch #{i} : validation accuracy {absolute_accuracy}")
+
             logger.info(f"Batch #{i} : validation loss {metric.result()}")
 
         return valid_predictions

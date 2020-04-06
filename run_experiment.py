@@ -99,13 +99,7 @@ def punctuation_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-<<<<<<< Updated upstream
-    training = Training(model, train_dl, valid_dl, [])
-=======
-    training = BasicMachineTranslationTraining(
-        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC]
-    )
->>>>>>> Stashed changes
+    training = Training(model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC])
     training.run(
         loss_fn,
         optim,
