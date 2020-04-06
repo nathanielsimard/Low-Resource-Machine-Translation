@@ -49,6 +49,7 @@ class MachineTranslationModel(Model, abc.ABC):
     Each model must implement the translate method.
     """
 
+    @tf.function
     def predictions(
         self, outputs: tf.Tensor, encoder: TextEncoder, logit=True
     ) -> List[str]:
@@ -56,7 +57,7 @@ class MachineTranslationModel(Model, abc.ABC):
         sentences = outputs
 
         if logit:
-            sentences = np.argmax(sentences.numpy(), axis=2)
+            sentences = tf.math.argmax(sentences, axis=2)
 
         sentences = [encoder.decode(sentence) for sentence in sentences]
 
@@ -75,6 +76,7 @@ class MachineTranslationModel(Model, abc.ABC):
         pass
 
 
+@tf.function
 def _clean_tokens(sentences):
     result = []
     for sentence in sentences:
