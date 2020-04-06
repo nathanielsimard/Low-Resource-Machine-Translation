@@ -112,9 +112,10 @@ class BasicMachineTranslationTraining(Training):
             self.model.load(str(checkpoint))
         else:
             checkpoint = 0
-
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
+
+            # valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
 
             for i, (inputs, targets) in enumerate(
                 train_dataset.padded_batch(
@@ -125,22 +126,23 @@ class BasicMachineTranslationTraining(Training):
                 train_predictions += self._train_step(
                     inputs, targets, i, optimizer, loss_fn
                 )
+                # break
+            if epoch % 10 == 0:
+                valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
 
-            valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
+                train_path = os.path.join(directory, f"train-{epoch}")
+                valid_path = os.path.join(directory, f"valid-{epoch}")
 
-            train_path = os.path.join(directory, f"train-{epoch}")
-            valid_path = os.path.join(directory, f"valid-{epoch}")
+                write_text(train_predictions, train_path)
+                write_text(valid_predictions, valid_path)
 
-            write_text(train_predictions, train_path)
-            write_text(valid_predictions, valid_path)
-
-            if Metrics.BLEU in self.metrics:
-                self._record_bleu(epoch, train_path, valid_path)
+                if Metrics.BLEU in self.metrics:
+                    self._record_bleu(epoch, train_path, valid_path)
 
             self._update_progress(epoch)
 
             self.model.save(epoch)
-            #self.history.save(directory + f"/history-{epoch}")
+            # self.history.save(directory + f"/history-{epoch}")
 
     # @tf.function
     def _train_step(
@@ -172,17 +174,21 @@ class BasicMachineTranslationTraining(Training):
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
+            dataset.padded_batch(batch_size=16, padded_shapes=self.model.padded_shapes)
         ):
             outputs = self.model(inputs, training=False)
-            valid_predictions += self.model.predictions(
-                outputs, self.valid_dataloader.encoder_target
+            # valid_predictions += self.model.predictions(
+            #    outputs, self.valid_dataloader.encoder_target
+            # )
+            valid_predictions = self.model.translate3(
+                inputs, self.valid_dataloader.encoder_target
             )
 
             loss = loss_fn(targets, outputs)
             metric = self.recorded_losses["valid"]
             metric(loss)
             logger.info(f"Batch #{i} : validation loss {metric.result()}")
+            break
 
         return valid_predictions
 

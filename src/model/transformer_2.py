@@ -66,17 +66,105 @@ class Transformer(base.MachineTranslationModel):
         encoder_output, _ = self.encoder(x[0], encoder_mask=encoder_mask)
 
         decoder_output, _, _ = self.decoder(
-            x[1], encoder_output, encoder_mask=encoder_mask
+            x[1], encoder_output, encoder_mask=encoder_mask, training=training
         )
 
         return decoder_output
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder):
+    def translate3(self, x: Tuple[tf.Tensor, tf.Tensor], tokenizer: TextEncoder):
+        # if test_source_text is None:
+        #    test_source_text = raw_data_en[np.random.choice(len(raw_data_en))]
+        # print(test_source_text)
+        # test_source_seq = en_tokenizer.texts_to_sequences([test_source_text])
+        batch_size = x[0].shape[0]
+        MAX_SEQ = 120
+        out_words = np.zeros((batch_size, MAX_SEQ))
+        # for j in range(0, batch_size):
+        test_source_seq = x[0]
+        # print(test_source_seq)
+        # test_source_seq = tf.expand_dims(test_source_seq, axis=1)
+        en_output, en_alignments = self.encoder(
+            tf.constant(test_source_seq), training=False
+        )
+
+        de_input = tf.convert_to_tensor(
+            np.ones((batch_size, 1)) * tokenizer.start_of_sample_index
+        )
+        de_input = tf.dtypes.cast(de_input, tf.int64)
+
+        i = 0
+        out_words[:, 0] = np.ones(batch_size) * tokenizer.start_of_sample_index
+        while True:
+            i = i + 1
+            de_output, de_bot_alignments, de_mid_alignments = self.decoder(
+                de_input, en_output, training=False
+            )
+            new_words = tf.expand_dims(tf.argmax(de_output, -1)[:, -1], axis=1)
+
+            # out_words.append(tokenizer.index_word[new_word.numpy()[0][0]])
+            out_words[:, i] = new_words.numpy()[:, 0]
+
+            # Transformer doesn't have sequential mechanism (i.e. states)
+            # so we have to add the last predicted word to create a new input sequence
+            de_input = tf.concat((de_input, new_words), axis=-1)
+
+            eos_occurrences = np.count_nonzero(
+                out_words == tokenizer.end_of_sample_index
+            )
+            # TODO: get a nicer constraint for the sequence length!
+            if eos_occurrences == batch_size or i >= MAX_SEQ - 1:
+                break
+
+        sentences = self.predictions(out_words, tokenizer, logit=False)
+        return sentences
+
+    def translate2(self, x: Tuple[tf.Tensor, tf.Tensor], tokenizer: TextEncoder):
+        # if test_source_text is None:
+        #    test_source_text = raw_data_en[np.random.choice(len(raw_data_en))]
+        # print(test_source_text)
+        # test_source_seq = en_tokenizer.texts_to_sequences([test_source_text])
+        batch_size = x[0].shape[0]
+        MAX_SEQ = 120
+        out_words = np.zeros((batch_size, MAX_SEQ))
+        for j in range(0, batch_size):
+            test_source_seq = x[0][j]
+            # print(test_source_seq)
+            test_source_seq = tf.expand_dims(test_source_seq, axis=1)
+            en_output, en_alignments = self.encoder(
+                tf.constant(test_source_seq), training=False
+            )
+
+            de_input = tf.constant([[tokenizer.start_of_sample_index]], dtype=tf.int64)
+
+            i = 0
+            out_words[j][i] = tokenizer.start_of_sample_index
+            while True:
+                i = i + 1
+                de_output, de_bot_alignments, de_mid_alignments = self.decoder(
+                    de_input, en_output, training=False
+                )
+                new_word = tf.expand_dims(tf.argmax(de_output, -1)[:, -1], axis=1)
+                # out_words.append(tokenizer.index_word[new_word.numpy()[0][0]])
+                out_words[j][i] = new_word.numpy()[0][0]
+                # Transformer doesn't have sequential mechanism (i.e. states)
+                # so we have to add the last predicted word to create a new input sequence
+                de_input = tf.concat((de_input, new_word), axis=-1)
+
+                # TODO: get a nicer constraint for the sequence length!
+                if out_words[j][i] == tokenizer.end_of_sample_index or i >= MAX_SEQ - 1:
+                    break
+        sentences = []
+        # for i in range(0, batch_size):
+        #    sentences += self.predictions(out_words[j])
+        sentences = self.predictions(out_words, tokenizer, logit=False)
+        return sentences
+
+    def translate(self, x: tf.Tensor, tokenizer: TextEncoder):
         """Translation function for the test set."""
         batch_size = x.shape[0]
         # The first words of each sentence in the batch is the start of sample token.
         words = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
+            tf.zeros([batch_size, 1], dtype=tf.int64) + tokenizer.start_of_sample_index
         )
         last_words = words
 
@@ -84,8 +172,8 @@ class Transformer(base.MachineTranslationModel):
         reach_max_seq_lenght = False
 
         # Always use the same mask because the decoder alway decode one word at a time.
-        en_output, en_alignments = encoder(tf.constant(x), training=False)
-        de_input = tf.constant([[encoder.start_of_sample_index]], dtype=tf.int64)
+        en_output, en_alignments = self.encoder(tf.constant(x), training=False)
+        de_input = tf.constant([[tokenizer.start_of_sample_index]], dtype=tf.int64)
         while not (has_finish_predicting or reach_max_seq_lenght):
             dec_output, de_bot_alignments, de_mid_alignments = self.decoder(
                 de_input, en_output, training=False
@@ -96,7 +184,8 @@ class Transformer(base.MachineTranslationModel):
 
             # Compute the end condition of the while loop.
             end_of_sample = (
-                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
+                np.zeros([batch_size, 1], dtype=np.int64)
+                + tokenizer.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
             reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
