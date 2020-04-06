@@ -8,13 +8,15 @@ import numpy as np
 from src import logging
 from src.dataloader import AlignedDataloader
 from src.training import base
+from typing import Tuple
 
 logger = logging.create_logger(__name__)
-
+"""
 train_step_signature = [
-    tf.TensorSpec(shape=((None, None), (None, None)), dtype=tf.int64),
+    Tuple[tf.TensorSpec(shape=(None, None), dtype=tf.int64)],
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
 ]
+"""
 
 
 class Training(base.Training):
@@ -80,9 +82,7 @@ class Training(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                outputs, predictions, loss = self._train_step(
-                    inputs, targets, i, batch_size
-                )
+                outputs, predictions, loss = self._train_step(inputs, targets)
                 train_predictions += predictions
                 metric = self.recorded_losses["train"]
                 metric(loss)
@@ -124,7 +124,7 @@ class Training(base.Training):
             self.model.save(epoch)
             self.history.save(directory + f"/history-{epoch}")
 
-    @tf.function(input_signature=train_step_signature)
+    @tf.function
     def _train_step(
         self, inputs, targets,
     ):
@@ -141,7 +141,7 @@ class Training(base.Training):
 
         return outputs, predictions, loss
 
-    @tf.function(input_signature=train_step_signature)
+    @tf.function
     def _valid_step(self, inputs, targets):
         outputs = self.model(inputs, training=False)
         valid_predictions = self.model.predictions(
