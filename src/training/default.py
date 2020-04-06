@@ -73,7 +73,7 @@ class Training(base.Training):
             ):
 
                 train_predictions += self._train_step(
-                    inputs, targets, i, optimizer, loss_fn
+                    inputs, targets, i, batch_size, optimizer, loss_fn
                 )
 
             valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
@@ -97,6 +97,7 @@ class Training(base.Training):
         inputs,
         targets,
         batch: int,
+        batch_size: int,
         optimizer: tf.keras.optimizers,
         loss_fn: tf.keras.losses,
     ):
@@ -115,12 +116,7 @@ class Training(base.Training):
         metric(loss)
 
         if base.Metrics.ABSOLUTE_ACC in self.metrics:
-            sentences = np.argmax(outputs.numpy(), axis=2)
-            absolute_accuracy = tf.math.reduce_mean(
-                tf.cast(sentences == targets, dtype=tf.int64), axis=1
-            )
-            self.history.record("train_abs_acc", absolute_accuracy)
-            logger.info(f"Batch #{batch} : train accuracy {absolute_accuracy}")
+            self._record_abs_acc(outputs, targets, batch, batch_size, "train")
 
         logger.info(f"Batch #{batch} : training loss {metric.result()}")
 
@@ -141,12 +137,7 @@ class Training(base.Training):
             metric(loss)
 
             if base.Metrics.ABSOLUTE_ACC in self.metrics:
-                sentences = np.argmax(outputs.numpy(), axis=2)
-                absolute_accuracy = tf.math.reduce_mean(
-                    tf.cast(sentences == targets, dtype=tf.int64), axis=1
-                )
-                self.history.record("valid_abs_acc", absolute_accuracy)
-                logger.info(f"Batch #{i} : validation accuracy {absolute_accuracy}")
+                self._record_abs_acc(outputs, targets, i, batch_size, "valid")
 
             logger.info(f"Batch #{i} : validation loss {metric.result()}")
 
@@ -180,3 +171,14 @@ class Training(base.Training):
 
         self.history.record("train_bleu", train_bleu)
         self.history.record("valid_bleu", valid_bleu)
+
+    def _record_abs_acc(self, outputs, targets, batch, batch_size, name):
+        sentences = np.argmax(outputs.numpy(), axis=2)
+        absolute_accuracy = (
+            tf.math.reduce_mean(tf.cast(sentences == targets, dtype=tf.int64), axis=1)
+            .numpy()
+            .sum()
+            / batch_size
+        )
+        self.history.record(name + "_abs_acc", absolute_accuracy)
+        logger.info(f"Batch #{batch} : {name} accuracy {absolute_accuracy*100} %")
