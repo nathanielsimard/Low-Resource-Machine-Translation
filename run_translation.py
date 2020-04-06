@@ -25,9 +25,7 @@ def translate(args):
     encoder_target = train_dl.encoder_target
 
     # Load the model.
-    model = models.find(
-        args, encoder_input.vocab_size, encoder_target.vocab_size
-    )
+    model = models.find(args, encoder_input.vocab_size, encoder_target.vocab_size)
     model.load(str(args.checkpoint))
 
     # Create the message to translate.
