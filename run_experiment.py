@@ -100,14 +100,15 @@ def punctuation_training(args, loss_fn):
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
     training = Training(
-        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU]
+        model,
+        train_dl,
+        valid_dl,
+        [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU],
+        optim,
+        loss_fn,
     )
     training.run(
-        loss_fn,
-        optim,
-        batch_size=args.batch_size,
-        num_epoch=args.epochs,
-        checkpoint=args.checkpoint,
+        batch_size=args.batch_size, num_epoch=args.epochs, checkpoint=args.checkpoint,
     )
 
 
@@ -135,13 +136,9 @@ def default_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
+    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU], optim, loss_fn)
     training.run(
-        loss_fn,
-        optim,
-        batch_size=args.batch_size,
-        num_epoch=args.epochs,
-        checkpoint=args.checkpoint,
+        batch_size=args.batch_size, num_epoch=args.epochs, checkpoint=args.checkpoint,
     )
 
 
