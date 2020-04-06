@@ -17,7 +17,7 @@ def translate(args):
     # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
     )
