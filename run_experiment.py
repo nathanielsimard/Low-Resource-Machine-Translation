@@ -46,9 +46,9 @@ def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
 
 def create_demi_bert(args, input_vocab_size, target_vocab_size):
     return masked_lm.DemiBERT(
-        num_layers=6,
+        num_layers=2,
         embedding_size=256,
-        num_heads=8,
+        num_heads=6,
         dff=512,
         vocab_size=input_vocab_size,
         max_pe=input_vocab_size,
@@ -99,7 +99,9 @@ def punctuation_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = Training(model, train_dl, valid_dl, [])
+    training = Training(
+        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU]
+    )
     training.run(
         loss_fn,
         optim,
@@ -332,7 +334,7 @@ def main():
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
 
-        return tf.reduce_mean(loss_)
+        return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
     try:
         logger.info(f"Executing task {args.task}.")
