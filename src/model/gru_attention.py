@@ -124,7 +124,14 @@ class Decoder(tf.keras.Model):
 class GRU(base.MachineTranslationModel):
     """Gru with Bahdanau attention."""
 
-    def __init__(self, input_vocab_size: int, output_vocab_size: int):
+    def __init__(
+        self,
+        input_vocab_size: int,
+        output_vocab_size: int,
+        expand_dims: int,
+        layers_size: int,
+        dropout: int,
+    ):
         """Create the gru model."""
         super().__init__(NAME)
         self.input_vocab_size = input_vocab_size

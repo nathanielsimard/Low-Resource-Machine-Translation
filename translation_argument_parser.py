@@ -13,13 +13,13 @@ def parse_args():
         "--checkpoint", help="The checkpoint to load before training.", required=True,
     )
     parser.add_argument(
-        "--text_encoder", help="Text Encoder type", default="word", type=str
+        "--text_encoder", help="Text Encoder type", type=str, required=True
     )
     parser.add_argument(
         "--model", help=f"Name of the model to run", type=str, required=True,
     )
     parser.add_argument(
-        "--vocab_size", help="Size of the vocabulary", default=30000, type=int
+        "--vocab_size", help="Size of the vocabulary", type=int, required=True,
     )
     parser.add_argument(
         "--message", help="Message to translate", type=str, required=True

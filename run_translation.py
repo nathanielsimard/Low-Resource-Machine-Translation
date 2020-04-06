@@ -25,8 +25,8 @@ def translate(args):
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
     model.load(str(args.checkpoint))
-    message = preprocessing.add_start_end_token([args.message])
-    x = tf.convert_to_tensor(train_dl.encoder_input.encode(message))
+    message = preprocessing.add_start_end_token([args.message])[0]
+    x = tf.convert_to_tensor([train_dl.encoder_input.encode(message)])
 
     pred = model.translate(x, train_dl.encoder_input)
     pred_message = train_dl.encoder_target.decode(pred)
