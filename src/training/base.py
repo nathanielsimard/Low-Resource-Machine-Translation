@@ -139,10 +139,10 @@ class BasicMachineTranslationTraining(Training):
 
                 if Metrics.BLEU in self.metrics:
                     self._record_bleu(epoch, train_path, valid_path)
+                self.model.save(epoch)
 
             self._update_progress(epoch)
 
-            self.model.save(epoch)
             # self.history.save(directory + f"/history-{epoch}")
 
     # @tf.function
@@ -175,9 +175,9 @@ class BasicMachineTranslationTraining(Training):
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size=16, padded_shapes=self.model.padded_shapes)
+            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
         ):
-            outputs = self.model(inputs, training=False)
+            outputs = self.model(inputs, targets, training=False)
             # valid_predictions += self.model.predictions(
             #    outputs, self.valid_dataloader.encoder_target
             # )
@@ -189,7 +189,7 @@ class BasicMachineTranslationTraining(Training):
             metric = self.recorded_losses["valid"]
             metric(loss)
             logger.info(f"Batch #{i} : validation loss {metric.result()}")
-            break
+            # break
 
         return valid_predictions
 
