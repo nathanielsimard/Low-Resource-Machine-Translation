@@ -160,6 +160,8 @@ class BasicMachineTranslationTraining(Training):
             )
             # Calculate the loss and update the parameters
             loss = loss_fn(targets, outputs)
+
+        #variables = self.model.encoder.trainable_variables + self.model.decoder_output.trainable_variables
         gradients = tape.gradient(loss, self.model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
@@ -175,9 +177,9 @@ class BasicMachineTranslationTraining(Training):
         for i, (inputs, targets) in enumerate(
             dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
         ):
-            outputs = self.model.translate(inputs, self.encoder)
+            outputs = self.model.translate(inputs, self.model.encoder, self.valid_dataloader.encoder_target)
             valid_predictions += self.model.predictions(
-                outputs, self.valid_dataloader.encoder_target
+                outputs, self.valid_dataloader.encoder_target, logit=False
             )
 
             loss = loss_fn(targets, outputs)
@@ -243,8 +245,8 @@ def _generate_predictions(model, dataset, encoder, batch_size, loss_fn):
     for inputs, targets in dataset.padded_batch(
         batch_size, padded_shapes=model.padded_shapes
     ):
-        outputs = model.translate(inputs, encoder)
-        predictions += model.predictions(outputs, encoder)
+        outputs = model.translate(inputs, model.encoder, encoder)
+        predictions += model.predictions(outputs, encoder, logit=False)
 
         loss = loss_fn(targets, outputs)
 

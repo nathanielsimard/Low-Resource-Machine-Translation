@@ -71,35 +71,30 @@ class Transformer(base.MachineTranslationModel):
 
         return decoder_output
 
-    def translate(self, input_sequence: tf.Tensor, encoder: TextEncoder):
+    def translate(self, input_sequence: tf.Tensor, encoder_model, encoder_target):
         """Translation function for the test set."""
         batch_size = input_sequence.shape[0]
         # The first words of each sentence in the batch is the start of sample token.
-        words = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
-        )
-        last_words = words
 
         has_finish_predicting = False
         reach_max_seq_lenght = False
 
+        words = []
+
         # Always use the same mask because the decoder alway decode one word at a time.
-        en_output, en_alignments = encoder(tf.constant(input_sequence), training=False)
-        de_input = tf.constant([[encoder.start_of_sample_index]], dtype=tf.int64)
+        en_output, en_alignments = encoder_model(tf.constant(input_sequence), training=False)
+        de_input = tf.constant([[encoder_target.start_of_sample_index]], dtype=tf.int64)
         while not (has_finish_predicting or reach_max_seq_lenght):
             dec_output, de_bot_alignments, de_mid_alignments = self.decoder(
                 de_input, en_output, training=False
             )
-            last_words = self.final_layer(dec_output)
-            last_words = tf.math.argmax(last_words, axis=2)
-            words = tf.concat([words, last_words], 1)
+            new_word = tf.expand_dims(tf.argmax(dec_output, -1)[:, -1], axis=1)
+            new_word = new_word.numpy()[0][0]
 
+            words.append(new_word)
             # Compute the end condition of the while loop.
-            end_of_sample = (
-                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
-            )
-            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
-            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+            has_finish_predicting = new_word == encoder_target.end_of_sample_index
+            reach_max_seq_lenght = len(words) >= MAX_SEQ_LENGHT
 
         return words
 

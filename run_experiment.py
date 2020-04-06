@@ -327,7 +327,7 @@ def main():
         tf.random.set_seed(args.seed)
 
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=True, reduction="none"
+        from_logits=False, reduction="none"
     )
 
     def loss_function(real, pred):
