@@ -13,24 +13,31 @@ logger = logging.create_logger(__name__)
 
 def translate(args):
     """Translate user's input."""
-    text_encoder_type = TextEncoderType(args.text_encoder)
     # Used to load the train text encoders.
+    text_encoder_type = TextEncoderType(args.text_encoder)
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
         file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
     )
+    encoder_input = train_dl.encoder_input
+    encoder_target = train_dl.encoder_target
+
+    # Load the model.
     model = models.find(
-        args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
+        args, encoder_input.vocab_size, encoder_target.vocab_size
     )
     model.load(str(args.checkpoint))
+
+    # Create the message to translate.
     message = preprocessing.add_start_end_token([args.message])[0]
     x = tf.convert_to_tensor([train_dl.encoder_input.encode(message)])
 
-    pred = model.translate(x, train_dl.encoder_input)
-    pred_message = train_dl.encoder_target.decode(pred)
-    print(f"Translation is {pred_message}")
+    # Translate the message.
+    translated = model.translate(x, encoder_target)
+    translated_message = model.predictions(translated, encoder_target, logit=False)
+    logger.info(f"Translation is {translated_message}")
 
 
 def main():
