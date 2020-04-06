@@ -73,16 +73,16 @@ class Transformer(base.MachineTranslationModel):
 
         return decoder_output
 
-    def translate3(self, x: Tuple[tf.Tensor, tf.Tensor], tokenizer: TextEncoder):
+    def translate3(self, x: tf.Tensor, tokenizer: TextEncoder):
         # if test_source_text is None:
         #    test_source_text = raw_data_en[np.random.choice(len(raw_data_en))]
         # print(test_source_text)
         # test_source_seq = en_tokenizer.texts_to_sequences([test_source_text])
-        batch_size = x[0].shape[0]
+        batch_size = x.shape[0]
         MAX_SEQ = 120
         out_words = np.zeros((batch_size, MAX_SEQ))
         # for j in range(0, batch_size):
-        test_source_seq = x[0]
+        test_source_seq = x
         # print(test_source_seq)
         # test_source_seq = tf.expand_dims(test_source_seq, axis=1)
         en_output, en_alignments = self.encoder(
