@@ -99,7 +99,13 @@ def punctuation_training(args, loss_fn):
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
+<<<<<<< Updated upstream
     training = Training(model, train_dl, valid_dl, [])
+=======
+    training = BasicMachineTranslationTraining(
+        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC]
+    )
+>>>>>>> Stashed changes
     training.run(
         loss_fn,
         optim,
@@ -322,7 +328,7 @@ def main():
         tf.random.set_seed(args.seed)
 
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=True, reduction="none"
+        from_logits=False, reduction="none"
     )
 
     def loss_function(real, pred):
@@ -332,7 +338,7 @@ def main():
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
 
-        return tf.reduce_mean(loss_)
+        return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
     try:
         logger.info(f"Executing task {args.task}.")

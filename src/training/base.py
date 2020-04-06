@@ -65,6 +65,7 @@ class Metrics(enum.Enum):
     """
 
     BLEU = "bleu"
+    ABSOLUTE_ACC = "absolute accuracy"
 
 
 def test(
