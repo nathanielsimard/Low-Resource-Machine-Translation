@@ -57,8 +57,12 @@ class MachineTranslationModel(Model, abc.ABC):
 
         if logit:
             sentences = np.argmax(sentences.numpy(), axis=2)
-
-        sentences = [encoder.decode(sentence) for sentence in sentences]
+            sentences = [encoder.decode(sentence) for sentence in sentences]
+        else:
+            text_sentences = []
+            for i in range(0, sentences.shape[0]):
+                text_sentences += [encoder.decode(sentences[i])]
+            sentences = text_sentences
 
         return _clean_tokens(sentences)
 
