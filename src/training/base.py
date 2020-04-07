@@ -127,13 +127,14 @@ class BasicMachineTranslationTraining(Training):
                     inputs, targets, i, optimizer, loss_fn
                 )
 
-            valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
-
-            train_path = os.path.join(directory, f"train-{epoch}")
             valid_path = os.path.join(directory, f"valid-{epoch}")
 
-            write_text(train_predictions, train_path)
+            valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
             write_text(valid_predictions, valid_path)
+
+            train_path = os.path.join(directory, f"train-{epoch}")
+
+            write_text(train_predictions, train_path)
 
             if Metrics.BLEU in self.metrics:
                 self._record_bleu(epoch, train_path, valid_path)
@@ -182,26 +183,26 @@ class BasicMachineTranslationTraining(Training):
                 outputs, self.valid_dataloader.encoder_target, logit=False
             )
 
-            loss = loss_fn(targets, outputs)
-            metric = self.recorded_losses["valid"]
-            metric(loss)
-            logger.info(f"Batch #{i} : validation loss {metric.result()}")
+            #loss = loss_fn(targets, outputs)
+            #metric = self.recorded_losses["valid"]
+            # metric(loss)
+            # logger.info(f"Batch #{i} : validation loss {metric.result()}")
 
         return valid_predictions
 
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]
-        valid_metric = self.recorded_losses["valid"]
+        #valid_metric = self.recorded_losses["valid"]
 
         logger.info(
-            f"Epoch: {epoch}, Train loss: {train_metric.result()}, Valid loss: {valid_metric.result()} "
+            f"Epoch: {epoch}, Train loss: {train_metric.result()}, Valid loss: na "
         )
 
         # Reset the cumulative recorded_losses after each epoch
         self.history.record("train_loss", train_metric.result())
-        self.history.record("valid_loss", valid_metric.result())
+        #self.history.record("valid_loss", valid_metric.result())
         train_metric.reset_states()
-        valid_metric.reset_states()
+        # valid_metric.reset_states()
 
     def _record_bleu(self, epoch, train_path, valid_path):
         train_bleu = compute_bleu(train_path, self.train_dataloader.file_name_target)

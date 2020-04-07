@@ -79,29 +79,29 @@ class Transformer(base.MachineTranslationModel):
         has_finish_predicting = False
         reach_max_seq_lenght = False
 
-        words = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder_target.start_of_sample_index
-        )
+        # words = (
+        #   tf.zeros([batch_size, 1], dtype=tf.int64) + encoder_target.start_of_sample_index
+        # )
 
         # Always use the same mask because the decoder alway decode one word at a time.
-        en_output, en_alignments = encoder_model(tf.constant(input_sequence), training=False)
-        de_input = tf.constant([[encoder_target.start_of_sample_index] * 16], dtype=tf.int64)
+        en_output, en_alignments = self.encoder(tf.constant(input_sequence), training=False)
+        de_input = tf.zeros([batch_size, 1], dtype=tf.int64) + encoder_target.start_of_sample_index
+        #de_input = tf.constant([[encoder_target.start_of_sample_index] * batch_size], dtype=tf.int64)
         while not (has_finish_predicting or reach_max_seq_lenght):
             dec_output, de_bot_alignments, de_mid_alignments = self.decoder(
                 de_input, en_output, training=False
             )
-            new_word = tf.argmax(dec_output, -1)
-            new_word = new_word.numpy()[0]
+            new_word = tf.argmax(dec_output, -1)[:, -1]
 
-            words = tf.concat([words, np.transpose([new_word])], 1)
+            de_input = tf.concat([de_input, np.transpose([new_word])], 1)
             # Compute the end condition of the while loop.
             end_of_sample = (
                 np.zeros([batch_size, 1], dtype=np.int64) + encoder_target.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(new_word, end_of_sample)
-            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+            reach_max_seq_lenght = de_input.shape[1] >= MAX_SEQ_LENGHT
 
-        return words
+        return de_input
 
     @property
     def padded_shapes(self):
