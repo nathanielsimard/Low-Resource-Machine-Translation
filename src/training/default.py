@@ -70,8 +70,6 @@ class Training(base.Training):
         else:
             checkpoint = 0
 
-        print("wth")
-
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
             print("wth2")
@@ -130,8 +128,11 @@ class Training(base.Training):
     def _train_step(
         self, inputs, targets,
     ):
-        target_inputs = targets[:-1]
-        targets_true = targets[1:]
+
+        target_inputs = targets[:, :-1]
+        print(target_inputs.shape)
+        targets_true = targets[:, 1:]
+        print(targets_true.shape)
         with tf.GradientTape() as tape:
             outputs = self.model(inputs, target_inputs, training=True)
             # Calculate the loss and update the parameters

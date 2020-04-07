@@ -56,6 +56,7 @@ class Transformer(base.MachineTranslationModel):
 
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
+    # @tf.function
     def call(self, inputs_en: tf.Tensor, inputs_fr: tf.Tensor, training=False):
         """Forward pass of the Transformer."""
         enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(
