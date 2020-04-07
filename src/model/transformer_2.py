@@ -12,7 +12,7 @@ from src.text_encoder import TextEncoder
 # The more detailed implementation can be found @ https://www.tensorflow.org/tutorials/text/transformer
 
 NAME = "transformer-2"
-MAX_SEQ_LENGHT = 20
+MAX_SEQ_LENGHT = 100
 
 
 class Transformer(base.MachineTranslationModel):
