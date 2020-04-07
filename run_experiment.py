@@ -4,13 +4,13 @@ import random
 
 import tensorflow as tf
 
+import models
 from src import dataloader, logging
 from src.text_encoder import TextEncoderType
 from src.training import base
 from src.training.back_translation import BackTranslationTraining
 from src.training.default import Training
 from src.training.pretraining import Pretraining
-import models
 
 logger = logging.create_logger(__name__)
 
@@ -39,7 +39,9 @@ def punctuation_training(args, loss_fn):
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
+    training = Training(
+        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU]
+    )
     training.run(
         loss_fn,
         optim,
@@ -270,7 +272,7 @@ def main():
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
 
-        return tf.reduce_mean(loss_)
+        return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
     try:
         logger.info(f"Executing task {args.task}.")

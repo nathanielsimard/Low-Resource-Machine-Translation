@@ -1,8 +1,8 @@
-from src.model import gru_attention, lstm, lstm_luong_attention, transformer, masked_lm
 import hashlib
 from collections import OrderedDict
 
 from src import logging
+from src.model import gru_attention, lstm, lstm_luong_attention, masked_lm, transformer
 
 logger = logging.create_logger(__name__)
 
