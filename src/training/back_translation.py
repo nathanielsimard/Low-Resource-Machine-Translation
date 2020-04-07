@@ -79,7 +79,11 @@ class BackTranslationTraining(base.Training):
         self.model_1.title = self.model_1.title + "-model-1-post-pretraining"
         self.model_2.title = self.model_2.title + "-model-2-post-pretraining"
 
-        for epoch in range(1, num_epoch + 1):
+        current_epoch = min(
+            self.load_most_recent(self.model_1), self.load_most_recent(self.model_2)
+        )
+
+        for epoch in range(current_epoch, num_epoch + 1):
             logger.info(
                 "Creating updated dataloader by generating new samples "
                 + "with model2 for lang1 -> lang2"
@@ -127,6 +131,15 @@ class BackTranslationTraining(base.Training):
             )
             training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
             self.model_2.save(str(epoch))
+
+        def load_most_recent(self, model, num_epoch):
+            for instance in range(num_epoch, 1, -1):
+                try:
+                    self.model.load(str(instance))
+                    return instance
+                except FileNotFoundError:
+                    continue
+            return 1
 
 
 def create_updated_dataloader(
