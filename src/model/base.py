@@ -49,7 +49,6 @@ class MachineTranslationModel(Model, abc.ABC):
     Each model must implement the translate method.
     """
 
-    @tf.function
     def predictions(
         self, outputs: tf.Tensor, encoder: TextEncoder, logit=True
     ) -> List[str]:
@@ -76,7 +75,6 @@ class MachineTranslationModel(Model, abc.ABC):
         pass
 
 
-@tf.function
 def _clean_tokens(sentences):
     result = []
     for sentence in sentences:

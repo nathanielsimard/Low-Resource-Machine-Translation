@@ -82,8 +82,10 @@ class Training(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                outputs, predictions, loss = self._train_step(inputs, targets)
-                train_predictions += predictions
+                outputs, loss = self._train_step(inputs, targets)
+                train_predictions += self.model.predictions(
+                    outputs, self.train_dataloader.encoder_target
+                )
                 metric = self.recorded_losses["train"]
                 metric(loss)
                 logger.info(f"Batch #{i} : training loss: {metric.result()}")
@@ -100,8 +102,10 @@ class Training(base.Training):
                 )
             ):
 
-                outputs, predictions, loss = self._valid_step(inputs, targets)
-                valid_predictions += predictions
+                outputs, loss = self._valid_step(inputs, targets)
+                valid_predictions += self.model.predictions(
+                    outputs, self.valid_dataloader.encoder_target
+                )
                 metric = self.recorded_losses["valid"]
                 metric(loss)
                 logger.info(f"Batch #{i} : validation loss {metric.result()}")
@@ -130,26 +134,19 @@ class Training(base.Training):
     ):
         with tf.GradientTape() as tape:
             outputs = self.model(inputs, training=True)
-            # Calculate the training prediction tokens
-            predictions = self.model.predictions(
-                outputs, self.train_dataloader.encoder_target
-            )
             # Calculate the loss and update the parameters
             loss = self.loss_fn(targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        return outputs, predictions, loss
+        return outputs, loss
 
     @tf.function
     def _valid_step(self, inputs, targets):
         outputs = self.model(inputs, training=False)
-        valid_predictions = self.model.predictions(
-            outputs, self.valid_dataloader.encoder_target
-        )
         loss = self.loss_fn(targets, outputs)
 
-        return outputs, valid_predictions, loss
+        return outputs, loss
 
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]
