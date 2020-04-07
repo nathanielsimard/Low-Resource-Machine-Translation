@@ -20,6 +20,8 @@ class Training(base.Training):
         model,
         train_dataloader: AlignedDataloader,
         valid_dataloader: AlignedDataloader,
+        optim: tf.keras.optimizers,
+        loss_fn: tf.keras.losses,
         metrics: List[base.Metrics],
     ):
         """Create BasicMachineTranslationTraining."""
@@ -31,16 +33,19 @@ class Training(base.Training):
             "train": tf.keras.metrics.Mean("train_loss", tf.float32),
             "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
+        if base.Metrics.ABSOLUTE_ACC in self.metrics:
+            self.accuracies = {
+                "train": tf.keras.metrics.Mean("train_accuracy", tf.float32),
+                "valid": tf.keras.metrics.Mean("valid_accuracy", tf.float32),
+            }
+
+        self.loss_fn = loss_fn
+        self.optimizer = optim
 
         self.history = base.History()
 
     def run(
-        self,
-        loss_fn: tf.keras.losses,
-        optimizer: tf.keras.optimizers,
-        batch_size: int,
-        num_epoch: int,
-        checkpoint=None,
+        self, batch_size: int, num_epoch: int, checkpoint=None,
     ):
         """Training session."""
         logger.info("Creating datasets...")
@@ -65,18 +70,43 @@ class Training(base.Training):
 
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
-
             for i, (inputs, targets) in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-
-                train_predictions += self._train_step(
-                    inputs, targets, i, batch_size, optimizer, loss_fn
+                outputs, loss = self._train_step(inputs, targets)
+                train_predictions += self.model.predictions(
+                    outputs, self.train_dataloader.encoder_target
                 )
+                metric = self.recorded_losses["train"]
+                metric(loss)
+                logger.info(f"Batch #{i} : training loss: {metric.result()}")
 
-            valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
+                if base.Metrics.ABSOLUTE_ACC in self.metrics:
+                    other_metric = self.accuracies["train"]
+                    acc = self._record_abs_acc(outputs, targets, i, batch_size, "train")
+                    other_metric(acc)
+
+            valid_predictions: List[str] = []
+            for i, (inputs, targets) in enumerate(
+                valid_dataset.padded_batch(
+                    batch_size, padded_shapes=self.model.padded_shapes
+                )
+            ):
+
+                outputs, loss = self._valid_step(inputs, targets)
+                valid_predictions += self.model.predictions(
+                    outputs, self.valid_dataloader.encoder_target
+                )
+                metric = self.recorded_losses["valid"]
+                metric(loss)
+                logger.info(f"Batch #{i} : validation loss {metric.result()}")
+
+                if base.Metrics.ABSOLUTE_ACC in self.metrics:
+                    other_metric = self.accuracies["valid"]
+                    acc = self._record_abs_acc(outputs, targets, i, batch_size, "valid")
+                    other_metric(acc)
 
             train_path = os.path.join(directory, f"train-{epoch}")
             valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -92,56 +122,21 @@ class Training(base.Training):
             self.model.save(epoch)
             self.history.save(directory + f"/history-{epoch}")
 
-    def _train_step(
-        self,
-        inputs,
-        targets,
-        batch: int,
-        batch_size: int,
-        optimizer: tf.keras.optimizers,
-        loss_fn: tf.keras.losses,
-    ):
+    def _train_step(self, inputs, targets):
         with tf.GradientTape() as tape:
             outputs = self.model(inputs, training=True)
-            # Calculate the training prediction tokens
-            predictions = self.model.predictions(
-                outputs, self.train_dataloader.encoder_target
-            )
             # Calculate the loss and update the parameters
-            loss = loss_fn(targets, outputs)
+            loss = self.loss_fn(targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        metric = self.recorded_losses["train"]
-        metric(loss)
+        return outputs, loss
 
-        if base.Metrics.ABSOLUTE_ACC in self.metrics:
-            self._record_abs_acc(outputs, targets, batch, batch_size, "train")
+    def _valid_step(self, inputs, targets):
+        outputs = self.model(inputs, training=False)
+        loss = self.loss_fn(targets, outputs)
 
-        logger.info(f"Batch #{batch} : training loss {metric.result()}")
-
-        return predictions
-
-    def _valid_step(self, dataset, loss_fn, batch_size):
-        valid_predictions: List[str] = []
-        for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
-        ):
-            outputs = self.model(inputs, training=False)
-            valid_predictions += self.model.predictions(
-                outputs, self.valid_dataloader.encoder_target
-            )
-
-            loss = loss_fn(targets, outputs)
-            metric = self.recorded_losses["valid"]
-            metric(loss)
-
-            if base.Metrics.ABSOLUTE_ACC in self.metrics:
-                self._record_abs_acc(outputs, targets, i, batch_size, "valid")
-
-            logger.info(f"Batch #{i} : validation loss {metric.result()}")
-
-        return valid_predictions
+        return outputs, loss
 
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]
@@ -180,5 +175,7 @@ class Training(base.Training):
             .sum()
             / batch_size
         )
-        self.history.record(name + "_abs_acc", absolute_accuracy)
+
         logger.info(f"Batch #{batch} : {name} accuracy {absolute_accuracy*100} %")
+
+        return absolute_accuracy
