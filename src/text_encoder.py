@@ -17,6 +17,7 @@ class TextEncoderType(enum.Enum):
 
     SUBWORD = "subword"
     WORD = "word"
+    TOKENIZED = "tokenized"
 
 
 class TextEncoder(abc.ABC):
@@ -78,6 +79,62 @@ class TextEncoder(abc.ABC):
     def vocabulary(self) -> List[str]:
         """Return all the word tokens in the vocabulary."""
         pass
+
+
+class TokenizedTextEncoder(TextEncoder):
+    """Text Encoder for pre-tokenized text """
+
+    def __init__(self, vocab_size: int, corpus: List[str]):
+        """Create the encoder using the keras tokenizer."""
+        logger.info("Creating new word text encoder.")
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
+            num_words=vocab_size,
+            oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN,
+            lower=False,
+            filters="",
+        )
+        self.tokenizer.fit_on_texts(corpus)
+        self._vocab_size = vocab_size
+        max_vocab_size = len(self.tokenizer.index_word.keys())
+        if self._vocab_size > max_vocab_size:
+            self._vocab_size = max_vocab_size
+
+        self.cls = WordTextEncoder
+
+    def encode(self, text: str) -> List[int]:
+        """Encode a text into numbers."""
+        return self.tokenizer.texts_to_sequences([text])[0]
+
+    def decode(self, sequences: List[int]) -> str:
+        """Decode numbers into text."""
+        return self.tokenizer.sequences_to_texts([sequences])[0]
+
+    @classmethod
+    def type(cls):
+        """Type of the text encoder."""
+        return TextEncoderType.WORD
+
+    @property
+    def vocab_size(self):
+        """The vocabulary size handled by the encoder."""
+        return self._vocab_size
+
+    @property
+    def start_of_sample_index(self) -> int:
+        """The index representing the start of sample token."""
+        return self.tokenizer.word_index[preprocessing.START_OF_SAMPLE_TOKEN]
+
+    @property
+    def end_of_sample_index(self) -> int:
+        """The index representing the end of sample token."""
+        return self.tokenizer.word_index[preprocessing.END_OF_SAMPLE_TOKEN]
+
+    def vocabulary(self) -> List[str]:
+        """Return all the word tokens in the vocabulary."""
+        word_tokens = []
+        for i in range(1, self.vocab_size + 1):
+            word_tokens.append(self.tokenizer.index_word[i])
+        return word_tokens
 
 
 class WordTextEncoder(TextEncoder):
@@ -195,26 +252,32 @@ class SubWordTextEncoder(TextEncoder):
 
 
 def create_encoder(
-    file_name, corpus, vocab_size, text_encoder_type: TextEncoderType, cache_dir=None,
+    file_name,
+    corpus,
+    vocab_size,
+    text_encoder_type: TextEncoderType,
+    cache_dir=None,
+    no_cache=False,
 ):
     """Create a text encoder of the given type to encode and decode text from and into tensor."""
     directory = os.path.join(cache_dir, file_name)
-    os.makedirs(directory, exist_ok=True)
 
     clazz: Any = None
     if text_encoder_type == TextEncoderType.WORD:
         clazz = WordTextEncoder
     elif text_encoder_type == TextEncoderType.SUBWORD:
         clazz = SubWordTextEncoder
+    elif text_encoder_type == TextEncoderType.TOKENIZED:
+        clazz = TokenizedTextEncoder
     else:
         raise Exception(f"Text Encoder Type {text_encoder_type} is not supported.")
 
-    return _create_text_encoder(
-        corpus,
-        vocab_size,
-        clazz,
-        cache_file=os.path.join(directory, str(vocab_size)).format(),
-    )
+    cache_file = os.path.join(directory, str(vocab_size)).format()
+    if no_cache:
+        cache_file = None
+    else:
+        os.makedirs(directory, exist_ok=True)
+    return _create_text_encoder(corpus, vocab_size, clazz, cache_file=cache_file,)
 
 
 def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=None):

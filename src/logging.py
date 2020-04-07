@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from logging import StreamHandler
 
 handler = None
 level = None
@@ -25,6 +26,7 @@ def initialize(experiment_name="experiment", debug=False):
 
 def _initialize_handler(file_name):
     global handler
+    global streamhandler
     formatter = logging.Formatter(
         "[%(asctime)s - %(levelname)s - %(name)s] %(message)s"
     )
@@ -32,6 +34,8 @@ def _initialize_handler(file_name):
     handler = RotatingFileHandler(
         file_name, mode="a", maxBytes=536_870_912, backupCount=4, encoding=None
     )
+    streamhandler = StreamHandler()
+
     handler.setFormatter(formatter)
 
 
@@ -54,5 +58,6 @@ def create_logger(name: str) -> logging.Logger:
 
     logger = logging.getLogger(name)
     logger.addHandler(handler)  # type: ignore
+    logger.addHandler(streamhandler)
     logger.setLevel(level)  # type: ignore
     return logger

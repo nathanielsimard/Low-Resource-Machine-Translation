@@ -86,6 +86,7 @@ def punctuation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_valid.en",
@@ -95,6 +96,7 @@ def punctuation_training(args, loss_fn):
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -122,6 +124,7 @@ def default_training(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_valid,
@@ -131,6 +134,7 @@ def default_training(args, loss_fn):
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -155,6 +159,7 @@ def pretraining(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     valid_dl = dataloader.UnalignedDataloader(
         file_name="data/splitted_english_data/sorted_clean_valid.en",
@@ -162,6 +167,7 @@ def pretraining(args, loss_fn):
         text_encoder_type=text_encoder_type,
         encoder=train_dl.encoder,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     model = find_model(args, train_dl.encoder.vocab_size, train_dl.encoder.vocab_size)
     pretraining = Pretraining(model, train_dl, valid_dl)
@@ -185,6 +191,7 @@ def back_translation_training(args, loss_fn):
         args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     logger.info(f"English vocab size: {train_dl.encoder.vocab_size}")
 
@@ -194,6 +201,7 @@ def back_translation_training(args, loss_fn):
         args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
     logger.info(f"French vocab size: {train_dl_reverse.encoder.vocab_size}")
 
@@ -217,6 +225,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl.encoder_input,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
 
     logger.info("Creating valid aligned dataloader ...")
@@ -228,6 +237,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl.encoder_target,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
 
     logger.info("Creating reversed valid aligned dataloader ...")
@@ -239,6 +249,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl_reverse.encoder_target,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        no_cache=args.no_cache,
     )
 
     model = find_model(
@@ -349,6 +360,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except ValueError:
+    except ValueError as e:
         # Logging is already done
+        print(e)
         pass

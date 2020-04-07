@@ -19,6 +19,7 @@ def parse_args():
         default="default-training",
         type=str,
     )
+
     parser.add_argument(
         "--seed", help="Seed for the experiment", default=1234, type=int
     )
@@ -31,12 +32,16 @@ def parse_args():
         action="store_true",
     )
     parser.add_argument(
+        "--no_cache", help="Disable tokenized caching.", action="store_true"
+    )
+    parser.add_argument(
         "--checkpoint",
         help="The checkpoint to load before training.",
         default=None,
         type=int,
     )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
+
     parser.add_argument(
         "--text_encoder", help="Text Encoder type", default="word", type=str
     )
