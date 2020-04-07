@@ -101,13 +101,9 @@ def pretraining(args, loss_fn):
         max_seq_length=args.max_seq_length,
     )
     model = models.find(args, train_dl.encoder.vocab_size, train_dl.encoder.vocab_size)
-    pretraining = Pretraining(model, train_dl, valid_dl)
+    pretraining = Pretraining(model, train_dl, valid_dl, loss_fn, optim)
     pretraining.run(
-        loss_fn,
-        optim,
-        batch_size=args.batch_size,
-        num_epoch=args.epochs,
-        checkpoint=args.checkpoint,
+        batch_size=args.batch_size, num_epoch=args.epochs, checkpoint=args.checkpoint,
     )
 
 
