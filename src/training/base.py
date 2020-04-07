@@ -6,8 +6,6 @@ import subprocess
 from collections import defaultdict
 from typing import Dict, List
 
-import tensorflow as tf
-
 from src import logging
 from src.dataloader import AlignedDataloader
 from src.model import base
