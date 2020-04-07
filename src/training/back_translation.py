@@ -80,7 +80,10 @@ class BackTranslationTraining(base.Training):
         self.model_2.title = self.model_2.title + "-model-2-post-pretraining"
 
         current_epoch = min(
-            self.load_most_recent(self.model_1), self.load_most_recent(self.model_2)
+            [
+                self._load_most_recent(self.model_1, num_epoch),
+                self._load_most_recent(self.model_2, num_epoch),
+            ]
         )
 
         for epoch in range(current_epoch, num_epoch + 1):
@@ -132,14 +135,14 @@ class BackTranslationTraining(base.Training):
             training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
             self.model_2.save(str(epoch))
 
-        def load_most_recent(self, model, num_epoch):
-            for instance in range(num_epoch, 1, -1):
-                try:
-                    self.model.load(str(instance))
-                    return instance
-                except FileNotFoundError:
-                    continue
-            return 1
+    def _load_most_recent(self, model, num_epoch):
+        for instance in range(num_epoch, 1, -1):
+            try:
+                model.load(str(instance))
+                return instance
+            except FileNotFoundError:
+                continue
+        return 1
 
 
 def create_updated_dataloader(
