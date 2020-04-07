@@ -8,7 +8,6 @@ import numpy as np
 from src import logging
 from src.dataloader import AlignedDataloader
 from src.training import base
-from typing import Tuple
 
 logger = logging.create_logger(__name__)
 """
@@ -132,10 +131,12 @@ class Training(base.Training):
     def _train_step(
         self, inputs, targets,
     ):
+        target_inputs = targets[:-1]
+        targets_true = targets[1:]
         with tf.GradientTape() as tape:
-            outputs = self.model(inputs, training=True)
+            outputs = self.model(inputs, target_inputs, training=True)
             # Calculate the loss and update the parameters
-            loss = self.loss_fn(targets, outputs)
+            loss = self.loss_fn(targets_true, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
@@ -143,8 +144,10 @@ class Training(base.Training):
 
     @tf.function
     def _valid_step(self, inputs, targets):
-        outputs = self.model(inputs, training=False)
-        loss = self.loss_fn(targets, outputs)
+        target_inputs = targets[:-1]
+        targets_true = targets[1:]
+        outputs = self.model(inputs, target_inputs, training=False)
+        loss = self.loss_fn(targets_true, outputs)
 
         return outputs, loss
 

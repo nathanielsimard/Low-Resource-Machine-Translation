@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -58,16 +56,18 @@ class Transformer(base.MachineTranslationModel):
 
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
-    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
+    def call(self, inputs_en: tf.Tensor, inputs_fr: tf.Tensor, training=False):
         """Forward pass of the Transformer."""
-        enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(x[0], x[1])
+        enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(
+            inputs_en, inputs_fr
+        )
         enc_output = self.encoder(
-            x[0], training, enc_padding_mask
+            inputs_en, training, enc_padding_mask
         )  # (batch_size, inp_seq_len, d_model)
 
         # dec_output.shape == (batch_size, tar_seq_len, d_model)
         dec_output, attention_weights = self.decoder(
-            x[1], enc_output, training, look_ahead_mask, dec_padding_mask
+            inputs_fr, enc_output, training, look_ahead_mask, dec_padding_mask
         )
 
         final_output = self.final_layer(
@@ -114,14 +114,6 @@ class Transformer(base.MachineTranslationModel):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
-
-    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
-
-        def preprocess(input_sentence, output_sentence):
-            return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
-
-        return dataset.map(preprocess)
 
 
 class Decoder(layers.Layer):

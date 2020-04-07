@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import tensorflow as tf
 
 from src.model import base
@@ -131,22 +129,22 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
         self.attention_layer = LuongAttention(10)
         self.decoder = Decoder(output_vocab_size, 256, 512)
 
-    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
+    def call(self, inputs_en: tf.Tensor, inputs_fr: tf.Tensor, training=False):
         """Call the foward past."""
-        batch_size = x[0].shape[0]
+        batch_size = inputs_en.shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
         encoder_output, encoder_state_h, encoder_state_c = self.encoder(
-            x[0], encoder_hidden
+            inputs_en, encoder_hidden
         )
 
         decoder_state_h, decoder_state_c = encoder_state_h, encoder_state_c
         predictions = None
 
-        seq_lenght = x[1].shape[1]
+        seq_lenght = inputs_fr.shape[1]
         for t in range(seq_lenght):
             # The decoder input is the word at timestep t
-            previous_target_word = x[1][:, t]
+            previous_target_word = inputs_fr[:, t]
             decoder_input = tf.expand_dims(previous_target_word, 1)
 
             # Call the decoder and update the decoder hidden state
@@ -172,11 +170,3 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
-
-    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
-
-        def preprocess(input_sentence, output_sentence):
-            return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
-
-        return dataset.map(preprocess)

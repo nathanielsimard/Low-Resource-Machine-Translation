@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import tensorflow as tf
@@ -82,15 +82,18 @@ class Lstm(base.MachineTranslationModel):
         self.encoder = Encoder(input_vocab_size)
         self.decoder = Decoder(output_vocab_size)
 
-    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False) -> tf.Tensor:
+    def call(
+        self, inputs_en: tf.Tensor, inputs_fr: tf.Tensor, training=False
+    ) -> tf.Tensor:
         """Call the foward past.
 
         Args:
-            x: Inputs of the model (encoder_input, decoder_input).
+            inputs_en: Inputs of the model (encoder_input)
+            inputs_fr:  Inputs of the model (decoder_input).
             training: If the model is training.
         """
-        states = self.encoder(x[0])
-        x, _ = self.decoder(x[1], states)
+        states = self.encoder(inputs_en)
+        x, _ = self.decoder(inputs_fr, states)
 
         return x
 
@@ -130,11 +133,3 @@ class Lstm(base.MachineTranslationModel):
             reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
 
         return words
-
-    def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
-
-        def preprocess(input_sentence, output_sentence):
-            return ((input_sentence, output_sentence[:-1]), output_sentence[1:])
-
-        return dataset.map(preprocess)
