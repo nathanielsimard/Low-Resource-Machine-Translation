@@ -12,7 +12,7 @@ from src.text_encoder import TextEncoder
 # The more detailed implementation can be found @ https://www.tensorflow.org/tutorials/text/transformer
 
 NAME = "transformer-2"
-MAX_SEQ_LENGHT = 250
+MAX_SEQ_LENGHT = 100
 
 
 class Transformer(base.MachineTranslationModel):
@@ -66,7 +66,7 @@ class Transformer(base.MachineTranslationModel):
         encoder_output, _ = self.encoder(input_sequence, encoder_mask=encoder_mask)
 
         decoder_output, _, _ = self.decoder(
-            target_sequence[:-1], encoder_output, encoder_mask=encoder_mask
+            target_sequence, encoder_output, encoder_mask=encoder_mask
         )
 
         return decoder_output
@@ -111,8 +111,16 @@ class Transformer(base.MachineTranslationModel):
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
 
-        def preprocess(input_sentence, output_sentence):
-            return (input_sentence, output_sentence)
+        def preprocess(input_sentence, target_in, target_out):
+            return (input_sentence, target_in, target_out)
+
+        return dataset.map(preprocess)
+
+    def preprocessing2(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
+
+        def preprocess(input_sentence, output):
+            return (input_sentence, output)
 
         return dataset.map(preprocess)
 

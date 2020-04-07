@@ -99,7 +99,7 @@ class BasicMachineTranslationTraining(Training):
         valid_dataset = self.valid_dataloader.create_dataset()
 
         train_dataset = self.model.preprocessing(train_dataset)
-        valid_dataset = self.model.preprocessing(valid_dataset)
+        valid_dataset = self.model.preprocessing2(valid_dataset)
 
         logger.info("Creating results directory...")
 
@@ -117,14 +117,14 @@ class BasicMachineTranslationTraining(Training):
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
 
-            for i, (inputs, targets) in enumerate(
+            for i, (inputs, targets_in, targets_out) in enumerate(
                 train_dataset.padded_batch(
-                    batch_size, padded_shapes=self.model.padded_shapes
+                    batch_size, padded_shapes=([None], [None], [None])
                 )
             ):
 
                 train_predictions += self._train_step(
-                    inputs, targets, i, optimizer, loss_fn
+                    inputs, targets_in, targets_out, i, optimizer, loss_fn
                 )
 
             valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -148,19 +148,20 @@ class BasicMachineTranslationTraining(Training):
     def _train_step(
         self,
         inputs,
-        targets,
+        targets_in,
+        targets_out,
         batch: int,
         optimizer: tf.keras.optimizers,
         loss_fn: tf.keras.losses,
     ):
         with tf.GradientTape() as tape:
-            outputs = self.model(inputs, targets, training=True)
+            outputs = self.model(inputs, targets_in, training=True)
             # Calculate the training prediction tokens
             predictions = self.model.predictions(
                 outputs, self.train_dataloader.encoder_target
             )
             # Calculate the loss and update the parameters
-            loss = loss_fn(targets[1:], outputs)
+            loss = loss_fn(targets_out, outputs)
 
         #variables = self.model.encoder.trainable_variables + self.model.decoder_output.trainable_variables
         gradients = tape.gradient(loss, self.model.trainable_variables)
@@ -176,7 +177,7 @@ class BasicMachineTranslationTraining(Training):
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
+            dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
         ):
             outputs = self.model.translate(inputs, self.model.encoder, self.valid_dataloader.encoder_target)
             valid_predictions += self.model.predictions(

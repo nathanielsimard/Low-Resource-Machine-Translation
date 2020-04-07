@@ -11,3 +11,17 @@ def add_start_end_token(corpus):
     return [
         f"{START_OF_SAMPLE_TOKEN} {token} {END_OF_SAMPLE_TOKEN}" for token in corpus
     ]
+
+
+def add_start_token(corpus):
+    """Add an indicater token for the beginning and the end of a text sample."""
+    return [
+        f"{START_OF_SAMPLE_TOKEN} {token}" for token in corpus
+    ]
+
+
+def add_end_token(corpus):
+    """Add an indicater token for the beginning and the end of a text sample."""
+    return [
+        f"{token} {END_OF_SAMPLE_TOKEN}" for token in corpus
+    ]

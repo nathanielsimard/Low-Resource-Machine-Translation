@@ -91,6 +91,7 @@ class WordTextEncoder(TextEncoder):
             oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN,
             filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
         )
+        corpus = [sentence + ' <end>' for sentence in corpus]
         self.tokenizer.fit_on_texts(corpus)
 
         self._vocab_size = vocab_size

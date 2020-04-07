@@ -109,6 +109,7 @@ class AlignedDataloader:
         self.corpus_input = corpus_input
         self.corpus_target = corpus_target
         self.max_seq_lenght = max_seq_lenght
+        self.training = training
 
         if self.corpus_input is None:
             self.corpus_input = read_file(file_name_input)
@@ -120,9 +121,13 @@ class AlignedDataloader:
             self.corpus_input = preprocessing.add_start_end_token(
                 reversed(self.corpus_input)
             )
-            self.corpus_target = preprocessing.add_start_end_token(
+            self.corpus_target_in = preprocessing.add_start_token(
                 reversed(self.corpus_target)
             )
+            self.corpus_target_out = preprocessing.add_end_token(
+                reversed(self.corpus_target)
+            )
+
         else:
             self.corpus_input = reversed(self.corpus_input)
             self.corpus_target = reversed(self.corpus_target)
@@ -139,7 +144,7 @@ class AlignedDataloader:
         if self.encoder_target is None:
             self.encoder_target = text_encoder.create_encoder(
                 file_name_target,
-                self.corpus_target,
+                self.corpus_target_in,
                 self.vocab_size,
                 text_encoder_type,
                 cache_dir=self.cache_dir,
@@ -147,39 +152,27 @@ class AlignedDataloader:
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
+        if self.training:
+            def gen():
+                for i, t_i, t_o in zip(self.corpus_input, self.corpus_target_in, self.corpus_target_out):
 
-        def gen():
-            for i, o in zip(self.corpus_input, self.corpus_target):
-                if self.max_seq_lenght is not None:
-                    i_drop_char_len = len(i) - self.max_seq_lenght
-                    o_drop_char_len = len(o) - self.max_seq_lenght
+                    encoder_input = self.encoder_input.encode(i)
+                    encoder_target_in = self.encoder_target.encode(t_i)
+                    encoder_target_out = self.encoder_target.encode(t_o)
 
-                    if i_drop_char_len > 0:
-                        i = (
-                            i[: self.max_seq_lenght]
-                            + " "
-                            + preprocessing.END_OF_SAMPLE_TOKEN
-                        )
-                        logger.info(
-                            f"{i_drop_char_len} characters were cut from the input line."
-                        )
+                    yield (encoder_input, encoder_target_in, encoder_target_out)
 
-                    if o_drop_char_len > 0:
-                        o = (
-                            o[: self.max_seq_lenght]
-                            + " "
-                            + preprocessing.END_OF_SAMPLE_TOKEN
-                        )
-                        logger.info(
-                            f"{o_drop_char_len} characters were cut from the output line."
-                        )
+            return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64, tf.int64))
+        else:
+            def gen():
+                for i, t_i in zip(self.corpus_input, self.corpus_target):
 
-                encoder_input = self.encoder_input.encode(i)
-                encoder_target = self.encoder_target.encode(o)
+                    encoder_input = self.encoder_input.encode(i)
+                    encoder_target_in = self.encoder_target.encode(t_i)
 
-                yield (encoder_input, encoder_target)
+                    yield (encoder_input, encoder_target_in)
 
-        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
+            return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
 
 
 def read_file(file_name: str) -> List[str]:

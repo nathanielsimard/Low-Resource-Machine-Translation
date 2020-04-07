@@ -162,6 +162,7 @@ def default_training(args, loss_fn):
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         max_seq_lenght=args.max_seq_lenght,
+        training=False
     )
     model = find_model(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
