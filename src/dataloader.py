@@ -118,7 +118,7 @@ class AlignedDataloader:
             self.corpus_target = read_file(file_name_target)
 
         if training:
-            self.corpus_input = reversed(self.corpus_input)
+            self.corpus_input = preprocessing.add_nothing(reversed(self.corpus_input))
 
             self.corpus_target_in = preprocessing.add_start_token(
                 reversed(self.corpus_target)
@@ -128,8 +128,8 @@ class AlignedDataloader:
             )
 
         else:
-            self.corpus_input = reversed(self.corpus_input)
-            self.corpus_target = reversed(self.corpus_target)
+            self.corpus_input = preprocessing.add_nothing(reversed(self.corpus_input))
+            self.corpus_target = preprocessing.add_nothing(reversed(self.corpus_target))
 
         if self.encoder_input is None:
             self.encoder_input = text_encoder.create_encoder(
