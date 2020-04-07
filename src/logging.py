@@ -6,6 +6,7 @@ from logging import StreamHandler
 
 handler = None
 level = None
+streamhandler = None
 
 
 def initialize(experiment_name="experiment", debug=False):
@@ -58,6 +59,6 @@ def create_logger(name: str) -> logging.Logger:
 
     logger = logging.getLogger(name)
     logger.addHandler(handler)  # type: ignore
-    logger.addHandler(streamhandler)
+    logger.addHandler(streamhandler)  # type: ignore
     logger.setLevel(level)  # type: ignore
     return logger

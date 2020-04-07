@@ -82,7 +82,7 @@ class TextEncoder(abc.ABC):
 
 
 class TokenizedTextEncoder(TextEncoder):
-    """Text Encoder for pre-tokenized text """
+    """Text Encoder for pre-tokenized text."""
 
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder using the keras tokenizer."""
@@ -274,14 +274,14 @@ def create_encoder(
 
     cache_file = os.path.join(directory, str(vocab_size)).format()
     if no_cache:
-        cache_file = None
+        cache_file = ""
     else:
         os.makedirs(directory, exist_ok=True)
     return _create_text_encoder(corpus, vocab_size, clazz, cache_file=cache_file,)
 
 
 def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=None):
-    if cache_file is None:
+    if cache_file == "":  # No cache file
         return clazz(vocab_size, text)
 
     try:

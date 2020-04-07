@@ -19,6 +19,7 @@ class UnalignedDataloader:
         encoder=None,
         corpus=None,
         max_seq_length=None,
+        no_cache=False,
     ):
         """Create the UnalignedDataloader.
 
@@ -44,6 +45,7 @@ class UnalignedDataloader:
                 self.vocab_size,
                 text_encoder_type,
                 cache_dir=self.cache_dir,
+                no_cache=no_cache,
             )
 
     def create_dataset(self) -> tf.data.Dataset:
@@ -83,6 +85,7 @@ class AlignedDataloader:
         corpus_input=None,
         corpus_target=None,
         max_seq_length=None,
+        no_cache=False,
     ):
         """Create dataset for translation.
 
@@ -97,6 +100,7 @@ class AlignedDataloader:
             corpus_input: The corpus lang1,
             corpus_target: the corpus lang2,
             max_seq_length: The maximum seuqnce lenght of a sample in both corpuses.
+            no_cache: disables caching.
         """
         self.file_name_input = file_name_input
         self.file_name_target = file_name_target
@@ -129,6 +133,7 @@ class AlignedDataloader:
                 self.vocab_size,
                 text_encoder_type,
                 cache_dir=self.cache_dir,
+                no_cache=no_cache,
             )
 
         if self.encoder_target is None:
@@ -138,6 +143,7 @@ class AlignedDataloader:
                 self.vocab_size,
                 text_encoder_type,
                 cache_dir=self.cache_dir,
+                no_cache=no_cache,
             )
 
     def create_dataset(self) -> tf.data.Dataset:
