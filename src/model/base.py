@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 import tensorflow as tf
 
-from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
+from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN, OUT_OF_SAMPLE_TOKEN
 from src.text_encoder import TextEncoder
 
 MODEL_BASE_DIR = "models"
@@ -82,7 +82,7 @@ def _clean_tokens(sentences):
     for sentence in sentences:
         new_sentence = []
         for word in sentence.split():
-            if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word):
+            if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word or OUT_OF_SAMPLE_TOKEN in word):
                 new_sentence.append(word)
 
             if END_OF_SAMPLE_TOKEN in word:
