@@ -132,7 +132,7 @@ class GRU(base.MachineTranslationModel):
         output_vocab_size: int,
         embedding_size: int,
         layers_size: int,
-        dropout: int,
+        dropout: float,
         attention_size: int,
     ):
         """Create the gru model."""
