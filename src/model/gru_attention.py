@@ -130,18 +130,19 @@ class GRU(base.MachineTranslationModel):
         self,
         input_vocab_size: int,
         output_vocab_size: int,
-        expand_dims: int,
+        embedding_size: int,
         layers_size: int,
         dropout: int,
+        attention_size: int,
     ):
         """Create the gru model."""
         super().__init__(NAME)
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
 
-        self.encoder = Encoder(input_vocab_size, 256, 256, 0.5)
-        self.attention_layer = BahdanauAttention(10)
-        self.decoder = Decoder(output_vocab_size, 256, 256, 0.5)
+        self.encoder = Encoder(input_vocab_size, embedding_size, layers_size, dropout)
+        self.attention_layer = BahdanauAttention(attention_size)
+        self.decoder = Decoder(output_vocab_size, embedding_size, layers_size, dropout)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""

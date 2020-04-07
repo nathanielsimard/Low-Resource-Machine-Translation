@@ -35,9 +35,10 @@ def create_gru_attention(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
         "output_vocab_size": target_vocab_size + 1,
-        "expand_dims": 256,
+        "embedding_size": 256,
         "layers_size": 256,
         "dropout": 0.5,
+        "attention_size": 10,
     }
     return gru_attention.GRU(**hyperparameters), hyperparameters
 
