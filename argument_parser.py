@@ -53,6 +53,26 @@ def parse_args():
     parser.add_argument(
         "--vocab_size", help="Size of the vocabulary", default=30000, type=int
     )
+    parser.add_argument(
+        "--src_train",
+        help="Source training aligned file for aligned training schedules, such as default training.",
+        default="data/splitted_data/sorted_train_token.en",
+    )
+    parser.add_argument(
+        "--tgt_train",
+        help="Target training aligned file for aligned training schedules, such as default training.",
+        default="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
+    )
+    parser.add_argument(
+        "--src_valid",
+        help="Target validation aligned file for aligned training schedules, such as default training.",
+        default="data/splitted_data/sorted_val_token.en",
+    )
+    parser.add_argument(
+        "--tgt_valid",
+        help="Source training aligned file.",
+        default="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+    )
     args = parser.parse_args()
     logger = logging.initialize(experiment_name=args.model, debug=args.debug)
 
