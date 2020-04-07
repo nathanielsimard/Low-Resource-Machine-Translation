@@ -66,7 +66,7 @@ class Transformer(base.MachineTranslationModel):
         encoder_output, _ = self.encoder(input_sequence, encoder_mask=encoder_mask)
 
         decoder_output, _, _ = self.decoder(
-            target_sequence, encoder_output, encoder_mask=encoder_mask
+            target_sequence[:-1], encoder_output, encoder_mask=encoder_mask
         )
 
         return decoder_output

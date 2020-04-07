@@ -83,6 +83,7 @@ class AlignedDataloader:
         corpus_input=None,
         corpus_target=None,
         max_seq_lenght=None,
+        training=True
     ):
         """Create dataset for translation.
 
@@ -115,12 +116,16 @@ class AlignedDataloader:
         if self.corpus_target is None:
             self.corpus_target = read_file(file_name_target)
 
-        self.corpus_input = preprocessing.add_start_end_token(
-            reversed(self.corpus_input)
-        )
-        self.corpus_target = preprocessing.add_start_end_token(
-            reversed(self.corpus_target)
-        )
+        if training:
+            self.corpus_input = preprocessing.add_start_end_token(
+                reversed(self.corpus_input)
+            )
+            self.corpus_target = preprocessing.add_start_end_token(
+                reversed(self.corpus_target)
+            )
+        else:
+            self.corpus_input = reversed(self.corpus_input)
+            self.corpus_target = reversed(self.corpus_target)
 
         if self.encoder_input is None:
             self.encoder_input = text_encoder.create_encoder(

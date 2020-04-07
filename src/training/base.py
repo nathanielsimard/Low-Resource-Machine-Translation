@@ -160,7 +160,7 @@ class BasicMachineTranslationTraining(Training):
                 outputs, self.train_dataloader.encoder_target
             )
             # Calculate the loss and update the parameters
-            loss = loss_fn(targets, outputs)
+            loss = loss_fn(targets[1:], outputs)
 
         #variables = self.model.encoder.trainable_variables + self.model.decoder_output.trainable_variables
         gradients = tape.gradient(loss, self.model.trainable_variables)
