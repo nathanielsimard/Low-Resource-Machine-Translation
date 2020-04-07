@@ -18,6 +18,8 @@ class Pretraining(base.Training):
         model,
         train_monolingual_dataloader: UnalignedDataloader,
         valid_monolingual_dataloader: UnalignedDataloader,
+        loss_fn: tf.keras.losses,
+        optimizer: tf.keras.optimizers,
     ):
         """Initialize the pretraining session."""
         self.model = model
@@ -28,15 +30,13 @@ class Pretraining(base.Training):
             "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
 
+        self.optimizer = optimizer
+        self.loss_fn = loss_fn
+
         self.history = base.History()
 
     def run(
-        self,
-        loss_fn: tf.keras.losses,
-        optimizer: tf.keras.optimizers,
-        batch_size: int,
-        num_epoch: int,
-        checkpoint=None,
+        self, batch_size: int, num_epoch: int, checkpoint=None,
     ):
         """Pretraining session."""
         logger.info("Creating datasets...")
@@ -70,9 +70,9 @@ class Pretraining(base.Training):
                 )
             ):
                 with tf.GradientTape() as tape:
-                    loss = self._step(minibatch, i, loss_fn, "train")
+                    loss = self._step(minibatch, i, self.loss_fn, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
-                    optimizer.apply_gradients(
+                    self.optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
                     )
             logger.debug("Saving training loss")
@@ -83,7 +83,7 @@ class Pretraining(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                loss = self._step(minibatch, i, loss_fn, "valid")
+                loss = self._step(minibatch, i, self.loss_fn, "valid")
 
             logger.debug("Saving validation loss")
             self.history.record("valid_loss", self.losses["valid"].result())

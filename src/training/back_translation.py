@@ -22,10 +22,15 @@ class BackTranslationTraining(base.Training):
         aligned_dataloader_reversed,
         aligned_valid_dataloader,
         aligned_valid_dataloader_reverse,
+        loss_fn: tf.keras.losses,
+        optimizer: tf.keras.optimizers,
     ):
         """Create BackTranslationTraining."""
         self.model_1 = model_1
         self.model_2 = model_2
+
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
 
         self.dataloader = dataloader
         self.dataloader_reverse = dataloader_reverse
@@ -37,12 +42,7 @@ class BackTranslationTraining(base.Training):
         self.aligned_valid_dataloader_reverse = aligned_valid_dataloader_reverse
 
     def run(
-        self,
-        loss_fn: tf.keras.losses,
-        optimizer: tf.keras.optimizers,
-        batch_size: int,
-        num_epoch: int,
-        checkpoint=None,
+        self, batch_size: int, num_epoch: int, checkpoint=None,
     ):
         """Run the back translation training.
 
@@ -58,18 +58,22 @@ class BackTranslationTraining(base.Training):
             self.model_1,
             self.aligned_dataloader,
             self.aligned_valid_dataloader,
+            self.optimizer,
+            self.loss_fn,
             [base.Metrics.BLEU],
         )
-        training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
+        training.run(batch_size, num_epoch, checkpoint=checkpoint)
 
         logger.info("Training second model on reversed aligned dataset.")
         training = default.Training(
             self.model_2,
             self.aligned_dataloader_reversed,
             self.aligned_valid_dataloader_reverse,
+            self.optimizer,
+            self.loss_fn,
             [base.Metrics.BLEU],
         )
-        training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
+        training.run(batch_size, num_epoch, checkpoint=checkpoint)
 
         for epoch in range(1, num_epoch + 1):
             logger.info(
@@ -103,9 +107,11 @@ class BackTranslationTraining(base.Training):
                 self.model_1,
                 updated_dataloader,
                 self.aligned_valid_dataloader,
+                self.optimizer,
+                self.loss_fn,
                 [base.Metrics.BLEU],
             )
-            training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
+            training.run(batch_size, 1, checkpoint=None)
             self.model_1.save(str(epoch))
 
             logger.info("Training second model on reversed augmented aligned dataset.")
@@ -113,9 +119,11 @@ class BackTranslationTraining(base.Training):
                 self.model_2,
                 updated_dataloader_reverse,
                 self.aligned_valid_dataloader_reverse,
+                self.optimizer,
+                self.loss_fn,
                 [base.Metrics.BLEU],
             )
-            training.run(loss_fn, optimizer, batch_size, 1, checkpoint=None)
+            training.run(batch_size, 1, checkpoint=None)
             self.model_2.save(str(epoch))
 
 
