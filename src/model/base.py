@@ -68,7 +68,7 @@ class MachineTranslationModel(Model, abc.ABC):
     ) -> tf.Tensor:
         """Translate a sentence from input.
 
-        Example::A
+        Example::
             >>> translated = model.translate(x, target_encoder, max_seq_length)
             >>> predictions = model.predictions(translated, target_encoder, logit=False)
 
