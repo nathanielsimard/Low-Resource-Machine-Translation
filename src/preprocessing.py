@@ -4,6 +4,7 @@ OUT_OF_SAMPLE_TOKEN = "<out>"
 # for start and end of sample token.
 START_OF_SAMPLE_TOKEN = "<start>"
 END_OF_SAMPLE_TOKEN = "<end>"
+MASK_TOKEN = "<mask>"
 
 
 def add_start_end_token(corpus):

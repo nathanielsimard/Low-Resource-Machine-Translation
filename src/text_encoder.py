@@ -149,6 +149,7 @@ class SubWordTextEncoder(TextEncoder):
                 preprocessing.OUT_OF_SAMPLE_TOKEN,
                 preprocessing.START_OF_SAMPLE_TOKEN,
                 preprocessing.END_OF_SAMPLE_TOKEN,
+                preprocessing.MASK_TOKEN,
             ],
         )
         self.cls = SubWordTextEncoder
@@ -161,7 +162,6 @@ class SubWordTextEncoder(TextEncoder):
         """Decode numbers into text."""
         # Handle 0 index as 1 for <out>
         sequences = [1 if i == 0 else i for i in sequences]
-        logger.info(sequences)
         return self._encoder.decode(sequences)
 
     @classmethod
@@ -183,6 +183,11 @@ class SubWordTextEncoder(TextEncoder):
     def end_of_sample_index(self) -> int:
         """The index representing the end of sample token."""
         return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0]
+
+    @property
+    def mask_token_index(self) -> int:
+        """The index representing the mask token."""
+        return self._encoder.encode(preprocessing.MASK_TOKEN)[0]
 
     def vocabulary(self) -> List[str]:
         """Return all the word tokens in the vocabulary."""
