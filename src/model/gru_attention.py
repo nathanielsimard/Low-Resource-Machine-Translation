@@ -5,10 +5,12 @@ import tensorflow as tf
 
 from src.model import base
 from src.text_encoder import TextEncoder
+from src import logging
 
 NAME = "gru-attention"
 
 
+logger = logging.create_logger(__name__)
 MAX_SEQ_LENGHT = 250
 
 
@@ -124,15 +126,23 @@ class Decoder(tf.keras.Model):
 class GRU(base.MachineTranslationModel):
     """Gru with Bahdanau attention."""
 
-    def __init__(self, input_vocab_size: int, output_vocab_size: int):
+    def __init__(
+        self,
+        input_vocab_size: int,
+        output_vocab_size: int,
+        embedding_size: int,
+        layers_size: int,
+        dropout: float,
+        attention_size: int,
+    ):
         """Create the gru model."""
         super().__init__(NAME)
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
 
-        self.encoder = Encoder(input_vocab_size, 256, 256, 0.5)
-        self.attention_layer = BahdanauAttention(10)
-        self.decoder = Decoder(output_vocab_size, 256, 256, 0.5)
+        self.encoder = Encoder(input_vocab_size, embedding_size, layers_size, dropout)
+        self.attention_layer = BahdanauAttention(attention_size)
+        self.decoder = Decoder(output_vocab_size, embedding_size, layers_size, dropout)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
@@ -190,6 +200,8 @@ class GRU(base.MachineTranslationModel):
             last_words = tf.expand_dims(decoder_output, 1)
             last_words = tf.math.argmax(last_words, axis=2)
 
+            logger.debug(f"New word {last_words}.")
+
             # Append the newly predicted words into words.
             words = tf.concat([words, last_words], 1)
 
@@ -199,6 +211,9 @@ class GRU(base.MachineTranslationModel):
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
             reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+
+            logger.debug(f"Has finish predicting {has_finish_predicting}.")
+            logger.debug(f"Has reach max sequence length {reach_max_seq_lenght}.")
 
         return words
 
