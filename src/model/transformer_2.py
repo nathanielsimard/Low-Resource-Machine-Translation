@@ -12,7 +12,7 @@ from src.text_encoder import TextEncoder
 # The more detailed implementation can be found @ https://www.tensorflow.org/tutorials/text/transformer
 
 NAME = "transformer-2"
-MAX_SEQ_LENGHT = 100
+MAX_SEQ_LENGHT = 20
 
 
 class Transformer(base.MachineTranslationModel):
@@ -96,7 +96,7 @@ class Transformer(base.MachineTranslationModel):
             de_input = tf.concat([de_input, np.transpose([new_word])], 1)
             # Compute the end condition of the while loop.
             end_of_sample = (
-                np.zeros([batch_size, 1], dtype=np.int64) + encoder_target.end_of_sample_index
+                np.zeros([batch_size], dtype=np.int64) + encoder_target.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(new_word, end_of_sample)
             reach_max_seq_lenght = de_input.shape[1] >= MAX_SEQ_LENGHT
@@ -105,6 +105,11 @@ class Transformer(base.MachineTranslationModel):
 
     @property
     def padded_shapes(self):
+        """Padded shapes used to add padding when batching multiple sequences."""
+        return ([None], [None], [None])
+
+    @property
+    def padded_shapes2(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return ([None], [None])
 
@@ -119,10 +124,10 @@ class Transformer(base.MachineTranslationModel):
     def preprocessing2(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""
 
-        def preprocess(input_sentence, output):
+        def preprocess2(input_sentence, output):
             return (input_sentence, output)
 
-        return dataset.map(preprocess)
+        return dataset.map(preprocess2)
 
 
 class Decoder(layers.Layer):

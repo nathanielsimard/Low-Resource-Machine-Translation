@@ -118,9 +118,8 @@ class AlignedDataloader:
             self.corpus_target = read_file(file_name_target)
 
         if training:
-            self.corpus_input = preprocessing.add_start_end_token(
-                reversed(self.corpus_input)
-            )
+            self.corpus_input = reversed(self.corpus_input)
+
             self.corpus_target_in = preprocessing.add_start_token(
                 reversed(self.corpus_target)
             )
@@ -152,27 +151,27 @@ class AlignedDataloader:
 
     def create_dataset(self) -> tf.data.Dataset:
         """Create a Tensorflow dataset."""
-        if self.training:
-            def gen():
-                for i, t_i, t_o in zip(self.corpus_input, self.corpus_target_in, self.corpus_target_out):
+        def gen():
+            for i, t_i, t_o in zip(self.corpus_input, self.corpus_target_in, self.corpus_target_out):
 
-                    encoder_input = self.encoder_input.encode(i)
-                    encoder_target_in = self.encoder_target.encode(t_i)
-                    encoder_target_out = self.encoder_target.encode(t_o)
+                encoder_input = self.encoder_input.encode(i)
+                encoder_target_in = self.encoder_target.encode(t_i)
+                encoder_target_out = self.encoder_target.encode(t_o)
 
-                    yield (encoder_input, encoder_target_in, encoder_target_out)
+                yield (encoder_input, encoder_target_in, encoder_target_out)
 
-            return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64, tf.int64))
-        else:
-            def gen():
-                for i, t_i in zip(self.corpus_input, self.corpus_target):
+        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64, tf.int64))
 
-                    encoder_input = self.encoder_input.encode(i)
-                    encoder_target_in = self.encoder_target.encode(t_i)
+    def create_dataset2(self) -> tf.data.Dataset:
+        def gen2():
+            for i, t_i in zip(self.corpus_input, self.corpus_target):
 
-                    yield (encoder_input, encoder_target_in)
+                encoder_input = self.encoder_input.encode(i)
+                encoder_target_in = self.encoder_target.encode(t_i)
 
-            return tf.data.Dataset.from_generator(gen, (tf.int64, tf.int64))
+                yield (encoder_input, encoder_target_in)
+
+        return tf.data.Dataset.from_generator(gen2, (tf.int64, tf.int64))
 
 
 def read_file(file_name: str) -> List[str]:

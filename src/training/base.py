@@ -96,10 +96,10 @@ class BasicMachineTranslationTraining(Training):
         logger.info("Creating datasets...")
 
         train_dataset = self.train_dataloader.create_dataset()
-        valid_dataset = self.valid_dataloader.create_dataset()
+        #valid_dataset = self.valid_dataloader.create_dataset2()
 
         train_dataset = self.model.preprocessing(train_dataset)
-        valid_dataset = self.model.preprocessing2(valid_dataset)
+        #valid_dataset = self.model.preprocessing2(valid_dataset)
 
         logger.info("Creating results directory...")
 
@@ -119,7 +119,7 @@ class BasicMachineTranslationTraining(Training):
 
             for i, (inputs, targets_in, targets_out) in enumerate(
                 train_dataset.padded_batch(
-                    batch_size, padded_shapes=([None], [None], [None])
+                    batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
 
@@ -177,12 +177,13 @@ class BasicMachineTranslationTraining(Training):
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
+            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes2)
         ):
-            outputs = self.model.translate(inputs, self.model.encoder, self.valid_dataloader.encoder_target)
-            valid_predictions += self.model.predictions(
-                outputs, self.valid_dataloader.encoder_target, logit=False
-            )
+            if i == 15:
+                outputs = self.model.translate(inputs, self.model.encoder, self.valid_dataloader.encoder_target)
+                valid_predictions += self.model.predictions(
+                    outputs, self.valid_dataloader.encoder_target, logit=False
+                )
 
             #loss = loss_fn(targets, outputs)
             #metric = self.recorded_losses["valid"]
