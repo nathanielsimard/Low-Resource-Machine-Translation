@@ -113,7 +113,7 @@ class Transformer(base.MachineTranslationModel):
     @property
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
-        return (([None], [None]), [None])
+        return ([None], [None])
 
 
 class Decoder(layers.Layer):

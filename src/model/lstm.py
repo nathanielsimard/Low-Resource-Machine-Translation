@@ -100,7 +100,7 @@ class Lstm(base.MachineTranslationModel):
     @property
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
-        return (([None], [None]), [None])
+        return ([None], [None])
 
     def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate on input tensor."""

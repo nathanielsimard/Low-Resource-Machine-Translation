@@ -10,12 +10,11 @@ from src.dataloader import AlignedDataloader
 from src.training import base
 
 logger = logging.create_logger(__name__)
-"""
+
 train_step_signature = [
-    Tuple[tf.TensorSpec(shape=(None, None), dtype=tf.int64)],
+    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
 ]
-"""
 
 
 class Training(base.Training):
@@ -58,9 +57,6 @@ class Training(base.Training):
         train_dataset = self.train_dataloader.create_dataset()
         valid_dataset = self.valid_dataloader.create_dataset()
 
-        train_dataset = self.model.preprocessing(train_dataset)
-        valid_dataset = self.model.preprocessing(valid_dataset)
-
         logger.info("Creating results directory...")
 
         directory = os.path.join(
@@ -74,8 +70,11 @@ class Training(base.Training):
         else:
             checkpoint = 0
 
+        print("wth")
+
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
+            print("wth2")
             for i, (inputs, targets) in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
@@ -127,7 +126,7 @@ class Training(base.Training):
             self.model.save(epoch)
             self.history.save(directory + f"/history-{epoch}")
 
-    @tf.function
+    @tf.function(input_signature=train_step_signature)
     def _train_step(
         self, inputs, targets,
     ):
@@ -142,7 +141,7 @@ class Training(base.Training):
 
         return outputs, loss
 
-    @tf.function
+    @tf.function(input_signature=train_step_signature)
     def _valid_step(self, inputs, targets):
         target_inputs = targets[:-1]
         targets_true = targets[1:]
