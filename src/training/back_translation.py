@@ -36,6 +36,11 @@ class BackTranslationTraining(base.Training):
         self.aligned_valid_dataloader = aligned_valid_dataloader
         self.aligned_valid_dataloader_reverse = aligned_valid_dataloader_reverse
 
+        if self.dataloader.max_seq_length is not None:
+            self.batch_size_factor = self.dataloader.max_seq_length - 1
+        else:
+            self.batch_size_factor = 100
+
     def run(
         self,
         loss_fn: tf.keras.losses,
@@ -71,6 +76,9 @@ class BackTranslationTraining(base.Training):
         )
         training.run(loss_fn, optimizer, batch_size, num_epoch, checkpoint=checkpoint)
 
+        self.model_1.title = self.model_1.title + "-model-1-post-pretraining"
+        self.model_2.title = self.model_2.title + "-model-2-post-pretraining"
+
         for epoch in range(1, num_epoch + 1):
             logger.info(
                 "Creating updated dataloader by generating new samples "
@@ -81,8 +89,9 @@ class BackTranslationTraining(base.Training):
                 self.dataloader_reverse,
                 self.dataloader,
                 self.aligned_dataloader_reversed,
-                24
+                self.batch_size_factor
                 * batch_size,  # Batch size can be higher because it is one word after the other (seq of 1)
+                epoch,
             )
 
             logger.info(
@@ -94,8 +103,9 @@ class BackTranslationTraining(base.Training):
                 self.dataloader,
                 self.dataloader_reverse,
                 self.aligned_dataloader,
-                24
+                self.batch_size_factor
                 * batch_size,  # Batch size can be higher because it is one word after the other (seq of 1)
+                epoch,
             )
 
             logger.info("Training first model on augmented aligned dataset.")
@@ -120,12 +130,7 @@ class BackTranslationTraining(base.Training):
 
 
 def create_updated_dataloader(
-    model,
-    dataloader,
-    dataloader_reverse,
-    aligned_dataloader,
-    batch_size,
-    aumgentation_ratio=2,
+    model, dataloader, dataloader_reverse, aligned_dataloader, batch_size, epoch,
 ):
     """Create updated dataloader by augmenting the old dataset with predictions.
 
@@ -133,6 +138,7 @@ def create_updated_dataloader(
     It uses those predictions to augmente the inputs of the dataset lang1 -> lang2.
     Targets are always the original real data.
     """
+    aumgentation_ratio = epoch
     num_additional_data = aumgentation_ratio * len(aligned_dataloader.corpus_input)
 
     corpus = copy.deepcopy(dataloader.corpus)
@@ -147,18 +153,22 @@ def create_updated_dataloader(
     new_corpus_input = aligned_dataloader.corpus_target + predictions
     new_corpus_target = aligned_dataloader.corpus_input + dataloader.corpus
 
+    new_corpus_input_file_name = f"{model.title}-updated_input-{epoch}"
+    new_corpus_target_file_name = f"{model.title}-updated_target-{epoch}"
+
+    base.write_text(new_corpus_input, new_corpus_input_file_name)
+    base.write_text(new_corpus_target, new_corpus_target_file_name)
+
     # The corpus of the dataloader must not change.
     dataloader.corpus = corpus
 
     return AlignedDataloader(
-        "new_corpus_input",
-        "new_corpus_target",
+        new_corpus_input_file_name,
+        new_corpus_target_file_name,
         dataloader.vocab_size,
         dataloader.text_encoder_type,
         encoder_input=aligned_dataloader.encoder_target,
         encoder_target=aligned_dataloader.encoder_input,
-        corpus_input=new_corpus_input,
-        corpus_target=new_corpus_target,
     )
 
 
