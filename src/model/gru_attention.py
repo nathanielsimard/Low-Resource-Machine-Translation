@@ -3,9 +3,9 @@ from typing import Tuple
 import numpy as np
 import tensorflow as tf
 
+from src import logging
 from src.model import base
 from src.text_encoder import TextEncoder
-from src import logging
 
 NAME = "gru-attention"
 
@@ -27,7 +27,7 @@ class Encoder(tf.keras.Model):
             return_sequences=True,
             return_state=True,
             recurrent_initializer="glorot_uniform",
-            dropout=dropout,
+            recurrent_dropout=dropout,
         )
 
     def call(self, x, hidden, training):
@@ -90,7 +90,7 @@ class Decoder(tf.keras.Model):
             return_sequences=True,
             return_state=True,
             recurrent_initializer="glorot_uniform",
-            dropout=dropout,
+            recurrent_dropout=dropout,
         )
         self.fc = tf.keras.layers.Dense(vocab_size)
 
