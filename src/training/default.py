@@ -72,7 +72,6 @@ class Training(base.Training):
 
         for epoch in range(checkpoint + 1, num_epoch + 1):
             train_predictions: List[str] = []
-            print("wth2")
             for i, (inputs, targets) in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
@@ -105,6 +104,7 @@ class Training(base.Training):
                 metric = self.recorded_losses["valid"]
                 metric(loss)
                 logger.info(f"Batch #{i} : validation loss {metric.result()}")
+
                 if base.Metrics.ABSOLUTE_ACC in self.metrics:
                     other_metric = self.accuracies["valid"]
                     acc = self._record_abs_acc(outputs, targets, i, batch_size, "valid")
@@ -124,15 +124,13 @@ class Training(base.Training):
             self.model.save(epoch)
             self.history.save(directory + f"/history-{epoch}")
 
-    @tf.function(input_signature=train_step_signature)
+    # @tf.function(input_signature=train_step_signature)
     def _train_step(
         self, inputs, targets,
     ):
 
         target_inputs = targets[:, :-1]
-        print(target_inputs.shape)
         targets_true = targets[:, 1:]
-        print(targets_true.shape)
         with tf.GradientTape() as tape:
             outputs = self.model(inputs, target_inputs, training=True)
             # Calculate the loss and update the parameters
@@ -142,7 +140,7 @@ class Training(base.Training):
 
         return outputs, loss
 
-    @tf.function(input_signature=train_step_signature)
+    # @tf.function(input_signature=train_step_signature)
     def _valid_step(self, inputs, targets):
         target_inputs = targets[:-1]
         targets_true = targets[1:]
