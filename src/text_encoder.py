@@ -152,6 +152,12 @@ class WordNoFilterTextEncoder(WordTextEncoder):
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder like word but without filters."""
         super().__init__(vocab_size, corpus, filters="")
+        self.cls = WordNoFilterTextEncoder
+
+    @classmethod
+    def type(cls):
+        """Type of the text encoder."""
+        return TextEncoderType.WORD_NO_FILTER
 
 
 class SubWordTextEncoder(TextEncoder):
@@ -224,6 +230,8 @@ def create_encoder(
         clazz = WordTextEncoder
     elif text_encoder_type == TextEncoderType.SUBWORD:
         clazz = SubWordTextEncoder
+    elif text_encoder_type == TextEncoderType.WORD_NO_FILTER:
+        clazz = WordNoFilterTextEncoder
     else:
         raise Exception(f"Text Encoder Type {text_encoder_type} is not supported.")
 
