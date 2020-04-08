@@ -144,20 +144,20 @@ class GRU(base.MachineTranslationModel):
         self.attention_layer = BahdanauAttention(attention_size)
         self.decoder = Decoder(output_vocab_size, embedding_size, layers_size, dropout)
 
-    def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
+    def call(self, x1, x2, training=False):
         """Call the foward past."""
-        batch_size = x[0].shape[0]
+        batch_size = x1.shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden, training)
+        encoder_output, encoder_hidden = self.encoder(x1, encoder_hidden, training)
 
         decoder_hidden = encoder_hidden
         predictions = None
 
-        seq_lenght = x[1].shape[1]
+        seq_lenght = x2.shape[1]
         for t in range(seq_lenght):
             # The decoder input is the word at timestep t
-            previous_target_word = x[1][:, t]
+            previous_target_word = x2[:, t]
             decoder_input = tf.expand_dims(previous_target_word, 1)
 
             # Call the decoder and update the decoder hidden state

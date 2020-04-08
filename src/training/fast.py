@@ -73,7 +73,7 @@ class FastTraining(base.Training):
             ):
 
                 loss = self._train_step(
-                    inputs, targets, i, batch_size, optimizer, loss_fn
+                    inputs[0], inputs[1], targets, batch_size, optimizer, loss_fn
                 )
                 metric = self.recorded_losses["train"]
                 metric(loss)
@@ -102,15 +102,15 @@ class FastTraining(base.Training):
     @tf.function
     def _train_step(
         self,
-        inputs,
+        inputs1,
+        inputs2,
         targets,
-        batch: int,
         batch_size: int,
         optimizer: tf.keras.optimizers,
         loss_fn: tf.keras.losses,
     ):
         with tf.GradientTape() as tape:
-            outputs = self.model(inputs, training=True)
+            outputs = self.model(inputs1, inputs2, training=True)
             # Calculate the training prediction tokens
             # predictions = self.model.predictions(
             #    outputs, self.train_dataloader.encoder_target

@@ -67,9 +67,7 @@ class Training(base.Training):
             train_predictions: List[str] = []
 
             for i, (inputs, targets) in enumerate(
-                train_dataset.padded_batch(
-                    batch_size, padded_shapes=self.model.padded_shapes
-                )
+                train_dataset.padded_batch(batch_size, padded_shapes=((120, 120), 120))
             ):
 
                 train_predictions += self._train_step(
