@@ -276,7 +276,7 @@ def main():
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
 
-        return tf.reduce_mean(loss_)
+        return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
     try:
         logger.info(f"Executing task {args.task}.")
