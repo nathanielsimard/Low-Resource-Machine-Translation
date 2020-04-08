@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 from typing import List
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 from src import logging
 from src.dataloader import AlignedDataloader

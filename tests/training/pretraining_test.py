@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
-import numpy as np
 
+import numpy as np
 import tensorflow as tf
 
 from src.training.pretraining import Pretraining
@@ -90,6 +90,7 @@ class PretrainingTest(unittest.TestCase):
         self.assertTrue(tf.reduce_all(expected_inputs == masked_inputs))
 
     def test_create_and_apply_mask(self):
+        tf.random.set_seed(2)
         masked_inputs, mask = self.session.create_and_apply_masks(INPUTS)
         self.assertIsNotNone(mask)
         self.assertFalse(tf.reduce_all(masked_inputs == INPUTS))
