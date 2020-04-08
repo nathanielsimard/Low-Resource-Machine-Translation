@@ -57,15 +57,15 @@ def default_training(args, loss_fn):
 
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_train_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
+        file_name_input=args.src_train,
+        file_name_target=args.tgt_train,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
     )
     valid_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_val_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        file_name_input=args.src_valid,
+        file_name_target=args.tgt_valid,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
