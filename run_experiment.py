@@ -307,19 +307,19 @@ def main():
 
         return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
-    try:
-        logger.info(f"Executing task {args.task}.")
-        task = TASK[args.task]
-        task(args, loss_function)
-    except KeyError:
+    if args.task not in TASK.keys():
         logger.error(
             f"Task {args.task} is not supported, available tasks are {TASK.keys()}."
         )
+    else:
+        logger.info(f"Executing task {args.task}.")
+        task = TASK[args.task]
+        task(args, loss_function)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except ValueError:
+    except Exception as e:
         # Logging is already done
-        pass
+        print(e)
