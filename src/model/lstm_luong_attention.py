@@ -171,6 +171,11 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
         pass
 
     @property
+    def embedding_size(self):
+        """Embedding size."""
+        return 256
+
+    @property
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])

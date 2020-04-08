@@ -55,6 +55,7 @@ class Transformer(base.MachineTranslationModel):
             num_layers, d_model, num_heads, dff, target_vocab_size, pe_target, rate
         )
 
+        self._embedding_size = d_model
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
@@ -113,6 +114,11 @@ class Transformer(base.MachineTranslationModel):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
+
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self._embedding_size
 
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""

@@ -19,9 +19,6 @@ def punctuation_training(args, loss_fn):
     """Train the model for the punctuation task."""
     text_encoder_type = TextEncoderType(args.text_encoder)
 
-    optim = tf.keras.optimizers.Adam(
-        learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
-    )
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_train.en",
         file_name_target="data/splitted_english_data/sorted_target_train.en",
@@ -41,6 +38,7 @@ def punctuation_training(args, loss_fn):
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
+    optim = _create_optimizer(model.embedding_size)
     training = Training(
         model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU]
     )
@@ -57,7 +55,6 @@ def default_training(args, loss_fn):
     """Train the model."""
     text_encoder_type = TextEncoderType(args.text_encoder)
 
-    optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_train,
         file_name_target=args.target_train,
@@ -77,6 +74,7 @@ def default_training(args, loss_fn):
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
+    optim = _create_optimizer(model.embedding_size)
     training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
     training.run(
         loss_fn,
@@ -91,7 +89,6 @@ def pretraining(args, loss_fn):
     """Pretraining the model."""
     text_encoder_type = TextEncoderType(args.text_encoder)
 
-    optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.UnalignedDataloader(
         file_name="data/splitted_english_data/sorted_clean_train.en",
         vocab_size=args.vocab_size,
@@ -106,6 +103,7 @@ def pretraining(args, loss_fn):
         max_seq_length=args.max_seq_length,
     )
     model = models.find(args, train_dl.encoder.vocab_size, train_dl.encoder.vocab_size)
+    optim = _create_optimizer(model.embedding_size)
     pretraining = Pretraining(model, train_dl, valid_dl)
     pretraining.run(
         loss_fn,
@@ -120,7 +118,6 @@ def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
     text_encoder_type = TextEncoderType(args.text_encoder)
 
-    optim = tf.keras.optimizers.Adam(args.lr)
     logger.info("Creating training unaligned dataloader ...")
     train_dl = dataloader.UnalignedDataloader(
         "data/unaligned.en",
@@ -189,6 +186,7 @@ def back_translation_training(args, loss_fn):
         aligned_train_dl.encoder_target.vocab_size,
     )
 
+    optim = _create_optimizer(model.embedding_size)
     model_reverse = models.find(
         args,
         aligned_train_dl_reverse.encoder_input.vocab_size,
@@ -255,6 +253,14 @@ def _log_args(args):
     for arg in vars(args):
         args_output += f"{arg}:  {getattr(args, arg)}\n"
     logger.info(args_output)
+
+
+def _create_optimizer(embedding_size):
+    learning_rate = scheduler.Schedule(embedding_size)
+
+    return tf.keras.optimizers.Adam(
+        learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-09
+    )
 
 
 def main():
