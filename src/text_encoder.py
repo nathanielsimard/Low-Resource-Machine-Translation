@@ -17,6 +17,7 @@ class TextEncoderType(enum.Enum):
 
     SUBWORD = "subword"
     WORD = "word"
+    WORD_NO_FILTER = "word-no-filter"
 
 
 class TextEncoder(abc.ABC):
@@ -83,13 +84,18 @@ class TextEncoder(abc.ABC):
 class WordTextEncoder(TextEncoder):
     """Text Encoder where most popular words become tokens."""
 
-    def __init__(self, vocab_size: int, corpus: List[str]):
+    def __init__(
+        self,
+        vocab_size: int,
+        corpus: List[str],
+        filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
+    ):
         """Create the encoder using the keras tokenizer."""
         logger.info("Creating new word text encoder.")
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
             num_words=vocab_size,
             oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN,
-            filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
+            filters=filters,
         )
         self.tokenizer.fit_on_texts(corpus)
 
@@ -134,6 +140,18 @@ class WordTextEncoder(TextEncoder):
         for i in range(1, self.vocab_size + 1):
             word_tokens.append(self.tokenizer.index_word[i])
         return word_tokens
+
+
+class WordNoFilterTextEncoder(WordTextEncoder):
+    """Text Encoder where most popular words become tokens.
+
+    The corpus is expected to be already tokenized, so no
+    filters need to be applied.
+    """
+
+    def __init__(self, vocab_size: int, corpus: List[str]):
+        """Create the encoder like word but without filters."""
+        super().__init__(vocab_size, corpus, filters="")
 
 
 class SubWordTextEncoder(TextEncoder):
