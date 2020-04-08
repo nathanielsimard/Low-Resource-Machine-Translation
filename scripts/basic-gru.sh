@@ -10,3 +10,4 @@ python run_experiment.py \
 	--target_train data/splitted_data/train/train_token10000.fr \
 	--src_valid data/splitted_data/valid/val_token10000.en \
 	--target_valid data/splitted_data/valid/val_token10000.fr \
+	--no_cache
