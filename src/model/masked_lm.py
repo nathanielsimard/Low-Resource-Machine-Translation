@@ -33,7 +33,6 @@ class DemiBERT(base.Model):
         x = self.encoder(x, training, padding_mask)
         x = self.dense(x)
         x = tf.linalg.matmul(x, self.encoder.embedding.embeddings, transpose_b=True)
-        x = tf.keras.activations.softmax(x)
 
         return x
 
