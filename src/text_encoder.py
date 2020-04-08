@@ -151,7 +151,7 @@ class WordNoFilterTextEncoder(WordTextEncoder):
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder like word but without filters."""
         super().__init__(vocab_size, corpus, filters="")
-        self.cls = WordNoFilterTextEncoder
+        self.cls = WordNoFilterTextEncoder  # type: ignore
 
     @classmethod
     def type(cls):

@@ -3,8 +3,12 @@ import abc
 import unittest
 
 from src import logging, preprocessing
-from src.text_encoder import (SubWordTextEncoder, TextEncoder,
-                              WordNoFilterTextEncoder, WordTextEncoder)
+from src.text_encoder import (
+    SubWordTextEncoder,
+    TextEncoder,
+    WordNoFilterTextEncoder,
+    WordTextEncoder,
+)
 
 logger = logging.create_logger(__name__)
 
