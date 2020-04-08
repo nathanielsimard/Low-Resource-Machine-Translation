@@ -5,9 +5,10 @@ from logging.handlers import RotatingFileHandler
 
 handler = None
 level = None
+handler_std = None
 
 
-def initialize(experiment_name="experiment", debug=False):
+def initialize(experiment_name="experiment", debug=False, std=False):
     """Initialize the logging module.
 
     It can be called before any logger is created to change the default arguments.
@@ -20,11 +21,13 @@ def initialize(experiment_name="experiment", debug=False):
     file_name = os.path.join(directory, "experiment.log")
 
     _initialize_level(debug)
-    _initialize_handler(file_name)
+    _initialize_handler(file_name, std)
 
 
-def _initialize_handler(file_name):
+def _initialize_handler(file_name, std):
     global handler
+    global handler_std
+
     formatter = logging.Formatter(
         "[%(asctime)s - %(levelname)s - %(name)s] %(message)s"
     )
@@ -33,6 +36,10 @@ def _initialize_handler(file_name):
         file_name, mode="a", maxBytes=536_870_912, backupCount=4, encoding=None
     )
     handler.setFormatter(formatter)
+
+    if std:
+        handler_std = logging.StreamHandler()
+        handler_std.setFormatter(formatter)
 
 
 def _initialize_level(debug):
@@ -45,14 +52,15 @@ def _initialize_level(debug):
 
 def create_logger(name: str) -> logging.Logger:
     """Create a logger with default configuration and formatter."""
-    global level
-    global debug
-
     initialized = level is not None and handler is not None
     if not initialized:
         initialize()
 
     logger = logging.getLogger(name)
-    logger.addHandler(handler)  # type: ignore
     logger.setLevel(level)  # type: ignore
+
+    logger.addHandler(handler)  # type: ignore
+    if handler_std is not None:
+        logger.addHandler(handler_std)
+
     return logger
