@@ -164,7 +164,9 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
 
         return predictions
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    def translate(
+        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
+    ) -> tf.Tensor:
         """Translate a sentence from input."""
         pass
 

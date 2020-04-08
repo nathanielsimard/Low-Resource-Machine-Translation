@@ -12,7 +12,6 @@ from src.text_encoder import TextEncoder
 # The more detailed implementation can be found @ https://www.tensorflow.org/tutorials/text/transformer
 
 NAME = "transformer"
-MAX_SEQ_LENGHT = 250
 
 
 class Transformer(base.MachineTranslationModel):
@@ -76,7 +75,7 @@ class Transformer(base.MachineTranslationModel):
 
         return final_output
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder):
+    def translate(self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int):
         """Translation function for the test set."""
         batch_size = x.shape[0]
         # The first words of each sentence in the batch is the start of sample token.
@@ -106,7 +105,7 @@ class Transformer(base.MachineTranslationModel):
                 np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
-            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+            reach_max_seq_lenght = words.shape[1] >= max_seq_length
 
         return words
 

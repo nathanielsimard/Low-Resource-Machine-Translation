@@ -60,14 +60,16 @@ class MachineTranslationModel(Model, abc.ABC):
 
         sentences = [encoder.decode(sentence) for sentence in sentences]
 
-        return _clean_tokens(sentences)
+        return clean_sentences(sentences)
 
     @abc.abstractmethod
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    def translate(
+        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
+    ) -> tf.Tensor:
         """Translate a sentence from input.
 
         Example::
-            >>> translated = model.translate(x, target_encoder)
+            >>> translated = model.translate(x, target_encoder, max_seq_length)
             >>> predictions = model.predictions(translated, target_encoder, logit=False)
 
         Returns the indexes corresponding to each vocabulary word.
@@ -75,13 +77,24 @@ class MachineTranslationModel(Model, abc.ABC):
         pass
 
 
-def _clean_tokens(sentences):
+def clean_sentences(sentences: List[str]) -> List[str]:
+    """Clean sentences from start en end token."""
     result = []
     for sentence in sentences:
-        new_sentence = []
-        for word in sentence.split():
-            if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word):
-                new_sentence.append(word)
-        result.append(" ".join(new_sentence))
+        result.append(" ".join(_clean_tokens(sentence)))
 
     return result
+
+
+def _clean_tokens(sentence: str) -> List[str]:
+    cleaned_sentence: List[str] = []
+    for word in sentence.split():
+        if END_OF_SAMPLE_TOKEN == word:
+            return cleaned_sentence
+
+        if START_OF_SAMPLE_TOKEN == word:
+            continue
+
+        cleaned_sentence.append(word)
+
+    return cleaned_sentence
