@@ -33,6 +33,10 @@ class Training(base.Training):
 
         self.history = base.History()
 
+        self.max_seq_length = self.valid_dataloader.max_seq_length
+        if self.max_seq_length is None:
+            self.max_seq_length = 250
+
     def run(
         self,
         loss_fn: tf.keras.losses,
@@ -79,7 +83,7 @@ class Training(base.Training):
                 loss_fn,
                 batch_size,
                 self.valid_dataloader.encoder_target,
-                self.valid_dataloader.max_seq_length,
+                self.max_seq_length,
             )
 
             train_path = os.path.join(directory, f"train-{epoch}")
@@ -129,14 +133,13 @@ class Training(base.Training):
     def _valid_step(self, dataset, loss_fn, batch_size, encoder, max_seq_length):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
+            dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
         ):
+            logger.info(f"Batch #{i} : validation")
             outputs = self.model.translate(inputs, encoder, max_seq_length)
             valid_predictions += self.model.predictions(
-                outputs, self.valid_dataloader.encoder_target
+                outputs, self.valid_dataloader.encoder_target, logit=False
             )
-
-            logger.info(f"Batch #{i} : validation")
 
         return valid_predictions
 

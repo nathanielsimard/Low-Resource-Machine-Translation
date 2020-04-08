@@ -291,6 +291,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except ValueError:
+    except ValueError as e:
         # Logging is already done
-        pass
+        print(e)
