@@ -91,7 +91,6 @@ class WordTextEncoder(TextEncoder):
         filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
     ):
         """Create the encoder using the keras tokenizer."""
-        logger.info("Creating new word text encoder.")
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
             num_words=vocab_size,
             oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN,
@@ -165,7 +164,6 @@ class SubWordTextEncoder(TextEncoder):
 
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder using the tensorflow dataset corpus utilities."""
-        logger.info("Creating new subword text encoder.")
         self._encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
             (sentence for sentence in corpus),
             target_vocab_size=vocab_size,
@@ -251,6 +249,7 @@ def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=Non
         return clazz.load_from_file(cache_file)
     except FileNotFoundError:
         encoder = clazz(vocab_size, text)
+        logger.info(f"Created new text encoder of type {encoder.type()}.")
         encoder.save_to_file(cache_file)
 
         return encoder
