@@ -59,7 +59,7 @@ def parse_args():
         default="data/splitted_data/sorted_train_token.en",
     )
     parser.add_argument(
-        "--taget_train",
+        "--target_train",
         help="Target training aligned file for aligned training schedules, such as default training.",
         default="data/splitted_data/sorted_nopunctuation_lowercase_train_token.fr",
     )
@@ -69,7 +69,7 @@ def parse_args():
         default="data/splitted_data/sorted_val_token.en",
     )
     parser.add_argument(
-        "--taget_valid",
+        "--target_valid",
         help="Source training aligned file.",
         default="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
     )
