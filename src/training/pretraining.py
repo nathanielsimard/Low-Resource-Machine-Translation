@@ -95,6 +95,9 @@ class Pretraining(base.Training):
 
     def _step(self, inputs, batch, loss_fn, name):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
+        logger.debug(f"Inputs : {self.train_dataloader.encoder.decode(inputs)}")
+        logger.debug(f"Masked Inputs : {self.train_dataloader.encoder.decode(masked_inputs)}")
+
         outputs = self.model(masked_inputs, training=True)
 
         def mlm_loss(real, pred):
