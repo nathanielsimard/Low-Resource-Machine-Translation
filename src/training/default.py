@@ -84,9 +84,8 @@ class Training(base.Training):
                 logger.info(f"Batch #{i} : training loss: {metric.result()}")
 
                 if base.Metrics.ABSOLUTE_ACC in self.metrics:
-                    other_metric = self.accuracies["train"]
                     acc = self._record_abs_acc(outputs, targets, i, batch_size, "train")
-                    other_metric(acc)
+                    self.accuracies["train"](acc)
 
             valid_predictions: List[str] = []
             for i, (inputs, targets) in enumerate(
@@ -104,9 +103,8 @@ class Training(base.Training):
                 logger.info(f"Batch #{i} : validation loss {metric.result()}")
 
                 if base.Metrics.ABSOLUTE_ACC in self.metrics:
-                    other_metric = self.accuracies["valid"]
                     acc = self._record_abs_acc(outputs, targets, i, batch_size, "valid")
-                    other_metric(acc)
+                    self.accuracies["valid"](acc)
 
             train_path = os.path.join(directory, f"train-{epoch}")
             valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -116,6 +114,11 @@ class Training(base.Training):
 
             if base.Metrics.BLEU in self.metrics:
                 self._record_bleu(epoch, train_path, valid_path)
+            if base.Metrics.ABSOLUTE_ACC in self.metrics:
+                self.history.record("train_accuracy", self.accuracies["train"].result())
+                self.history.record("valid_accuracy", self.accuracies["valid"].result())
+                self.accuracies["train"].reset_states()
+                self.accuracies["valid"].reset_states()
 
             self._update_progress(epoch)
 
