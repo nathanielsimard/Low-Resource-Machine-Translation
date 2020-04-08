@@ -1,7 +1,6 @@
 import abc
 from typing import List
 
-import numpy as np
 import tensorflow as tf
 
 from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN

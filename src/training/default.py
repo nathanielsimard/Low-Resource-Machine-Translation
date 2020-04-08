@@ -146,9 +146,7 @@ class Training(base.Training):
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]
 
-        logger.info(
-            f"Epoch: {epoch}, Train loss: {train_metric.result()}"
-        )
+        logger.info(f"Epoch: {epoch}, Train loss: {train_metric.result()}")
 
         # Reset the cumulative recorded_losses after each epoch
         self.history.record("train_loss", train_metric.result())
