@@ -82,6 +82,9 @@ def _clean_tokens(sentences):
         for word in sentence.split():
             if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word):
                 new_sentence.append(word)
+            # Will not output garbage after the end of sentence caracter.
+            if END_OF_SAMPLE_TOKEN in word:
+                break
         result.append(" ".join(new_sentence))
 
     return result
