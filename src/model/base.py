@@ -56,9 +56,9 @@ class MachineTranslationModel(Model, abc.ABC):
         sentences = outputs
 
         if logit:
-            sentences = np.argmax(sentences.numpy(), axis=2)
+            sentences = tf.argmax(sentences, axis=-1)
 
-        sentences = [encoder.decode(sentence) for sentence in sentences]
+        sentences = [encoder.decode(sentence) for sentence in sentences.numpy()]
 
         return clean_sentences(sentences)
 
