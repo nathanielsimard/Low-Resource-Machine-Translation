@@ -220,8 +220,12 @@ def create_encoder(
     file_name, corpus, vocab_size, text_encoder_type: TextEncoderType, cache_dir=None,
 ):
     """Create a text encoder of the given type to encode and decode text from and into tensor."""
-    directory = os.path.join(cache_dir, file_name)
-    os.makedirs(directory, exist_ok=True)
+    cache_file = None
+
+    if cache_dir is not None:
+        directory = os.path.join(cache_dir, file_name)
+        os.makedirs(directory, exist_ok=True)
+        cache_file = os.path.join(directory, str(vocab_size)).format()
 
     clazz: Any = None
     if text_encoder_type == TextEncoderType.WORD:
@@ -233,23 +237,16 @@ def create_encoder(
     else:
         raise Exception(f"Text Encoder Type {text_encoder_type} is not supported.")
 
-    return _create_text_encoder(
-        corpus,
-        vocab_size,
-        clazz,
-        cache_file=os.path.join(directory, str(vocab_size)).format(),
-    )
+    return _create_text_encoder(corpus, vocab_size, clazz, cache_file=cache_file)
 
 
 def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=None):
     if cache_file is None:
-        return clazz(vocab_size, text)
+        encoder = clazz(vocab_size, text)
+        logger.info(f"Created new text encoder of type {encoder.type()}.")
+        return encoder
 
     try:
         return clazz.load_from_file(cache_file)
     except FileNotFoundError:
-        encoder = clazz(vocab_size, text)
-        logger.info(f"Created new text encoder of type {encoder.type()}.")
-        encoder.save_to_file(cache_file)
-
-        return encoder
+        return _create_text_encoder(text, vocab_size, clazz)
