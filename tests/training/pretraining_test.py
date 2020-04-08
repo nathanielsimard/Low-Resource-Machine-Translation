@@ -19,12 +19,16 @@ class PretrainingTest(unittest.TestCase):
         fake_model = mock.Mock()
         fake_train_dl = mock.Mock()
         fake_valid_dl = mock.Mock()
+        fake_optimizer = mock.Mock()
+        fake_loss = mock.Mock()
         encoder = mock.Mock()
         encoder.vocab_size = 200
         encoder.mask_token_index = MASKED_TOKEN_INDEX
         fake_train_dl.encoder = encoder
 
-        self.session = Pretraining(fake_model, fake_train_dl, fake_valid_dl)
+        self.session = Pretraining(
+            fake_model, fake_train_dl, fake_valid_dl, fake_loss, fake_optimizer
+        )
 
     def test_apply_masked_token_index(self):
         mask = create_mask(indexes=[(0, 0), (0, 1), (1, 2), (1, 5)])

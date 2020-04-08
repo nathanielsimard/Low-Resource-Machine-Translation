@@ -57,8 +57,8 @@ def create_demi_bert(args, input_vocab_size, target_vocab_size):
         "embedding_size": 256,
         "num_heads": 8,
         "dff": 512,
-        "vocab_size": input_vocab_size,
-        "max_pe": input_vocab_size,
+        "vocab_size": input_vocab_size + 1,
+        "max_pe": input_vocab_size + 1,
         "dropout": 0.1,
     }
     return masked_lm.DemiBERT(**hyperparameters), hyperparameters
