@@ -14,10 +14,12 @@ from src.training.pretraining import Pretraining
 
 logger = logging.create_logger(__name__)
 
+CACHE_DIR = ".cache"
+
 
 def punctuation_training(args, loss_fn):
     """Train the model for the punctuation task."""
-    text_encoder_type = TextEncoderType(args.text_encoder)
+    text_encoder_type = _text_encoder_type(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(
         learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
@@ -28,6 +30,7 @@ def punctuation_training(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_valid.en",
@@ -37,6 +40,7 @@ def punctuation_training(args, loss_fn):
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -55,7 +59,7 @@ def punctuation_training(args, loss_fn):
 
 def default_training(args, loss_fn):
     """Train the model."""
-    text_encoder_type = TextEncoderType(args.text_encoder)
+    text_encoder_type = _text_encoder_type(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.AlignedDataloader(
@@ -64,6 +68,7 @@ def default_training(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_valid,
@@ -73,6 +78,7 @@ def default_training(args, loss_fn):
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -89,7 +95,7 @@ def default_training(args, loss_fn):
 
 def pretraining(args, loss_fn):
     """Pretraining the model."""
-    text_encoder_type = TextEncoderType(args.text_encoder)
+    text_encoder_type = _text_encoder_type(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.UnalignedDataloader(
@@ -97,6 +103,7 @@ def pretraining(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     valid_dl = dataloader.UnalignedDataloader(
         file_name="data/splitted_english_data/sorted_clean_valid.en",
@@ -104,6 +111,7 @@ def pretraining(args, loss_fn):
         text_encoder_type=text_encoder_type,
         encoder=train_dl.encoder,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     model = models.find(args, train_dl.encoder.vocab_size, train_dl.encoder.vocab_size)
     pretraining = Pretraining(model, train_dl, valid_dl)
@@ -118,7 +126,7 @@ def pretraining(args, loss_fn):
 
 def back_translation_training(args, loss_fn):
     """Train the model with back translation."""
-    text_encoder_type = TextEncoderType(args.text_encoder)
+    text_encoder_type = _text_encoder_type(args.text_encoder)
 
     optim = tf.keras.optimizers.Adam(args.lr)
     logger.info("Creating training unaligned dataloader ...")
@@ -148,6 +156,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=train_dl_reverse.encoder,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
 
     logger.info("Creating reversed training aligned dataloader ...")
@@ -159,6 +168,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl.encoder_input,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
 
     logger.info("Creating valid aligned dataloader ...")
@@ -170,6 +180,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl.encoder_target,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
 
     logger.info("Creating reversed valid aligned dataloader ...")
@@ -181,6 +192,7 @@ def back_translation_training(args, loss_fn):
         encoder_target=aligned_train_dl_reverse.encoder_target,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
 
     model = models.find(
@@ -217,7 +229,7 @@ def back_translation_training(args, loss_fn):
 
 def test(args, loss_fn):
     """Test the model."""
-    text_encoder_type = TextEncoderType(args.text_encoder)
+    text_encoder_type = _text_encoder_type(args.text_encoder)
     # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_train_token.en",
@@ -225,6 +237,7 @@ def test(args, loss_fn):
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     test_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/sorted_test_token.en",
@@ -234,6 +247,7 @@ def test(args, loss_fn):
         encoder_target=train_dl.encoder_target,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
     )
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
@@ -257,6 +271,21 @@ def _log_args(args):
     logger.info(args_output)
 
 
+def _text_encoder_type(text_encoder: str) -> TextEncoderType:
+    try:
+        return TextEncoderType(text_encoder)
+    except Exception as e:
+        logger.error(f"Text encoder type {text_encoder} is not valid.")
+        raise ValueError(e)
+
+
+def _cache_dir(args):
+    if args.no_cache:
+        return None
+
+    return CACHE_DIR
+
+
 def main():
     args = argument_parser.args
     _log_args(args)
@@ -278,19 +307,19 @@ def main():
 
         return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
-    try:
-        logger.info(f"Executing task {args.task}.")
-        task = TASK[args.task]
-        task(args, loss_function)
-    except KeyError:
+    if args.task not in TASK.keys():
         logger.error(
             f"Task {args.task} is not supported, available tasks are {TASK.keys()}."
         )
+    else:
+        logger.info(f"Executing task {args.task}.")
+        task = TASK[args.task]
+        task(args, loss_function)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except ValueError:
+    except Exception as e:
         # Logging is already done
-        pass
+        print(e)
