@@ -4,7 +4,7 @@
 #	  "input_vocab_size": input_vocab_size + 1,
 #	  "output_vocab_size": target_vocab_size + 1,
 #	  "embedding_size": 256,
-#	  "layers_size": 256,
+#	  "layers_size": 512,
 #	  "dropout": 0.3,
 #	  "attention_size": 8,
 # }
