@@ -154,8 +154,8 @@ def create_updated_dataloader(
     It uses those predictions to augmente the inputs of the dataset lang1 -> lang2.
     Targets are always the original real data.
     """
-    aumgentation_ratio = epoch
-    num_additional_data = aumgentation_ratio * len(aligned_dataloader.corpus_input)
+    augmentation_ratio = epoch
+    num_additional_data = augmentation_ratio * len(aligned_dataloader.corpus_input)
 
     corpus = copy.deepcopy(dataloader.corpus)
     # Reduce the corpus to only predict the same number as the number of additional data.
