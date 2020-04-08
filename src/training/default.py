@@ -145,16 +145,14 @@ class Training(base.Training):
 
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]
-        valid_metric = self.recorded_losses["valid"]
 
         logger.info(
-            f"Epoch: {epoch}, Train loss: {train_metric.result()}, Valid loss: {valid_metric.result()} "
+            f"Epoch: {epoch}, Train loss: {train_metric.result()}"
         )
 
         # Reset the cumulative recorded_losses after each epoch
         self.history.record("train_loss", train_metric.result())
         train_metric.reset_states()
-        valid_metric.reset_states()
 
     def _record_bleu(self, epoch, train_path, valid_path):
         train_bleu = base.compute_bleu(
