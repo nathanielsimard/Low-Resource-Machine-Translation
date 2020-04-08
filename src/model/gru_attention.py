@@ -5,10 +5,12 @@ import tensorflow as tf
 
 from src.model import base
 from src.text_encoder import TextEncoder
+from src import logging
 
 NAME = "gru-attention"
 
 
+logger = logging.create_logger(__name__)
 MAX_SEQ_LENGHT = 250
 
 
@@ -28,10 +30,10 @@ class Encoder(tf.keras.Model):
             dropout=dropout,
         )
 
-    def call(self, x, hidden):
+    def call(self, x, hidden, training):
         """Call the foward past."""
         x = self.embedding(x)
-        output, state = self.gru(x, initial_state=hidden)
+        output, state = self.gru(x, initial_state=hidden, training=training)
         return output, state
 
     def initialize_hidden_state(self, batch_size):
@@ -95,7 +97,7 @@ class Decoder(tf.keras.Model):
         # used for attention
         self.attention = BahdanauAttention(self.dec_units)
 
-    def call(self, x, hidden, enc_output):
+    def call(self, x, hidden, enc_output, training):
         """Call the foward past.
 
         Note that the call must be for one caracter/word at a time.
@@ -110,7 +112,7 @@ class Decoder(tf.keras.Model):
         x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
 
         # passing the concatenated vector to the GRU
-        output, state = self.gru(x)
+        output, state = self.gru(x, training=training)
 
         # output shape == (batch_size * seq_lenght, hidden_size)
         output = tf.reshape(output, (-1, output.shape[2]))
@@ -124,22 +126,30 @@ class Decoder(tf.keras.Model):
 class GRU(base.MachineTranslationModel):
     """Gru with Bahdanau attention."""
 
-    def __init__(self, input_vocab_size: int, output_vocab_size: int):
+    def __init__(
+        self,
+        input_vocab_size: int,
+        output_vocab_size: int,
+        embedding_size: int,
+        layers_size: int,
+        dropout: float,
+        attention_size: int,
+    ):
         """Create the gru model."""
         super().__init__(NAME)
         self.input_vocab_size = input_vocab_size
         self.output_vocab_size = output_vocab_size
 
-        self.encoder = Encoder(input_vocab_size, 256, 512, 0.3)
-        self.attention_layer = BahdanauAttention(10)
-        self.decoder = Decoder(output_vocab_size, 256, 512, 0.3)
+        self.encoder = Encoder(input_vocab_size, embedding_size, layers_size, dropout)
+        self.attention_layer = BahdanauAttention(attention_size)
+        self.decoder = Decoder(output_vocab_size, embedding_size, layers_size, dropout)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
         batch_size = x[0].shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden)
+        encoder_output, encoder_hidden = self.encoder(x[0], encoder_hidden, training)
 
         decoder_hidden = encoder_hidden
         predictions = None
@@ -152,7 +162,7 @@ class GRU(base.MachineTranslationModel):
 
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_hidden, _ = self.decoder(
-                decoder_input, decoder_hidden, encoder_output
+                decoder_input, decoder_hidden, encoder_output, training
             )
 
             # The predictions are concatenated on the time axis
@@ -170,7 +180,7 @@ class GRU(base.MachineTranslationModel):
         batch_size = x.shape[0]
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden)
+        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden, False)
         decoder_hidden = encoder_hidden
 
         # The first words of each sentence in the batch is the start of sample token.
@@ -185,10 +195,12 @@ class GRU(base.MachineTranslationModel):
         while not (has_finish_predicting or reach_max_seq_lenght):
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_hidden, _ = self.decoder(
-                last_words, decoder_hidden, encoder_output
+                last_words, decoder_hidden, encoder_output, False
             )
             last_words = tf.expand_dims(decoder_output, 1)
             last_words = tf.math.argmax(last_words, axis=2)
+
+            logger.debug(f"New word {last_words}.")
 
             # Append the newly predicted words into words.
             words = tf.concat([words, last_words], 1)
@@ -199,6 +211,9 @@ class GRU(base.MachineTranslationModel):
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
             reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+
+            logger.debug(f"Has finish predicting {has_finish_predicting}.")
+            logger.debug(f"Has reach max sequence length {reach_max_seq_lenght}.")
 
         return words
 

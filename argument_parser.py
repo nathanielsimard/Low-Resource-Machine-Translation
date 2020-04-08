@@ -38,7 +38,7 @@ def parse_args():
     )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
     parser.add_argument(
-        "--text_encoder", help="Text Encoder type", default="word", type=str
+        "--text_encoder", help="Text Encoder type", default="subword", type=str
     )
     parser.add_argument(
         "--model",
