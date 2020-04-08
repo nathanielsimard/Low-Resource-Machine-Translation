@@ -1,4 +1,3 @@
-import asyncio
 import os
 from datetime import datetime
 from typing import List
@@ -102,38 +101,26 @@ class Training(base.Training):
         optimizer: tf.keras.optimizers,
         loss_fn: tf.keras.losses,
     ):
-        loop = asyncio.new_event_loop()
-
-        async def predict_task_func(outputs):
-            return self.model.predictions(outputs, self.train_dataloader.encoder_target)
-
-        async def gradients_task_func(outputs, tape):
+        with tf.GradientTape() as tape:
+            outputs = self.model(inputs, training=True)
+            # Calculate the training prediction tokens
+            predictions = self.model.predictions(
+                outputs, self.train_dataloader.encoder_target
+            )
             # Calculate the loss and update the parameters
             loss = loss_fn(targets, outputs)
-            gradients = tape.gradient(loss, self.model.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
-            metric = self.recorded_losses["train"]
-            metric(loss)
-            if base.Metrics.ABSOLUTE_ACC in self.metrics:
-                self._record_abs_acc(outputs, targets, batch, batch_size, "train")
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-            logger.info(f"Batch #{batch} : training loss {metric.result()}")
+        metric = self.recorded_losses["train"]
+        metric(loss)
 
-        async def train_step_task_func():
-            with tf.GradientTape() as tape:
-                outputs = self.model(inputs, training=True)
-                # Calculate the training prediction tokens
-                predictions_task = loop.create_task(predict_task_func(outputs))
-                gradients_task = loop.create_task(gradients_task_func(outputs, tape))
+        if base.Metrics.ABSOLUTE_ACC in self.metrics:
+            self._record_abs_acc(outputs, targets, batch, batch_size, "train")
 
-                await asyncio.gather(predictions_task, gradients_task)
-            return predictions_task.result()
+        logger.info(f"Batch #{batch} : training loss {metric.result()}")
 
-        train_step_task = loop.create_task(train_step_task_func())
-        loop.run_until_complete(train_step_task)
-        loop.close()
-
-        return train_step_task
+        return predictions
 
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
