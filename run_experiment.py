@@ -7,7 +7,7 @@ import tensorflow as tf
 import models
 from src import dataloader, logging
 from src.text_encoder import TextEncoderType
-from src.training import base
+from src.training import base, scheduler
 from src.training.back_translation import BackTranslationTraining
 from src.training.default import Training
 from src.training.pretraining import Pretraining
