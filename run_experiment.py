@@ -281,11 +281,11 @@ def main():
     try:
         logger.info(f"Executing task {args.task}.")
         task = TASK[args.task]
-        task(args, loss_function)
     except KeyError:
         logger.error(
             f"Task {args.task} is not supported, available tasks are {TASK.keys()}."
         )
+    task(args, loss_function)
 
 
 if __name__ == "__main__":
