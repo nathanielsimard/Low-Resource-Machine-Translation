@@ -19,7 +19,9 @@ def punctuation_training(args, loss_fn):
     """Train the model for the punctuation task."""
     text_encoder_type = TextEncoderType(args.text_encoder)
 
-    optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
+    optim = tf.keras.optimizers.Adam(
+        learning_rate=args.lr, beta_1=0.9, beta_2=0.98, epsilon=1e-09
+    )
     train_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_english_data/sorted_clean_train.en",
         file_name_target="data/splitted_english_data/sorted_target_train.en",
@@ -58,14 +60,14 @@ def default_training(args, loss_fn):
     optim = tf.keras.optimizers.Adam(learning_rate=args.lr)
     train_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_train,
-        file_name_target=args.tgt_train,
+        file_name_target=args.target_train,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
     )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_valid,
-        file_name_target=args.tgt_valid,
+        file_name_target=args.target_valid,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
@@ -263,7 +265,9 @@ def main():
         random.seed(args.seed)
         tf.random.set_seed(args.seed)
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+        from_logits=True, reduction="none"
+    )
 
     def loss_function(real, pred):
         mask = tf.math.logical_not(tf.math.equal(real, 0))
