@@ -10,6 +10,8 @@ BATCH_SIZE = 2
 VOCAB_SIZE = 20
 SEQ_LENGHT = 10
 
+MAX_SEQ_LENGTH = 100
+
 
 class MachineTranslationModelTest(abc.ABC):
     def setUp(self):
@@ -21,7 +23,7 @@ class MachineTranslationModelTest(abc.ABC):
     def test_translate(self):
         sentences = np.random.randint(0, VOCAB_SIZE, size=(BATCH_SIZE, SEQ_LENGHT))
 
-        translated = self.model.translate(sentences, self.encoder)
+        translated = self.model.translate(sentences, self.encoder, MAX_SEQ_LENGTH)
 
         self.assertIsNotNone(translated)  # type: ignore
 

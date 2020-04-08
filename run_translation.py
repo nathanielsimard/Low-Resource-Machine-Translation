@@ -2,11 +2,9 @@ import translation_argument_parser  # isort:skip
 
 import tensorflow as tf
 
-from src.text_encoder import TextEncoderType
-from src import dataloader, logging
-from src import preprocessing
 import models
-
+from src import dataloader, logging, preprocessing
+from src.text_encoder import TextEncoderType
 
 logger = logging.create_logger(__name__)
 
@@ -33,7 +31,7 @@ def translate(args):
     x = tf.convert_to_tensor([train_dl.encoder_input.encode(message)])
 
     # Translate the message.
-    translated = model.translate(x, encoder_target)
+    translated = model.translate(x, encoder_target, args.max_seq_length)
     translated_message = model.predictions(translated, encoder_target, logit=False)
     logger.info(f"Translation is {translated_message}")
 

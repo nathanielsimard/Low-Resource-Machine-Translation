@@ -11,7 +11,6 @@ NAME = "gru-attention"
 
 
 logger = logging.create_logger(__name__)
-MAX_SEQ_LENGHT = 250
 
 
 class Encoder(tf.keras.Model):
@@ -175,7 +174,9 @@ class GRU(base.MachineTranslationModel):
 
         return predictions
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    def translate(
+        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
+    ) -> tf.Tensor:
         """Translate a sentence from input."""
         batch_size = x.shape[0]
 
@@ -210,7 +211,7 @@ class GRU(base.MachineTranslationModel):
                 np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
-            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+            reach_max_seq_lenght = words.shape[1] >= max_seq_length
 
             logger.debug(f"Has finish predicting {has_finish_predicting}.")
             logger.debug(f"Has reach max sequence length {reach_max_seq_lenght}.")
