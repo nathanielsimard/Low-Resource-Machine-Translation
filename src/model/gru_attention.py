@@ -174,11 +174,10 @@ class GRU(base.MachineTranslationModel):
 
         return predictions
 
-    def translate(
-        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
-    ) -> tf.Tensor:
+    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate a sentence from input."""
         batch_size = x.shape[0]
+        max_seq_length = tf.reduce_max(base.translation_max_seq_lenght(x, encoder))
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
         encoder_output, encoder_hidden = self.encoder(x, encoder_hidden, False)

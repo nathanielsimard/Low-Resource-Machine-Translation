@@ -75,9 +75,10 @@ class Transformer(base.MachineTranslationModel):
 
         return final_output
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int):
+    def translate(self, x: tf.Tensor, encoder: TextEncoder):
         """Translation function for the test set."""
         batch_size = x.shape[0]
+        max_seq_length = x.shape[1]
         # The first words of each sentence in the batch is the start of sample token.
         words = (
             tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index

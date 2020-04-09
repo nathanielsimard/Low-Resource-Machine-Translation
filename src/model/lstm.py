@@ -98,11 +98,10 @@ class Lstm(base.MachineTranslationModel):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
 
-    def translate(
-        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
-    ) -> tf.Tensor:
+    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
         """Translate on input tensor."""
         batch_size = x.shape[0]
+        max_seq_length = x.shape[1]
         states = self.encoder(x)
 
         # The first words of each sentence in the batch is the start of sample token.
