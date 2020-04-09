@@ -232,16 +232,16 @@ def test(args, loss_fn):
     text_encoder_type = _text_encoder_type(args.text_encoder)
     # Used to load the train text encoders.
     train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_train_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        file_name_input="data/splitted_data/train/train_token10000.en",
+        file_name_target="data/splitted_data/train/train_token10000.fr",
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
         cache_dir=_cache_dir(args),
     )
     test_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_test_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        file_name_input="data/splitted_data/test/test_token10000.en",
+        file_name_target="data/splitted_data/test/test_token10000.fr",
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder_input,
         encoder_target=train_dl.encoder_target,
@@ -252,7 +252,7 @@ def test(args, loss_fn):
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
-    base.test(model, loss_fn, test_dl, args.batch_size, args.test)
+    base.test(model, loss_fn, test_dl, args.batch_size, args.checkpoint)
 
 
 TASK = {
