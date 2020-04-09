@@ -103,7 +103,9 @@ class Lstm(base.MachineTranslationModel):
     ) -> tf.Tensor:
         """Translate on input tensor."""
         batch_size = x.shape[0]
-        max_seq_length = x.shape[1]
+        max_seq_length = tf.reduce_max(
+            base.translation_max_seq_lenght(x, encoder_inputs)
+        )
         states = self.encoder(x)
 
         # The first words of each sentence in the batch is the start of sample token.
