@@ -146,8 +146,8 @@ def back_translation_training(args, loss_fn):
 
     logger.info("Creating training aligned dataloader ...")
     aligned_train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_train_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        file_name_input="data/splitted_data/train/train_token10000.en",
+        file_name_target="data/splitted_data/train/train_token10000.fr",
         vocab_size=args.vocab_size,
         encoder_input=train_dl.encoder,
         encoder_target=train_dl_reverse.encoder,
@@ -158,8 +158,8 @@ def back_translation_training(args, loss_fn):
 
     logger.info("Creating reversed training aligned dataloader ...")
     aligned_train_dl_reverse = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
-        file_name_target="data/splitted_data/sorted_train_token.en",
+        file_name_input="data/splitted_data/train/train_token10000.fr",
+        file_name_target="data/splitted_data/train/train_token10000.en",
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_target,
         encoder_target=aligned_train_dl.encoder_input,
@@ -170,8 +170,8 @@ def back_translation_training(args, loss_fn):
 
     logger.info("Creating valid aligned dataloader ...")
     aligned_valid_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_val_token.en",
-        file_name_target="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+        file_name_input="data/splitted_data/valid/val_token10000.en",
+        file_name_target="data/splitted_data/valid/val_token10000.fr",
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl.encoder_input,
         encoder_target=aligned_train_dl.encoder_target,
@@ -182,8 +182,8 @@ def back_translation_training(args, loss_fn):
 
     logger.info("Creating reversed valid aligned dataloader ...")
     aligned_valid_dl_reverse = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/sorted_nopunctuation_lowercase_val_token.frs",
-        file_name_target="data/splitted_data/sorted_val_token.en",
+        file_name_input="data/splitted_data/valid/val_token10000.fr",
+        file_name_target="data/splitted_data/valid/val_token10000.en",
         vocab_size=args.vocab_size,
         encoder_input=aligned_train_dl_reverse.encoder_input,
         encoder_target=aligned_train_dl_reverse.encoder_target,

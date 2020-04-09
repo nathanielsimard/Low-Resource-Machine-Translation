@@ -2,7 +2,8 @@ import hashlib
 from collections import OrderedDict
 
 from src import logging
-from src.model import gru_attention, lstm, lstm_luong_attention, masked_lm, transformer
+from src.model import (gru_attention, lstm, lstm_luong_attention, masked_lm,
+                       transformer)
 
 logger = logging.create_logger(__name__)
 
@@ -17,10 +18,10 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
-        "num_layers": 4,
+        "num_layers": 6,
         "num_heads": 4,
-        "dff": 256,
-        "d_model": 256,
+        "dff": 512,
+        "d_model": 512,
         "input_vocab_size": input_vocab_size + 1,
         "target_vocab_size": target_vocab_size + 1,
         "pe_input": input_vocab_size + 1,
