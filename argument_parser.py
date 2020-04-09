@@ -42,7 +42,11 @@ def parse_args():
         default=None,
         type=int,
     )
-    parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
+    parser.add_argument(
+        "--lr",
+        help="The learning rate, if it's not a float, a learning rate scheduler will be used.",
+        default=0.001,
+    )
     parser.add_argument(
         "--text_encoder", help="Text Encoder type", default="subword", type=str
     )

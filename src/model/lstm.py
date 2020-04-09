@@ -37,6 +37,11 @@ class Encoder(base.Model):
 
         return [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return 256
+
 
 class Decoder(base.Model):
     """Decoder of the lstm basic model."""
@@ -71,6 +76,11 @@ class Decoder(base.Model):
 
         return x, [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return 256
+
 
 class Lstm(base.MachineTranslationModel):
     """Basic sequence-to-sequence lstm model to perform machine translation."""
@@ -97,6 +107,11 @@ class Lstm(base.MachineTranslationModel):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
+
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self.encoder.embedding_size
 
     def translate(
         self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int

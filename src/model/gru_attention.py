@@ -143,6 +143,8 @@ class GRU(base.MachineTranslationModel):
         self.attention_layer = BahdanauAttention(attention_size)
         self.decoder = Decoder(output_vocab_size, embedding_size, layers_size, dropout)
 
+        self._embedding_size = embedding_size
+
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
         batch_size = x[0].shape[0]
@@ -173,6 +175,11 @@ class GRU(base.MachineTranslationModel):
                 predictions = tf.concat([predictions, decoder_output], axis=1)
 
         return predictions
+
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self._embedding_size
 
     def translate(
         self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int

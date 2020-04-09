@@ -37,6 +37,11 @@ class Model(tf.keras.Model):
         file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
         super().load_weights(file_name)
 
+    @abc.abstractproperty
+    def embedding_size(self):
+        """Size of the embedding layer."""
+        pass
+
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Can apply some preprocessing specific to the model."""
         return dataset
