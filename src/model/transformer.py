@@ -77,45 +77,25 @@ class Transformer(base.MachineTranslationModel):
     def translate(self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int):
         batch_size = x.shape[0]
         max_seq_length = x.shape[1]
-        output = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
-        )
 
-        for i in range(max_seq_length):
-            enc_padding_mask, combined_mask, dec_padding_mask = _create_masks(x, output)
-            # predictions.shape == (batch_size, seq_len, vocab_size)
-            predictions = self.call((x, output), training=False)
-            # select the last word from the seq_len dimension
-            predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
-            pred = tf.argmax(predictions, axis=-1)
-
-            output = tf.concat([output, pred], axis=1)
-        return output
-
-    def allo(self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int):
-        """Translation function for the test set."""
-        batch_size = x.shape[0]
         # The first words of each sentence in the batch is the start of sample token.
         words = (
             tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
         )
-        last_words = words
 
         has_finish_predicting = False
         reach_max_seq_lenght = False
 
-        # Always use the same mask because the decoder alway decode one word at a time.
-        enc_padding_mask, look_ahead_mask, dec_padding_mask = _create_masks(
-            x, last_words
-        )
-        enc_output = self.encoder(x, False, enc_padding_mask)
         while not (has_finish_predicting or reach_max_seq_lenght):
-            dec_output, attention_weights = self.decoder(
-                last_words, enc_output, False, look_ahead_mask, dec_padding_mask
-            )
-            last_words = self.final_layer(dec_output)
-            last_words = tf.math.argmax(last_words, axis=2)
-            words = tf.concat([words, last_words], 1)
+            enc_padding_mask, combined_mask, dec_padding_mask = _create_masks(x, words)
+            # predictions.shape == (batch_size, seq_len, vocab_size)
+            predictions = self.call((x, words), training=False)
+
+            # select the last word from the seq_len dimension
+            last_words = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
+            last_words = tf.math.argmax(last_words, axis=-1)
+
+            words = tf.concat([words, last_words], axis=1)
 
             # Compute the end condition of the while loop.
             end_of_sample = (
