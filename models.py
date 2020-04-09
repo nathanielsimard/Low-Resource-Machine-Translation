@@ -2,8 +2,7 @@ import hashlib
 from collections import OrderedDict
 
 from src import logging
-from src.model import (gru_attention, lstm, lstm_luong_attention, masked_lm,
-                       transformer)
+from src.model import gru_attention, lstm, lstm_luong_attention, masked_lm, transformer
 
 logger = logging.create_logger(__name__)
 
@@ -36,10 +35,10 @@ def create_gru_attention(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
         "output_vocab_size": target_vocab_size + 1,
-        "embedding_size": 256,
-        "layers_size": 256,
-        "dropout": 0.5,
-        "attention_size": 10,
+        "embedding_size": 128,
+        "layers_size": 128,
+        "dropout": 0.3,
+        "attention_size": 4,
     }
     return gru_attention.GRU(**hyperparameters), hyperparameters
 
