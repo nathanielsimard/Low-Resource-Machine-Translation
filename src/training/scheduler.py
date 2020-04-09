@@ -8,7 +8,7 @@ class Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         """Create the scheduler from the embedding size."""
         super().__init__()
         self.embedding_size = embedding_size
-        self.embedding_size = tf.cast(self.d_model, tf.float32)
+        self.embedding_size = tf.cast(self.embedding_size, tf.float32)
         self.warmup_steps = warmup_steps
 
     def __call__(self, step):

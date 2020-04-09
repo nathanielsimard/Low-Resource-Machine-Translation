@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "--lr",
         help="Learning rate, if None, a learning rate scheduler will be used.",
-        default=None,
+        default=0.001,
         type=float,
     )
     parser.add_argument(
