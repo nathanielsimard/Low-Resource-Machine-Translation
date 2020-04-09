@@ -23,7 +23,7 @@ class MachineTranslationModelTest(abc.ABC):
             np.random.randint(0, VOCAB_SIZE, size=(BATCH_SIZE, SEQ_LENGHT))
         )
 
-        translated = self.model.translate(sentences, self.encoder)
+        translated = self.model.translate(sentences, self.encoder, self.encoder)
 
         self.assertIsNotNone(translated)  # type: ignore
 

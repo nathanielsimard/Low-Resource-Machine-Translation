@@ -64,11 +64,13 @@ class MachineTranslationModel(Model, abc.ABC):
         return clean_sentences(sentences)
 
     @abc.abstractmethod
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    def translate(
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
+    ) -> tf.Tensor:
         """Translate a sentence from input.
 
         Example::
-            >>> translated = model.translate(x, target_encoder)
+            >>> translated = model.translate(x, encoder_inputs, encoder_targets)
             >>> predictions = model.predictions(translated, target_encoder, logit=False)
 
         Returns the indexes corresponding to each vocabulary word.

@@ -5,7 +5,7 @@ import tensorflow as tf
 from src.dataloader import UnalignedDataloader
 from src.model.base import clean_sentences, translation_max_seq_lenght
 from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
-from src.text_encoder import TextEncoderType, WordTextEncoder
+from src.text_encoder import TextEncoderType
 
 
 class CleanSentences(unittest.TestCase):
