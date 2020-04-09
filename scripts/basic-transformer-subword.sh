@@ -12,11 +12,16 @@
 #        "rate": 0.1,
 #    }
 
+# Bleu Score after 38 epochs:
+#   - Train 32.5439
+#   - Valid 5.3417
+#   - Test 5.2406
+
 python run_experiment.py \
 	--model transformer \
 	--text_encoder subword \
 	--vocab_size 8192 \
-	--epochs 100 \
+	--epochs 38 \
 	--lr None \
 	--batch_size 64 \
 	--max_seq_length 500 \
