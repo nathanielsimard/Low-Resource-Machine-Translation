@@ -270,7 +270,7 @@ def _log_args(args):
 
 
 def _create_optimizer(embedding_size, args):
-    if args.lr is not None:
+    if type(args.lr) is float:
         learning_rate = args.lr
     else:
         learning_rate = scheduler.Schedule(embedding_size)
