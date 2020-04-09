@@ -78,13 +78,7 @@ class Training(base.Training):
                     inputs, targets, i, batch_size, optimizer, loss_fn
                 )
 
-            valid_predictions = self._valid_step(
-                valid_dataset,
-                loss_fn,
-                batch_size,
-                self.valid_dataloader.encoder_target,
-                self.max_seq_length,
-            )
+            valid_predictions = self._valid_step(valid_dataset, loss_fn, batch_size)
 
             train_path = os.path.join(directory, f"train-{epoch}")
             valid_path = os.path.join(directory, f"valid-{epoch}")
@@ -130,13 +124,17 @@ class Training(base.Training):
 
         return predictions
 
-    def _valid_step(self, dataset, loss_fn, batch_size, encoder, max_seq_length):
+    def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
             dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
         ):
             logger.info(f"Batch #{i} : validation")
-            outputs = self.model.translate(inputs, encoder, max_seq_length)
+            outputs = self.model.translate(
+                inputs,
+                self.valid_dataloader.encoder_input,
+                self.valid_dataloader.encoder_target,
+            )
             valid_predictions += self.model.predictions(
                 outputs, self.valid_dataloader.encoder_target, logit=False
             )
