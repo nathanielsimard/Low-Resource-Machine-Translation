@@ -72,8 +72,35 @@ class Transformer(base.MachineTranslationModel):
         final_output = self.final_layer(
             dec_output
         )  # (batch_size, tar_seq_len, target_vocab_size)
-
         return final_output
+
+    def allo(
+        self, x: tf.Tensor, encoder_input: TextEncoder, encoder_target: TextEncoder
+    ):
+        batch_size = x.shape[0]
+        max_seq_length = 40
+        output = (
+            tf.zeros([batch_size, 1], dtype=tf.int64)
+            + encoder_target.start_of_sample_index
+        )
+
+        for i in range(max_seq_length):
+            enc_padding_mask, combined_mask, dec_padding_mask = _create_masks(
+                encoder_input, output
+            )
+            # predictions.shape == (batch_size, seq_len, vocab_size)
+            predictions, attention_weights = self.call(
+                (encoder_input, output), training=False
+            )
+            # select the last word from the seq_len dimension
+            predictions = predictions[:, -1:, :]  # (batch_size, 1, vocab_size)
+
+            predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int32)
+            # concatentate the predicted_id to the output which is given to the decoder
+            # as its input.
+            output = tf.concat([output, predicted_id], axis=-1)
+
+        return tf.squeeze(output, axis=0), attention_weights
 
     def translate(self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int):
         """Translation function for the test set."""
