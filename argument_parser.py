@@ -26,6 +26,12 @@ def parse_args():
         "--debug", help="Enable debug logging.", action="store_true",
     )
     parser.add_argument(
+        "--std", help="Also log into std.", action="store_true",
+    )
+    parser.add_argument(
+        "--no_cache", help="Disable caching for text encoders.", action="store_true",
+    )
+    parser.add_argument(
         "--random_seed",
         help="Will overide the default seed and use a random one",
         action="store_true",
@@ -36,7 +42,12 @@ def parse_args():
         default=None,
         type=int,
     )
-    parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
+    parser.add_argument(
+        "--lr",
+        help="Learning rate, if None, a learning rate scheduler will be used.",
+        default=None,
+        type=float,
+    )
     parser.add_argument(
         "--text_encoder", help="Text Encoder type", default="subword", type=str
     )
@@ -74,7 +85,9 @@ def parse_args():
         default="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
     )
     args = parser.parse_args()
-    logger = logging.initialize(experiment_name=args.model, debug=args.debug)
+    logger = logging.initialize(
+        experiment_name=args.model, debug=args.debug, std=args.std
+    )
 
     return args, logger
 
