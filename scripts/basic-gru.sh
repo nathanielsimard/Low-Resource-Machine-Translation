@@ -9,6 +9,14 @@
 #	  "attention_size": 8,
 # }
 
+# After 18 epochs:
+#   - Train : 24.1215
+#   - Valid : 2.3812
+#   - Test : 2.6832
+#
+# Note: Does not predict correctly end of sentence tokens and
+#       enters an endless loop of repreating the same
+#       part of the sentence.
 
 python run_experiment.py \
 	--model gru-attention \
