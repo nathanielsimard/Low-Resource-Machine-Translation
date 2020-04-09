@@ -37,6 +37,11 @@ class Encoder(base.Model):
 
         return [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return 256
+
 
 class Decoder(base.Model):
     """Decoder of the lstm basic model."""
@@ -71,6 +76,11 @@ class Decoder(base.Model):
 
         return x, [[hidden_state_1, carry_state_1], [hidden_state_2, carry_state_2]]
 
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return 256
+
 
 class Lstm(base.MachineTranslationModel):
     """Basic sequence-to-sequence lstm model to perform machine translation."""
@@ -98,16 +108,25 @@ class Lstm(base.MachineTranslationModel):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
 
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self.encoder.embedding_size
+
     def translate(
-        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
     ) -> tf.Tensor:
         """Translate on input tensor."""
         batch_size = x.shape[0]
+        max_seq_length = tf.reduce_max(
+            base.translation_max_seq_lenght(x, encoder_inputs)
+        )
         states = self.encoder(x)
 
         # The first words of each sentence in the batch is the start of sample token.
         words = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
+            tf.zeros([batch_size, 1], dtype=tf.int64)
+            + encoder_targets.start_of_sample_index
         )
         last_words = words
 
@@ -125,7 +144,8 @@ class Lstm(base.MachineTranslationModel):
 
             # Compute the end condition of the while loop.
             end_of_sample = (
-                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
+                np.zeros([batch_size, 1], dtype=np.int64)
+                + encoder_targets.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
             reach_max_seq_lenght = words.shape[1] >= max_seq_length

@@ -55,6 +55,7 @@ class Transformer(base.MachineTranslationModel):
             num_layers, d_model, num_heads, dff, target_vocab_size, pe_target, rate
         )
 
+        self._embedding_size = d_model
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
@@ -74,13 +75,18 @@ class Transformer(base.MachineTranslationModel):
         )  # (batch_size, tar_seq_len, target_vocab_size)
         return final_output
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int):
+    def translate(
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
+    ) -> tf.Tensor:
+        """Translation function for the test set."""
         batch_size = x.shape[0]
-        max_seq_length = x.shape[1]
-
+        max_seq_length = tf.reduce_max(
+            base.translation_max_seq_lenght(x, encoder_inputs)
+        )
         # The first words of each sentence in the batch is the start of sample token.
         words = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
+            tf.zeros([batch_size, 1], dtype=tf.int64)
+            + encoder_targets.start_of_sample_index
         )
 
         has_finish_predicting = False
@@ -99,7 +105,8 @@ class Transformer(base.MachineTranslationModel):
 
             # Compute the end condition of the while loop.
             end_of_sample = (
-                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
+                np.zeros([batch_size, 1], dtype=np.int64)
+                + encoder_targets.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
             reach_max_seq_lenght = words.shape[1] >= max_seq_length
@@ -110,6 +117,11 @@ class Transformer(base.MachineTranslationModel):
     def padded_shapes(self):
         """Padded shapes used to add padding when batching multiple sequences."""
         return (([None], [None]), [None])
+
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self._embedding_size
 
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Proprocess dataset to have ((encoder_input, decoder_input), target)."""

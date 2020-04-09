@@ -78,9 +78,7 @@ def test(
     """Test a model at a specific checkpoint."""
     model.load(str(checkpoint))
 
-    predictions = _generate_predictions(
-        model, dataloader, dataloader.encoder_target, batch_size
-    )
+    predictions = _generate_predictions(model, dataloader, batch_size)
 
     directory = os.path.join("results/test", model.title)
     os.makedirs(directory, exist_ok=True)
@@ -91,18 +89,16 @@ def test(
     logger.info(f"Bleu score {bleu}")
 
 
-def _generate_predictions(model, dataloader, encoder, batch_size):
-    max_seq_length = dataloader.max_seq_length
-    if max_seq_length is None:
-        max_seq_length = 250
-
+def _generate_predictions(model, dataloader, batch_size):
     dataset = dataloader.create_dataset()
     predictions: List[str] = []
     for i, (inputs, targets) in enumerate(
         dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
     ):
         logger.info(f"Batch #{i} : testing")
-        outputs = model.translate(inputs, encoder, max_seq_length)
+        outputs = model.translate(
+            inputs, dataloader.encoder_input, dataloader.encoder_target
+        )
         predictions += model.predictions(
             outputs, dataloader.encoder_target, logit=False
         )

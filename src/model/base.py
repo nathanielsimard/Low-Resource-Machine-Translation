@@ -1,12 +1,14 @@
 import abc
 from typing import List
 
+import numpy as np
 import tensorflow as tf
 
 from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
 from src.text_encoder import TextEncoder
 
 MODEL_BASE_DIR = "models"
+EN_TO_FR_FACTOR = 1.25
 
 
 class Model(tf.keras.Model):
@@ -37,6 +39,11 @@ class Model(tf.keras.Model):
         file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
         super().load_weights(file_name)
 
+    @abc.abstractproperty
+    def embedding_size(self):
+        """Size of the embedding layer."""
+        pass
+
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Can apply some preprocessing specific to the model."""
         return dataset
@@ -63,12 +70,12 @@ class MachineTranslationModel(Model, abc.ABC):
 
     @abc.abstractmethod
     def translate(
-        self, x: tf.Tensor, encoder: TextEncoder, max_seq_length: int
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
     ) -> tf.Tensor:
         """Translate a sentence from input.
 
         Example::
-            >>> translated = model.translate(x, target_encoder, max_seq_length)
+            >>> translated = model.translate(x, encoder_inputs, encoder_targets)
             >>> predictions = model.predictions(translated, target_encoder, logit=False)
 
         Returns the indexes corresponding to each vocabulary word.
@@ -97,3 +104,13 @@ def _clean_tokens(sentence: str) -> List[str]:
         cleaned_sentence.append(word)
 
     return cleaned_sentence
+
+
+def translation_max_seq_lenght(
+    inputs: tf.Tensor, encoder: TextEncoder, factor=EN_TO_FR_FACTOR
+):
+    """Calculate the max index for each sentence in the input tensor."""
+    bool_tensor = inputs.numpy() == encoder.end_of_sample_index
+    max_index_tensor = np.ceil(np.argmax(bool_tensor, axis=-1) * factor)
+
+    return tf.convert_to_tensor(max_index_tensor, dtype=tf.int32,)
