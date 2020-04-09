@@ -76,13 +76,9 @@ def test(
     checkpoint: int,
 ):
     """Test a model at a specific checkpoint."""
-    dataset = dataloader.create_dataset()
-    dataset = model.preprocessing(dataset)
     model.load(str(checkpoint))
 
-    predictions, _ = _generate_predictions(
-        model, dataset, dataloader.encoder_target, batch_size, loss_fn
-    )
+    predictions = _generate_predictions(model, dataloader, batch_size)
 
     directory = os.path.join("results/test", model.title)
     os.makedirs(directory, exist_ok=True)
@@ -93,17 +89,21 @@ def test(
     logger.info(f"Bleu score {bleu}")
 
 
-def _generate_predictions(model, dataset, encoder, batch_size, loss_fn):
-    predictions = []
-    for inputs, targets in dataset.padded_batch(
-        batch_size, padded_shapes=model.padded_shapes
+def _generate_predictions(model, dataloader, batch_size):
+    dataset = dataloader.create_dataset()
+    predictions: List[str] = []
+    for i, (inputs, targets) in enumerate(
+        dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
     ):
-        outputs = model(inputs, training=False)
-        predictions += model.predictions(outputs, encoder)
+        logger.info(f"Batch #{i} : testing")
+        outputs = model.translate(
+            inputs, dataloader.encoder_input, dataloader.encoder_target
+        )
+        predictions += model.predictions(
+            outputs, dataloader.encoder_target, logit=False
+        )
 
-        loss = loss_fn(targets, outputs)
-
-    return predictions, loss
+    return predictions
 
 
 def write_text(sentences, output_file):

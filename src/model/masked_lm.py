@@ -26,6 +26,7 @@ class DemiBERT(base.Model):
             rate=dropout,
         )
         self.dense = layers.Dense(embedding_size)
+        self._embedding_size = embedding_size
 
     def call(self, x: tf.Tensor, training=False):
         """Performs a forward pass."""
@@ -40,3 +41,8 @@ class DemiBERT(base.Model):
     def padded_shapes(self):
         """Padded shapes for the minibatch."""
         return [None]
+
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self._embedding_size

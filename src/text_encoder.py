@@ -17,6 +17,7 @@ class TextEncoderType(enum.Enum):
 
     SUBWORD = "subword"
     WORD = "word"
+    WORD_NO_FILTER = "word-no-filter"
 
 
 class TextEncoder(abc.ABC):
@@ -83,13 +84,17 @@ class TextEncoder(abc.ABC):
 class WordTextEncoder(TextEncoder):
     """Text Encoder where most popular words become tokens."""
 
-    def __init__(self, vocab_size: int, corpus: List[str]):
+    def __init__(
+        self,
+        vocab_size: int,
+        corpus: List[str],
+        filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
+    ):
         """Create the encoder using the keras tokenizer."""
-        logger.info("Creating new word text encoder.")
         self.tokenizer = tf.keras.preprocessing.text.Tokenizer(
             num_words=vocab_size,
             oov_token=preprocessing.OUT_OF_SAMPLE_TOKEN,
-            filters='!"#$%&()*+,-./:;=?@[\\]^_`{|}~\t\n',
+            filters=filters,
         )
         self.tokenizer.fit_on_texts(corpus)
 
@@ -136,12 +141,29 @@ class WordTextEncoder(TextEncoder):
         return word_tokens
 
 
+class WordNoFilterTextEncoder(WordTextEncoder):
+    """Text Encoder where most popular words become tokens.
+
+    The corpus is expected to be already tokenized, so no
+    filters need to be applied.
+    """
+
+    def __init__(self, vocab_size: int, corpus: List[str]):
+        """Create the encoder like word but without filters."""
+        super().__init__(vocab_size, corpus, filters="")
+        self.cls = WordNoFilterTextEncoder  # type: ignore
+
+    @classmethod
+    def type(cls):
+        """Type of the text encoder."""
+        return TextEncoderType.WORD_NO_FILTER
+
+
 class SubWordTextEncoder(TextEncoder):
     """Text Encoder where most popular subwords become tokens."""
 
     def __init__(self, vocab_size: int, corpus: List[str]):
         """Create the encoder using the tensorflow dataset corpus utilities."""
-        logger.info("Creating new subword text encoder.")
         self._encoder = tfds.features.text.SubwordTextEncoder.build_from_corpus(
             (sentence for sentence in corpus),
             target_vocab_size=vocab_size,
@@ -198,33 +220,33 @@ def create_encoder(
     file_name, corpus, vocab_size, text_encoder_type: TextEncoderType, cache_dir=None,
 ):
     """Create a text encoder of the given type to encode and decode text from and into tensor."""
-    directory = os.path.join(cache_dir, file_name)
-    os.makedirs(directory, exist_ok=True)
+    cache_file = None
+
+    if cache_dir is not None:
+        directory = os.path.join(cache_dir, file_name)
+        os.makedirs(directory, exist_ok=True)
+        cache_file = os.path.join(directory, str(vocab_size)).format()
 
     clazz: Any = None
     if text_encoder_type == TextEncoderType.WORD:
         clazz = WordTextEncoder
     elif text_encoder_type == TextEncoderType.SUBWORD:
         clazz = SubWordTextEncoder
+    elif text_encoder_type == TextEncoderType.WORD_NO_FILTER:
+        clazz = WordNoFilterTextEncoder
     else:
         raise Exception(f"Text Encoder Type {text_encoder_type} is not supported.")
 
-    return _create_text_encoder(
-        corpus,
-        vocab_size,
-        clazz,
-        cache_file=os.path.join(directory, str(vocab_size)).format(),
-    )
+    return _create_text_encoder(corpus, vocab_size, clazz, cache_file=cache_file)
 
 
 def _create_text_encoder(text: List[str], vocab_size: int, clazz, cache_file=None):
     if cache_file is None:
-        return clazz(vocab_size, text)
+        encoder = clazz(vocab_size, text)
+        logger.info(f"Created new text encoder of type {encoder.type()}.")
+        return encoder
 
     try:
         return clazz.load_from_file(cache_file)
     except FileNotFoundError:
-        encoder = clazz(vocab_size, text)
-        encoder.save_to_file(cache_file)
-
-        return encoder
+        return _create_text_encoder(text, vocab_size, clazz)

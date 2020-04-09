@@ -17,8 +17,8 @@ def create_lstm(args, input_vocab_size, target_vocab_size):
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
-        "num_layers": 2,
-        "num_heads": 2,
+        "num_layers": 4,
+        "num_heads": 4,
         "dff": 256,
         "d_model": 256,
         "input_vocab_size": input_vocab_size + 1,
@@ -36,9 +36,9 @@ def create_gru_attention(args, input_vocab_size, target_vocab_size):
         "input_vocab_size": input_vocab_size + 1,
         "output_vocab_size": target_vocab_size + 1,
         "embedding_size": 256,
-        "layers_size": 256,
-        "dropout": 0.5,
-        "attention_size": 10,
+        "layers_size": 512,
+        "dropout": 0.3,
+        "attention_size": 8,
     }
     return gru_attention.GRU(**hyperparameters), hyperparameters
 

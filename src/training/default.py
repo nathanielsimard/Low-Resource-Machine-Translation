@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 from typing import List
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 from src import logging
 from src.dataloader import AlignedDataloader
@@ -29,10 +29,13 @@ class Training(base.Training):
         self.metrics = metrics
         self.recorded_losses = {
             "train": tf.keras.metrics.Mean("train_loss", tf.float32),
-            "valid": tf.keras.metrics.Mean("valid_loss", tf.float32),
         }
 
         self.history = base.History()
+
+        self.max_seq_length = self.valid_dataloader.max_seq_length
+        if self.max_seq_length is None:
+            self.max_seq_length = 250
 
     def run(
         self,
@@ -48,7 +51,6 @@ class Training(base.Training):
         valid_dataset = self.valid_dataloader.create_dataset()
 
         train_dataset = self.model.preprocessing(train_dataset)
-        valid_dataset = self.model.preprocessing(valid_dataset)
 
         logger.info("Creating results directory...")
 
@@ -125,37 +127,28 @@ class Training(base.Training):
     def _valid_step(self, dataset, loss_fn, batch_size):
         valid_predictions: List[str] = []
         for i, (inputs, targets) in enumerate(
-            dataset.padded_batch(batch_size, padded_shapes=self.model.padded_shapes)
+            dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
         ):
-            outputs = self.model(inputs, training=False)
-            valid_predictions += self.model.predictions(
-                outputs, self.valid_dataloader.encoder_target
+            logger.info(f"Batch #{i} : validation")
+            outputs = self.model.translate(
+                inputs,
+                self.valid_dataloader.encoder_input,
+                self.valid_dataloader.encoder_target,
             )
-
-            loss = loss_fn(targets, outputs)
-            metric = self.recorded_losses["valid"]
-            metric(loss)
-
-            if base.Metrics.ABSOLUTE_ACC in self.metrics:
-                self._record_abs_acc(outputs, targets, i, batch_size, "valid")
-
-            logger.info(f"Batch #{i} : validation loss {metric.result()}")
+            valid_predictions += self.model.predictions(
+                outputs, self.valid_dataloader.encoder_target, logit=False
+            )
 
         return valid_predictions
 
     def _update_progress(self, epoch):
         train_metric = self.recorded_losses["train"]
-        valid_metric = self.recorded_losses["valid"]
 
-        logger.info(
-            f"Epoch: {epoch}, Train loss: {train_metric.result()}, Valid loss: {valid_metric.result()} "
-        )
+        logger.info(f"Epoch: {epoch}, Train loss: {train_metric.result()}")
 
         # Reset the cumulative recorded_losses after each epoch
         self.history.record("train_loss", train_metric.result())
-        self.history.record("valid_loss", valid_metric.result())
         train_metric.reset_states()
-        valid_metric.reset_states()
 
     def _record_bleu(self, epoch, train_path, valid_path):
         train_bleu = base.compute_bleu(

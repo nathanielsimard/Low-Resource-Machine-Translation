@@ -3,15 +3,14 @@ from typing import Tuple
 import numpy as np
 import tensorflow as tf
 
+from src import logging
 from src.model import base
 from src.text_encoder import TextEncoder
-from src import logging
 
 NAME = "gru-attention"
 
 
 logger = logging.create_logger(__name__)
-MAX_SEQ_LENGHT = 250
 
 
 class Encoder(tf.keras.Model):
@@ -27,7 +26,7 @@ class Encoder(tf.keras.Model):
             return_sequences=True,
             return_state=True,
             recurrent_initializer="glorot_uniform",
-            dropout=dropout,
+            recurrent_dropout=dropout,
         )
 
     def call(self, x, hidden, training):
@@ -90,7 +89,7 @@ class Decoder(tf.keras.Model):
             return_sequences=True,
             return_state=True,
             recurrent_initializer="glorot_uniform",
-            dropout=dropout,
+            recurrent_dropout=dropout,
         )
         self.fc = tf.keras.layers.Dense(vocab_size)
 
@@ -144,6 +143,8 @@ class GRU(base.MachineTranslationModel):
         self.attention_layer = BahdanauAttention(attention_size)
         self.decoder = Decoder(output_vocab_size, embedding_size, layers_size, dropout)
 
+        self._embedding_size = embedding_size
+
     def call(self, x: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Call the foward past."""
         batch_size = x[0].shape[0]
@@ -175,9 +176,19 @@ class GRU(base.MachineTranslationModel):
 
         return predictions
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return self._embedding_size
+
+    def translate(
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
+    ) -> tf.Tensor:
         """Translate a sentence from input."""
         batch_size = x.shape[0]
+        max_seq_length = tf.reduce_max(
+            base.translation_max_seq_lenght(x, encoder_inputs)
+        )
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
         encoder_output, encoder_hidden = self.encoder(x, encoder_hidden, False)
@@ -185,7 +196,8 @@ class GRU(base.MachineTranslationModel):
 
         # The first words of each sentence in the batch is the start of sample token.
         words = (
-            tf.zeros([batch_size, 1], dtype=tf.int64) + encoder.start_of_sample_index
+            tf.zeros([batch_size, 1], dtype=tf.int64)
+            + encoder_targets.start_of_sample_index
         )
         last_words = words
 
@@ -207,10 +219,11 @@ class GRU(base.MachineTranslationModel):
 
             # Compute the end condition of the while loop.
             end_of_sample = (
-                np.zeros([batch_size, 1], dtype=np.int64) + encoder.end_of_sample_index
+                np.zeros([batch_size, 1], dtype=np.int64)
+                + encoder_targets.end_of_sample_index
             )
             has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
-            reach_max_seq_lenght = words.shape[1] >= MAX_SEQ_LENGHT
+            reach_max_seq_lenght = words.shape[1] >= max_seq_length
 
             logger.debug(f"Has finish predicting {has_finish_predicting}.")
             logger.debug(f"Has reach max sequence length {reach_max_seq_lenght}.")

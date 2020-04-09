@@ -164,9 +164,16 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
 
         return predictions
 
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    def translate(
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
+    ) -> tf.Tensor:
         """Translate a sentence from input."""
         pass
+
+    @property
+    def embedding_size(self):
+        """Embedding size."""
+        return 256
 
     @property
     def padded_shapes(self):

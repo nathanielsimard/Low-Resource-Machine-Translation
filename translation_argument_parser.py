@@ -24,6 +24,9 @@ def parse_args():
     parser.add_argument(
         "--message", help="Message to translate", type=str, required=True
     )
+    parser.add_argument(
+        "--max_seq_length", help="Max sequence length", default=250, type=int
+    )
     args = parser.parse_args()
     logger = logging.initialize(experiment_name=args.model, debug=args.debug)
 
