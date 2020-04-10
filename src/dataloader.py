@@ -50,7 +50,7 @@ class UnalignedDataloader:
         """Create a Tensorflow dataset."""
 
         def gen():
-            for i in self.corpus[:20000]:
+            for i in self.corpus:
                 if self.max_seq_length is not None:
                     drop_char_len = len(i) - self.max_seq_length
                     if drop_char_len > 0:
