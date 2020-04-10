@@ -72,7 +72,7 @@ class Pretraining(base.Training):
             ):
                 logger.debug(minibatch)
                 with tf.GradientTape() as tape:
-                    loss = self._step(minibatch, i, loss_fn, "train")
+                    loss = self._step(minibatch, i, loss_fn, "train", training=True)
                     gradients = tape.gradient(loss, self.model.trainable_variables)
                     optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
@@ -85,7 +85,7 @@ class Pretraining(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                loss = self._step(minibatch, i, loss_fn, "valid")
+                loss = self._step(minibatch, i, loss_fn, "valid", training=False)
 
             logger.debug("Saving validation loss")
             self.history.record("valid_loss", self.losses["valid"].result())
@@ -95,12 +95,12 @@ class Pretraining(base.Training):
             self.losses["train"].reset_states()
             self.losses["valid"].reset_states()
 
-    def _step(self, inputs, batch, loss_fn, name):
+    def _step(self, inputs, batch, loss_fn, name, training):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
         logger.debug(masked_inputs)
         logger.debug(mask)
 
-        outputs = self.model(masked_inputs, training=True)
+        outputs = self.model(masked_inputs, training=training)
         logger.debug("outputs shape: ", outputs.shape)
 
         def mlm_loss(real, pred):
