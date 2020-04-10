@@ -69,7 +69,7 @@ def train(
     report_every=100,
     validation_source_file=None,
     validation_target_file=None,
-    validate_every=1000,
+    validate_every=2000,
     validate_now=False,
 ):
     """Runs the training loop.
@@ -160,6 +160,7 @@ def train(
         if step % save_every == 0:
             tf.get_logger().info("Saving checkpoint for step %d", step)
             checkpoint_manager.save(checkpoint_number=step)
+            tf.get_logger().info("Checkpoint saved.")
 
         if step == train_steps:
             break
