@@ -20,6 +20,8 @@ import opennmt as onmt
 
 tf.get_logger().setLevel(logging.INFO)
 
+tfa.options.TF_ADDONS_PY_OPS=True
+
 
 # Define the model. For the purpose of this example, the model components
 # (encoder, decoder, etc.) will be called separately.
