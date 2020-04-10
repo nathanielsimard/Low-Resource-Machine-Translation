@@ -17,7 +17,7 @@ class French2EnglishSettings(object):
     src_train = "data/splitted_data/train/train_token10000.fr"
     target_train = "data/splitted_data/train/train_token10000.en"
     checkpoint = 34
-    max_seq_length = (500,)
+    max_seq_length = 750
     batch_size = 64
     model = "transformer"
 
@@ -71,10 +71,10 @@ def _generate_predictions(
 ):
     dataset = dataloader.create_dataset()
     predictions: List[str] = []
-    for i, (inputs, targets) in enumerate(
-        dataset.padded_batch(batch_size, padded_shapes=([None], [None]))
+    for i, inputs in enumerate(
+        dataset.padded_batch(batch_size, padded_shapes=[None])
     ):
-        logger.info(f"Batch #{i} : testing")
+        logger.info(f"Batch #{i} : evaluator")
         outputs = model.translate(inputs, encoder_input, encoder_target)
         predictions += model.predictions(outputs, encoder_target, logit=False)
 
