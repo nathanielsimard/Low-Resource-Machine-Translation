@@ -1,15 +1,13 @@
 #!/bin/bash
 
 # hyperparameters = {
-#        "num_layers": 4,
+#        "num_layers": 6,
+#        "embedding_size": 256,
 #        "num_heads": 4,
-#        "dff": 256,
-#        "d_model": 256,
-#        "input_vocab_size": input_vocab_size + 1,
-#        "target_vocab_size": target_vocab_size + 1,
-#        "pe_input": input_vocab_size + 1,
-#        "pe_target": target_vocab_size + 1,
-#        "rate": 0.1,
+#        "dff": 512,
+#        "vocab_size": input_vocab_size + 1,
+#        "max_pe": input_vocab_size + 1,
+#        "dropout": 0.1,
 #    }
 
 # Bleu Score after 25 epochs:
@@ -29,4 +27,5 @@ python run_experiment.py \
 	--target_train data/splitted_data/train/train_token10000.fr \
 	--src_valid data/splitted_data/valid/val_token10000.en \
 	--target_valid data/splitted_data/valid/val_token10000.fr \
-	--no_cache
+	--no_cache \
+	--std

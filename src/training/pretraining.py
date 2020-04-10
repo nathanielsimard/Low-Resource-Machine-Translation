@@ -63,12 +63,14 @@ class Pretraining(base.Training):
         logger.info("Beginning pretraining session...")
 
         for epoch in range(checkpoint + 1, num_epoch + 1):
+            logger.debug(f"Epoch {epoch}...")
 
             for i, minibatch in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
+                logger.debug(minibatch)
                 with tf.GradientTape() as tape:
                     loss = self._step(minibatch, i, loss_fn, "train")
                     gradients = tape.gradient(loss, self.model.trainable_variables)
@@ -95,10 +97,11 @@ class Pretraining(base.Training):
 
     def _step(self, inputs, batch, loss_fn, name):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
-        logger.debug(f"Inputs : {self.train_dataloader.encoder.decode(inputs)}")
-        logger.debug(f"Masked Inputs : {self.train_dataloader.encoder.decode(masked_inputs)}")
+        logger.debug(masked_inputs)
+        logger.debug(mask)
 
         outputs = self.model(masked_inputs, training=True)
+        logger.debug("outputs shape: ", outputs.shape)
 
         def mlm_loss(real, pred):
             mask_targets = tf.cast(mask, dtype=tf.int32)
@@ -112,7 +115,7 @@ class Pretraining(base.Training):
             logger.debug(f"mask target: {mask_targets}")
             logger.debug(f"preds : {pred}")
 
-            return tf.reduce_mean(loss_)
+            return tf.reduce_sum(loss_) / tf.reduce_sum(mask_targets)
 
         loss = mlm_loss(inputs, outputs)
         self.losses[name](loss)
