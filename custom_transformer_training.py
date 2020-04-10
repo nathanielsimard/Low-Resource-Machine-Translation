@@ -281,14 +281,15 @@ def main():
 
     if args.bpe:
         # Prepare Byte-Pair Encore model + Byte-Pair Encoded Files.
+        prepare_bpe_models(src, tgt)
+        prepare_bpe_files(src, tgt)
+        prepare_bpe_files(valsrc, valtgt)
+
         src += ".bpe"
         tgt += ".bpe"
         valsrc += ".bpe"
         vocab_size = args.bpe_vocab_size
         # valtgt += ".bpe" We compare againt the real version of the validation file.
-        prepare_bpe_models(src, tgt)
-        prepare_bpe_files(src, tgt)
-        prepare_bpe_files(valsrc, valtgt)
 
     # Rebuilds the vocabulary from scratch using only the input data.
     build_vocabulary(src, src_vocab, vocab_size)
