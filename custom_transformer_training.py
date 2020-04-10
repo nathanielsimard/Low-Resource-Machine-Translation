@@ -138,7 +138,7 @@ def train(source_file,
 
 def translate(source_file,
               batch_size=32,
-              beam_size=4):
+              beam_size=1):
   """Runs translation.
   Args:
     source_file: The source file.
