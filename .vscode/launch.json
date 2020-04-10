@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                //"--src_vocab=data/splitted_data/train/vocab10000.en",
+                //"--tgt_vocab=data/splitted_data/train/vocab10000.fr",
+                "--bpe",
+                "train"
+            ]
+        }
+    ]
+}

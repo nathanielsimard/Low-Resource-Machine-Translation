@@ -71,6 +71,7 @@ def train(
     validation_target_file=None,
     validate_every=2000,
     validate_now=False,
+    bpe=False,
 ):
     """Runs the training loop.
   Args:
@@ -142,6 +143,8 @@ def train(
                     f"Saving validation predictions from {validation_source_file} to {output_file_name}"
                 )
                 translate(validation_source_file, output_file=output_file_name)
+                if bpe:
+                    output_file_name = decode_bpe_file(output_file_name)
                 tf.get_logger().info(
                     f"Computing BLEU between from {validation_target_file} to {output_file_name}"
                 )
@@ -227,6 +230,15 @@ def translate(source_file, batch_size=32, beam_size=1, output_file=None):
         f.close()
 
 
+from build_vocabulary import (
+    prepare_bpe_models,
+    prepare_bpe_files,
+    decode_bpe_file,
+    get_bpe_vocab_files,
+    build_vocabulary,
+)
+
+
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -236,18 +248,22 @@ def main():
     parser.add_argument("--tgt", help="Path to the target file.")
     parser.add_argument("--valsrc", help="Path to the validation source file.")
     parser.add_argument("--valtgt", help="Path to the validation target file.")
+    parser.add_argument("--bpe", help="Enables Byte-Pair Encoding", action="store_true")
+    parser.add_argument("--vocab_size", help="Vocabulary Size", default=16000)
+    parser.add_argument("--bpe_vocab_size", help="Vocabulary Size", default=4000)
+
     parser.add_argument(
         "--validate_now",
         help="Skips training and validate at current checkpoint",
         action="store_true",
     )
 
-    parser.add_argument(
-        "--src_vocab", required=True, help="Path to the source vocabulary."
-    )
-    parser.add_argument(
-        "--tgt_vocab", required=True, help="Path to the target vocabulary."
-    )
+    # parser.add_argument(
+    #    "--src_vocab", required=True, help="Path to the source vocabulary."
+    # )
+    # parser.add_argument(
+    #    "--tgt_vocab", required=True, help="Path to the target vocabulary."
+    # )
     parser.add_argument(
         "--model_dir",
         default="checkpoint",
@@ -255,9 +271,32 @@ def main():
     )
     args = parser.parse_args()
 
+    src = args.src
+    tgt = args.tgt
+    valsrc = args.valsrc
+    valtgt = args.valtgt
+    src_vocab = "src_vocab.txt"
+    tgt_vocab = "tgt_vocab.txt"
+    vocab_size = args.vocab_size
+
+    if args.bpe:
+        # Prepare Byte-Pair Encore model + Byte-Pair Encoded Files.
+        src += ".bpe"
+        tgt += ".bpe"
+        valsrc += ".bpe"
+        vocab_size = args.bpe_vocab_size
+        # valtgt += ".bpe" We compare againt the real version of the validation file.
+        prepare_bpe_models(src, tgt)
+        prepare_bpe_files(src, tgt)
+        prepare_bpe_files(valsrc, valtgt)
+
+    # Rebuilds the vocabulary from scratch using only the input data.
+    build_vocabulary(src, src_vocab, vocab_size)
+    build_vocabulary(tgt, tgt_vocab, vocab_size)
+
     data_config = {
-        "source_vocabulary": args.src_vocab,
-        "target_vocabulary": args.tgt_vocab,
+        "source_vocabulary": src_vocab,
+        "target_vocabulary": tgt_vocab,
     }
 
     model.initialize(data_config)
@@ -271,14 +310,19 @@ def main():
         )
         checkpoint.restore(checkpoint_manager.latest_checkpoint)
 
+    print(
+        f"Training on {src}, {tgt}\nValidating on {valsrc}, {valtgt}.\nVocab = {src_vocab}, {tgt_vocab}\n BPE={args.bpe}"
+    )
+
     if args.run == "train":
         train(
-            args.src,
-            args.tgt,
+            src,
+            tgt,
             checkpoint_manager,
-            validation_source_file=args.valsrc,
-            validation_target_file=args.valtgt,
+            validation_source_file=valsrc,
+            validation_target_file=valtgt,
             validate_now=args.validate_now,
+            bpe=args.bpe,
         )
     elif args.run == "translate":
         translate(args.src)

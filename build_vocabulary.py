@@ -1,5 +1,6 @@
 import argparse
 import pandas as pd
+import sentencepiece as spm
 
 
 def build_vocabulary(input_file: str, output_file: str, size: int):
@@ -36,6 +37,126 @@ def build_vocabulary(input_file: str, output_file: str, size: int):
             of.write(word + "\n")
 
 
+def prepare_bpe_models(
+    source_file, target_file, prefix="default", combined=False, vocab_size=4000
+):
+    if not combined:
+        # prepare source language BPE
+        spm.SentencePieceTrainer.Train(
+            f"--input={source_file} --model_prefix={prefix}_src_bpe --vocab_size={vocab_size} --model_type=bpe"
+        )
+        # prepare target language BPE
+        spm.SentencePieceTrainer.Train(
+            f"--input={target_file} --model_prefix={prefix}_tgt_bpe --vocab_size={vocab_size} --model_type=bpe"
+        )
+    else:
+        # Concatenate both source files and target files
+        TMPFILE = "concat.tmp"
+        with open(TMPFILE, "w") as outfile:
+            with open(source_file) as infile:
+                outfile.write(infile.read())
+            with open(target_file) as infile:
+                outfile.write(infile.read())
+        # prepare combined language BPE
+        spm.SentencePieceTrainer.Train(
+            f"--input={TMPFILE} --model_prefix={prefix}_combined_bpe --vocab_size={vocab_size} --model_type=bpe"
+        )
+
+
+def get_bpe_prefix(prefix="default", combined=False):
+    if not combined:
+        return (f"{prefix}_src_bpe", f"{prefix}_tgt_bpe")
+    else:
+        return (f"{prefix}_combined_bpe.vocab", f"{prefix}_combined_bpe.vocab")
+
+
+def get_bpe_vocab_files(combined=False, prefix="default"):
+    src_bpe_prefix, tgt_bpe_prefix = get_bpe_prefix(prefix=prefix, combined=combined)
+    return (src_bpe_prefix + ".vocab", tgt_bpe_prefix + ".vocab")
+
+
+def get_bpe_model_files(combined=False, prefix="default"):
+    src_bpe_prefix, tgt_bpe_prefix = get_bpe_prefix(prefix=prefix, combined=combined)
+    return (src_bpe_prefix + ".model", tgt_bpe_prefix + ".model")
+
+
+def prepare_bpe_files(source_file, target_file, combined=False, prefix="default"):
+    src_model, tgt_model = get_bpe_model_files(combined=combined, prefix=prefix)
+
+    sp_source = spm.SentencePieceProcessor()
+    sp_source.Load(src_model)
+    sp_target = spm.SentencePieceProcessor()
+    sp_target.Load(tgt_model)
+
+    # Will generate .bpe files.
+    # Source:
+    with open(source_file) as f:
+        source_lines = f.readlines()
+        source_lines = [x.strip() for x in source_lines]
+    with open(f"{source_file}.bpe", "w") as of:
+        for line in source_lines:
+            of.write(" ".join(sp_source.EncodeAsPieces(line)) + "\n")
+    # Target:
+    with open(target_file) as f:
+        target_lines = f.readlines()
+        target_lines = [x.strip() for x in target_lines]
+    with open(f"{target_file}.bpe", "w") as of:
+        for line in target_lines:
+            of.write(" ".join(sp_target.EncodeAsPieces(line)) + "\n")
+
+
+def decode_bpe_file(filename, target=True, combined=False, prefix="default"):
+
+    src_model, tgt_model = get_bpe_model_files(combined=combined, prefix=prefix)
+
+    model = tgt_model
+    if not target:
+        model = src_model
+
+    sp = spm.SentencePieceProcessor()
+    sp.Load(model)
+
+    with open(filename) as f:
+        lines = f.readlines()
+    lines = [x.strip() for x in lines]
+    output_file_name = f"{filename}.decoded"
+    with open(output_file_name, "w") as of:
+        for line in lines:
+            of.write(sp.DecodePieces(line.split(" ")) + "\n")
+    return output_file_name
+
+
+def prepare_bpe_en_fr_test():
+    prepare_bpe_models(
+        "data/splitted_data/train/train_token10000.en",
+        "data/splitted_data/train/train_token10000.fr",
+    )
+    prepare_bpe_files(
+        "data/splitted_data/train/train_token10000.en",
+        "data/splitted_data/train/train_token10000.fr",
+    )
+    prepare_bpe_files(
+        "data/splitted_data/valid/val_token10000.en",
+        "data/splitted_data/valid/val_token10000.fr",
+    )
+    prepare_bpe_files(
+        "data/splitted_data/test/test_token10000.en",
+        "data/splitted_data/test/test_token10000.fr",
+    )
+
+
+def decode_bpe_file_test():
+    output_file = decode_bpe_file("data/splitted_data/train/train_token10000.fr.bpe")
+
+
+def prepare_bpe_combined_test():
+    prepare_bpe_models(
+        "data/splitted_data/train/train_token10000.en",
+        "data/splitted_data/train/train_token10000.fr",
+        combined=True,
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -51,8 +172,14 @@ def main():
     build_vocabulary(args.src, args.output)
 
 
-if __name__ == "__main__":
-    # main()
+def build_vocabulary_test():
     build_vocabulary(
         "data/splitted_data/train/train_token10000.en", "vocab.txt", size=16000
     )
+
+
+if __name__ == "__main__":
+    # main()
+    prepare_bpe_en_fr_test()
+    prepare_bpe_combined_test()
+    decode_bpe_file_test()
