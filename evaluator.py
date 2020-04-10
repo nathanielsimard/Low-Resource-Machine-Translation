@@ -37,6 +37,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     Returns: None
 
     """
+    logger.info(f"Generate predictions with input {input_file_path} {pred_file_path}")
     settings = French2EnglishSettings()
     train_dl = dataloader.AlignedDataloader(
         file_name_input=settings.src_train,
@@ -63,7 +64,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     predictions = _generate_predictions(
         model, dl, encoder_input, encoder_target, settings.batch_size
     )
-    base.write_text(predictions, pred_file_path)
+    base.write_text(predictions, "allo.txt")
 
 
 def _generate_predictions(
@@ -138,8 +139,8 @@ def main():
     if args.do_not_run_model:
         compute_bleu(args.input_file_path, args.target_file_path, args.print_all_scores)
     else:
-        _, pred_file_path = tempfile.mkstemp()
-        generate_predictions(args.input_file_path, pred_file_path)
+        #_, pred_file_path = tempfile.mkstemp()
+        generate_predictions(args.input_file_path, args.target_file_path)
         compute_bleu(pred_file_path, args.target_file_path, args.print_all_scores)
 
 

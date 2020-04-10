@@ -110,6 +110,8 @@ def write_text(sentences, output_file):
     """Write text from sentences."""
     with open(output_file, "w+") as out_stream:
         for sentence in reversed(sentences):
+            print("write ")
+            print(sentence)
             out_stream.write(sentence + "\n")
 
 
