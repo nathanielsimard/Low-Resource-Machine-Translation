@@ -12,9 +12,9 @@
 #        "rate": 0.1,
 #    }
 
-# Bleu Score after 25 epochs:
-#   - Train 30.117
-#   - Valid 6.674
+# Bleu Score after 27 epochs:
+#   - Train 42.35
+#   - Valid 7.42
 #   - Test 6.816
 
 python run_experiment.py \
