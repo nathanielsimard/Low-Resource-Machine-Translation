@@ -94,6 +94,7 @@ class Pretraining(base.Training):
 
             self.losses["train"].reset_states()
             self.losses["valid"].reset_states()
+            self.history.save(directory + f"/history-{epoch}")
 
     def _step(self, inputs, batch, loss_fn, name, training):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
@@ -179,3 +180,16 @@ class Pretraining(base.Training):
         inputs = inputs * tf.cast(tf.math.logical_not(mask), dtype=tf.int32)
 
         return inputs + unchanged_index + random_index + mask_index
+
+
+def test(sentence, model, encoder):
+    """To test the quality of our embeddings."""
+    mask_index = tf.where(sentence == encoder.mask_token_index)[:, 1].numpy()
+    print(mask_index)
+    outputs = model(sentence)
+    print(outputs)
+    sentence = tf.argmax(outputs, axis=-1)
+    print(sentence)
+    pred = encoder.decode([sentence[0][mask_index[0]].numpy()])
+
+    print("Predicted token to replace <mask>:", pred)
