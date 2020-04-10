@@ -72,9 +72,7 @@ def _generate_predictions(
 ):
     dataset = dataloader.create_dataset()
     predictions: List[str] = []
-    for i, inputs in enumerate(
-        dataset.padded_batch(batch_size, padded_shapes=[None])
-    ):
+    for i, inputs in enumerate(dataset.padded_batch(batch_size, padded_shapes=[None])):
         logger.info(f"Batch #{i} : evaluator")
         outputs = model.translate(inputs, encoder_input, encoder_target)
         predictions += model.predictions(outputs, encoder_target, logit=False)
@@ -139,8 +137,8 @@ def main():
     if args.do_not_run_model:
         compute_bleu(args.input_file_path, args.target_file_path, args.print_all_scores)
     else:
-        #_, pred_file_path = tempfile.mkstemp()
-        generate_predictions(args.input_file_path, args.target_file_path)
+        _, pred_file_path = tempfile.mkstemp()
+        generate_predictions(args.input_file_path, pred_file_path)
         compute_bleu(pred_file_path, args.target_file_path, args.print_all_scores)
 
 
