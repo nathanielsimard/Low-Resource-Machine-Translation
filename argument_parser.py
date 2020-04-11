@@ -32,6 +32,12 @@ def parse_args():
         "--no_cache", help="Disable caching for text encoders.", action="store_true",
     )
     parser.add_argument(
+        "--hyperparameters",
+        help="Path to the hyperparameters json config file",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
         "--random_seed",
         help="Will overide the default seed and use a random one",
         action="store_true",

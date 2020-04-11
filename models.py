@@ -1,31 +1,36 @@
 import hashlib
+import json
 from collections import OrderedDict
+from typing import Any, Dict
 
 from src import logging
-from src.model import gru_attention, lstm, lstm_luong_attention, masked_lm, transformer
+from src.model import (gru_attention, lstm, lstm_luong_attention, masked_lm,
+                       transformer)
 
 logger = logging.create_logger(__name__)
+
+
+def read_json_file(file_name: str) -> Dict[str, Any]:
+    with open(file_name) as file:
+        return json.load(file)
 
 
 def create_lstm(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
         "output_vocab_size": target_vocab_size + 1,
+        **read_json_file(args.hyperparameters),
     }
     return lstm.Lstm(**hyperparameters), hyperparameters
 
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
-        "num_layers": 4,
-        "num_heads": 4,
-        "dff": 256,
-        "d_model": 256,
         "input_vocab_size": input_vocab_size + 1,
         "target_vocab_size": target_vocab_size + 1,
         "pe_input": input_vocab_size + 1,
         "pe_target": target_vocab_size + 1,
-        "rate": 0.1,
+        **read_json_file(args.hyperparameters),
     }
     model = transformer.Transformer(**hyperparameters)
     return model, hyperparameters
@@ -35,10 +40,7 @@ def create_gru_attention(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
         "output_vocab_size": target_vocab_size + 1,
-        "embedding_size": 256,
-        "layers_size": 512,
-        "dropout": 0.3,
-        "attention_size": 8,
+        **read_json_file(args.hyperparameters),
     }
     return gru_attention.GRU(**hyperparameters), hyperparameters
 
@@ -53,13 +55,9 @@ def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
 
 def create_demi_bert(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
-        "num_layers": 6,
-        "embedding_size": 256,
-        "num_heads": 8,
-        "dff": 512,
         "vocab_size": input_vocab_size,
         "max_pe": input_vocab_size,
-        "dropout": 0.1,
+        **read_json_file(args.hyperparameters),
     }
     return masked_lm.DemiBERT(**hyperparameters), hyperparameters
 
