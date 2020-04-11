@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Bleu Score after 25 epochs:
-#   - Train 30.117
-#   - Valid 6.674
-#   - Test 6.816
+# Bleu Score after 27 epochs:
+#   - Train 42.350
+#   - Valid 7.425
+#   - Test 7.310
 
 python run_experiment.py \
 	--model transformer \
 	--text_encoder word-no-filter \
 	--vocab_size 30000 \
-	--epochs 25 \
+	--epochs 50 \
 	--lr None \
 	--batch_size 64 \
 	--max_seq_length 500 \
