@@ -72,9 +72,11 @@ MODELS = {
 
 
 def _print_hyperparameters(hyperparameters):
-    string = ""
+    string = "{"
     for key, value in hyperparameters.items():
         string += f"\n\t{key}: {value}"
+    string += "\n}"
+
     return string
 
 
@@ -85,12 +87,12 @@ def find(args, input_vocab_size, target_vocab_size):
         )
 
         # Usefull to not override the same model with different hyperparameters.
-        hyperparameters = str(OrderedDict(hyperparameters))
-        model_id = hashlib.md5(str.encode(hyperparameters)).hexdigest()
+        hyperparameters = OrderedDict(hyperparameters)
+        model_id = hashlib.md5(str.encode(str(hyperparameters))).hexdigest()
         model.title += "-" + str(model_id)
 
         logger.info(
-            f"Model {model.title} with hyperparameters {_print_hyperparameters(hyperparameters)}"
+            f"Model {model.title} with hyperparameters: {_print_hyperparameters(hyperparameters)}"
         )
         return model
     except KeyError as e:
