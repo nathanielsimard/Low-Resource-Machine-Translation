@@ -71,6 +71,13 @@ MODELS = {
 }
 
 
+def _print_hyperparameters(hyperparameters):
+    string = ""
+    for key, value in hyperparameters.items():
+        string += f"\n\t{key}: {value}"
+    return string
+
+
 def find(args, input_vocab_size, target_vocab_size):
     try:
         model, hyperparameters = MODELS[args.model](
@@ -82,7 +89,9 @@ def find(args, input_vocab_size, target_vocab_size):
         model_id = hashlib.md5(str.encode(hyperparameters)).hexdigest()
         model.title += "-" + str(model_id)
 
-        logger.info(f"Model {model.title} with hyperparameters {hyperparameters}")
+        logger.info(
+            f"Model {model.title} with hyperparameters {_print_hyperparameters(hyperparameters)}"
+        )
         return model
     except KeyError as e:
         logger.error(
