@@ -76,10 +76,10 @@ def find(args, input_vocab_size, target_vocab_size):
         model, hyperparameters = MODELS[args.model](
             args, input_vocab_size, target_vocab_size
         )
+
         # Usefull to not override the same model with different hyperparameters.
-        model_id = hashlib.md5(
-            str.encode(str(OrderedDict(hyperparameters)))
-        ).hexdigest()
+        hyperparameters = str(OrderedDict(hyperparameters))
+        model_id = hashlib.md5(str.encode(hyperparameters)).hexdigest()
         model.title += "-" + str(model_id)
 
         logger.info(f"Model {model.title} with hyperparameters {hyperparameters}")
