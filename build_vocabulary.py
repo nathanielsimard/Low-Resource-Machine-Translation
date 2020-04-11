@@ -52,22 +52,45 @@ def prepare_bpe_models(
     else:
         # Concatenate both source files and target files
         TMPFILE = "concat.tmp"
-        with open(TMPFILE, "w") as outfile:
-            with open(source_file) as infile:
-                outfile.write(infile.read())
-            with open(target_file) as infile:
-                outfile.write(infile.read())
+        concat_files(source_file, target_file, TMPFILE)
         # prepare combined language BPE
         spm.SentencePieceTrainer.Train(
             f"--input={TMPFILE} --model_prefix={prefix}_combined_bpe --vocab_size={vocab_size} --model_type=bpe"
         )
 
 
+def concat_files(
+    filename1: str, filename2: str, output_file_name: str, lines1=None, lines2=None
+):
+    # If lines1 or lines2 is none, it will keep all lines. Else, it will keep only the first lines.
+    with open(output_file_name, "w") as outfile:
+        with open(filename1) as infile:
+            outfile.write("\n".join(infile.read().split("\n")[0:lines1]))
+        with open(filename2) as infile:
+            outfile.write("\n".join(infile.read().split("\n")[0:lines2]))
+
+
+import random
+
+
+def shuffle_file(filename, inplace=True, seed=1234):
+    if not inplace:
+        raise ValueError("This will overwrite the file.")
+    if ".tmp" not in filename:
+        raise ValueError("Use this fonction only on temporary files. It works inplace!")
+    random.seed(seed)
+    with open(filename) as infile:
+        lines = infile.read().split("\n")
+    random.shuffle(lines)
+    with open(filename, "w") as outfile:
+        outfile.write("\n".join(lines))
+
+
 def get_bpe_prefix(prefix="default", combined=False):
     if not combined:
         return (f"{prefix}_src_bpe", f"{prefix}_tgt_bpe")
     else:
-        return (f"{prefix}_combined_bpe.vocab", f"{prefix}_combined_bpe.vocab")
+        return (f"{prefix}_combined_bpe", f"{prefix}_combined_bpe")
 
 
 def get_bpe_vocab_files(combined=False, prefix="default"):

@@ -18,6 +18,15 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import opennmt as onmt
 from tmp_helpers.metrics import compute_bleu
+from build_vocabulary import (
+    prepare_bpe_models,
+    prepare_bpe_files,
+    decode_bpe_file,
+    get_bpe_vocab_files,
+    build_vocabulary,
+    concat_files,
+    shuffle_file,
+)
 
 tf.get_logger().setLevel(logging.INFO)
 
@@ -230,15 +239,6 @@ def translate(source_file, batch_size=32, beam_size=1, output_file=None):
         f.close()
 
 
-from build_vocabulary import (
-    prepare_bpe_models,
-    prepare_bpe_files,
-    decode_bpe_file,
-    get_bpe_vocab_files,
-    build_vocabulary,
-)
-
-
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -250,7 +250,22 @@ def main():
     parser.add_argument("--valtgt", help="Path to the validation target file.")
     parser.add_argument("--bpe", help="Enables Byte-Pair Encoding", action="store_true")
     parser.add_argument("--vocab_size", help="Vocabulary Size", default=16000)
-    parser.add_argument("--bpe_vocab_size", help="Vocabulary Size", default=4000)
+    parser.add_argument("--bpe_vocab_size", help="BPE Vocabulary Size", default=4000)
+    parser.add_argument(
+        "--monosrc",
+        help="Monolingual data source (Target language).",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
+        "--monolen", help="Number of monolingual samples to consider.", default=20000
+    )
+    parser.add_argument(
+        "--bpe_combined",
+        help="Use combined BPE vocabulary for both languages",
+        action="store_true",
+        default=False,
+    )
 
     parser.add_argument(
         "--validate_now",
@@ -271,6 +286,10 @@ def main():
     )
     args = parser.parse_args()
 
+    combined = args.bpe_combined
+    if args.monosrc != "":
+        combined = True  # Combined vocabulary must be used for monolingual data!
+        print("Using combined BPE vocabulary since monolingual data is used!")
     src = args.src
     tgt = args.tgt
     valsrc = args.valsrc
@@ -281,9 +300,9 @@ def main():
 
     if args.bpe:
         # Prepare Byte-Pair Encore model + Byte-Pair Encoded Files.
-        prepare_bpe_models(src, tgt)
-        prepare_bpe_files(src, tgt)
-        prepare_bpe_files(valsrc, valtgt)
+        prepare_bpe_models(src, tgt, combined=combined)
+        prepare_bpe_files(src, tgt, combined=combined)
+        prepare_bpe_files(valsrc, valtgt, combined=combined)
 
         src += ".bpe"
         tgt += ".bpe"
@@ -292,8 +311,30 @@ def main():
         # valtgt += ".bpe" We compare againt the real version of the validation file.
 
     # Rebuilds the vocabulary from scratch using only the input data.
-    build_vocabulary(src, src_vocab, vocab_size)
-    build_vocabulary(tgt, tgt_vocab, vocab_size)
+    if not combined:
+        build_vocabulary(src, src_vocab, vocab_size)
+        build_vocabulary(tgt, tgt_vocab, vocab_size)
+    else:
+        # Combined vocabulary!
+        concat_files(src, tgt, "all.tmp")
+        build_vocabulary("all.tmp", src_vocab, vocab_size)
+        build_vocabulary("all.tmp", tgt_vocab, vocab_size)
+
+    # Add additionnal monolingual data if requested.
+    if args.monosrc != "":
+        tmp_monosrc = "monosrc.tmp"
+        tmp_monotgt = "monotgt.tmp"
+        prepare_bpe_files(args.monosrc, args.monosrc)
+        concat_files(
+            src, args.monosrc + ".bpe", tmp_monosrc, lines1=None, lines2=args.monolen
+        )
+        concat_files(
+            tgt, args.monosrc + ".bpe", tmp_monotgt, lines1=None, lines2=args.monolen
+        )
+        shuffle_file(tmp_monosrc, seed=1234, inplace=True)
+        shuffle_file(tmp_monotgt, seed=1234, inplace=True)
+        src = tmp_monosrc
+        tgt = tmp_monotgt
 
     data_config = {
         "source_vocabulary": src_vocab,
