@@ -63,14 +63,16 @@ class Pretraining(base.Training):
         logger.info("Beginning pretraining session...")
 
         for epoch in range(checkpoint + 1, num_epoch + 1):
+            logger.debug(f"Epoch {epoch}...")
 
             for i, minibatch in enumerate(
                 train_dataset.padded_batch(
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
+                logger.debug(minibatch)
                 with tf.GradientTape() as tape:
-                    loss = self._step(minibatch, i, loss_fn, "train")
+                    loss = self._step(minibatch, i, loss_fn, "train", training=True)
                     gradients = tape.gradient(loss, self.model.trainable_variables)
                     optimizer.apply_gradients(
                         zip(gradients, self.model.trainable_variables)
@@ -83,7 +85,7 @@ class Pretraining(base.Training):
                     batch_size, padded_shapes=self.model.padded_shapes
                 )
             ):
-                loss = self._step(minibatch, i, loss_fn, "valid")
+                loss = self._step(minibatch, i, loss_fn, "valid", training=False)
 
             logger.debug("Saving validation loss")
             self.history.record("valid_loss", self.losses["valid"].result())
@@ -92,10 +94,15 @@ class Pretraining(base.Training):
 
             self.losses["train"].reset_states()
             self.losses["valid"].reset_states()
+            self.history.save(directory + f"/history-{epoch}")
 
-    def _step(self, inputs, batch, loss_fn, name):
+    def _step(self, inputs, batch, loss_fn, name, training):
         masked_inputs, mask = self.create_and_apply_masks(inputs)
-        outputs = self.model(masked_inputs, training=True)
+        logger.debug(masked_inputs)
+        logger.debug(mask)
+
+        outputs = self.model(masked_inputs, training=training)
+        logger.debug("outputs shape: ", outputs.shape)
 
         def mlm_loss(real, pred):
             mask_targets = tf.cast(mask, dtype=tf.int32)
@@ -109,7 +116,7 @@ class Pretraining(base.Training):
             logger.debug(f"mask target: {mask_targets}")
             logger.debug(f"preds : {pred}")
 
-            return tf.reduce_mean(loss_)
+            return tf.reduce_sum(loss_) / tf.reduce_sum(mask_targets)
 
         loss = mlm_loss(inputs, outputs)
         self.losses[name](loss)
@@ -173,3 +180,16 @@ class Pretraining(base.Training):
         inputs = inputs * tf.cast(tf.math.logical_not(mask), dtype=tf.int32)
 
         return inputs + unchanged_index + random_index + mask_index
+
+
+def test(sentence, model, encoder):
+    """To test the quality of our embeddings."""
+    mask_index = tf.where(sentence == encoder.mask_token_index)[:, 1].numpy()
+    print(mask_index)
+    outputs = model(sentence)
+    print(outputs)
+    sentence = tf.argmax(outputs, axis=-1)
+    print(sentence)
+    pred = encoder.decode([sentence[0][mask_index[0]].numpy()])
+
+    print("Predicted token to replace <mask>:", pred)
