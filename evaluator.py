@@ -1,6 +1,25 @@
 import argparse
 import subprocess
 import tempfile
+from typing import List
+
+import models
+from src import dataloader, logging
+from src.text_encoder import TextEncoderType
+from src.training import base
+
+logger = logging.create_logger(__name__)
+
+
+class French2EnglishSettings(object):
+    text_encoder = TextEncoderType.WORD_NO_FILTER
+    vocab_size = 30000
+    src_train = "data/splitted_data/train/train_token10000.fr"
+    target_train = "data/splitted_data/train/train_token10000.en"
+    checkpoint = 34
+    max_seq_length = 750
+    batch_size = 64
+    model = "transformer"
 
 
 def generate_predictions(input_file_path: str, pred_file_path: str):
@@ -18,7 +37,47 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     Returns: None
 
     """
-    pass
+    logger.info(f"Generate predictions with input {input_file_path} {pred_file_path}")
+    settings = French2EnglishSettings()
+    train_dl = dataloader.AlignedDataloader(
+        file_name_input=settings.src_train,
+        file_name_target=settings.target_train,
+        vocab_size=settings.vocab_size,
+        text_encoder_type=settings.text_encoder,
+    )
+    encoder_input = train_dl.encoder_input
+    encoder_target = train_dl.encoder_target
+
+    # Load the model.
+    model = models.find(settings, encoder_input.vocab_size, encoder_target.vocab_size)
+    model.load(str(settings.checkpoint))
+
+    dl = dataloader.UnalignedDataloader(
+        file_name=input_file_path,
+        vocab_size=settings.vocab_size,
+        text_encoder_type=settings.text_encoder,
+        max_seq_length=settings.max_seq_length,
+        cache_dir=None,
+        encoder=encoder_input,
+    )
+
+    predictions = _generate_predictions(
+        model, dl, encoder_input, encoder_target, settings.batch_size
+    )
+    base.write_text(predictions, "allo.txt")
+
+
+def _generate_predictions(
+    model, dataloader, encoder_input, encoder_target, batch_size,
+):
+    dataset = dataloader.create_dataset()
+    predictions: List[str] = []
+    for i, inputs in enumerate(dataset.padded_batch(batch_size, padded_shapes=[None])):
+        logger.info(f"Batch #{i} : evaluator")
+        outputs = model.translate(inputs, encoder_input, encoder_target)
+        predictions += model.predictions(outputs, encoder_target, logit=False)
+
+    return predictions
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: bool):
