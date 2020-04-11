@@ -3,7 +3,7 @@
 # Bleu Score after 31 epochs:
 #   - Train 37.107
 #   - Valid 7.782
-#   - Test ??
+#   - Test 7.620
 
 python run_experiment.py \
     --model transformer \

@@ -32,8 +32,7 @@ def create_transformer(args, input_vocab_size, target_vocab_size):
         "pe_target": target_vocab_size + 1,
         **read_json_file(args.hyperparameters),
     }
-    model = transformer.Transformer(**hyperparameters)
-    return model, hyperparameters
+    return transformer.Transformer(**hyperparameters), hyperparameters
 
 
 def create_gru_attention(args, input_vocab_size, target_vocab_size):
