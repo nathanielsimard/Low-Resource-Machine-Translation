@@ -90,6 +90,7 @@ class PretrainingTest(unittest.TestCase):
         masked_inputs, mask = self.session.create_and_apply_masks(INPUTS)
         self.assertIsNotNone(mask)
         self.assertFalse(tf.reduce_all(masked_inputs == INPUTS))
+        self.assertNotEqual(tf.math.reduce_min(masked_inputs).numpy(), 0)
 
 
 def create_mask(shape=INPUTS.shape, indexes=[]):

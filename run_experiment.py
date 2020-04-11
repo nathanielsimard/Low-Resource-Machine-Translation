@@ -96,14 +96,14 @@ def pretraining(args, loss_fn):
     text_encoder_type = _text_encoder_type(args.text_encoder)
 
     train_dl = dataloader.UnalignedDataloader(
-        file_name="data/splitted_english_data/sorted_clean_train.en",
+        file_name=args.src_train,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
         cache_dir=_cache_dir(args),
     )
     valid_dl = dataloader.UnalignedDataloader(
-        file_name="data/splitted_english_data/sorted_clean_valid.en",
+        file_name=args.src_valid,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         encoder=train_dl.encoder,
