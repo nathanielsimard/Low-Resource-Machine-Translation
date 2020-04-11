@@ -138,3 +138,7 @@ logging
 checkpoint
 checkpoint.*
 predictions.*
+*.tmp
+*.vocab
+*.model
+ckpt*
