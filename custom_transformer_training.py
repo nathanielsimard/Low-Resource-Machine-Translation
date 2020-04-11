@@ -160,7 +160,7 @@ def train(
                 per_sentence_score, mean_score = compute_bleu(
                     output_file_name, validation_target_file
                 )
-                tf.get_logger().info(f"Raw BLEU score {mean_score}")
+                tf.get_logger().info(f"BLEU score {mean_score}")
 
         if step % report_every == 0:
             tf.get_logger().info(

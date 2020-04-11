@@ -17,7 +17,7 @@ pip install --no-deps OpenNMT-tf==2.8.1
 pip install pyyaml 
 pip install rouge 
 pip install pandas
-pip install sacrebleu==1.3.5
+pip install sacrebleu==1.4.4
 pip install sentencepiece 
 
 
