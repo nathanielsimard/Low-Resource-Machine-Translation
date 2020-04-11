@@ -145,7 +145,8 @@ def decode_bpe_file(filename, target=True, combined=False, prefix="default"):
     output_file_name = f"{filename}.decoded"
     with open(output_file_name, "w") as of:
         for line in lines:
-            of.write(sp.DecodePieces(line.split(" ")) + "\n")
+            # Small patch for stray _ : .replace("▁", " ") (+0.3 BLEU)
+            of.write(sp.DecodePieces(line.split(" ")).replace("▁", " ") + "\n")
     return output_file_name
 
 
