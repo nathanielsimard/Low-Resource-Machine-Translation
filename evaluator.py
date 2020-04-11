@@ -20,6 +20,7 @@ class French2EnglishSettings(object):
     max_seq_length = 750
     batch_size = 64
     model = "transformer"
+    hyperparameters = "experiments/transformer/basic-hyperparameters.json"
 
 
 def generate_predictions(input_file_path: str, pred_file_path: str):
