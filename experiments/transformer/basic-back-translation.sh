@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Bleu Score after 34 epochs:
+# Bleu Score after 31 epochs:
+#   - Train 37.107
+#   - Valid 7.782
+#   - Test ??
 
 python run_experiment.py \
 	--model transformer \
@@ -14,5 +17,5 @@ python run_experiment.py \
 	--target_train data/back-translation.fr \
 	--src_valid data/splitted_data/valid/val_token10000.en \
 	--target_valid data/splitted_data/valid/val_token10000.fr \
-    --hyperparameters experiments/transformer/back-translation-hyperparameters.json \
+    --hyperparameters experiments/transformer/basic-hyperparameters.json \
 	--no_cache
