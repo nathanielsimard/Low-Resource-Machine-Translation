@@ -20,6 +20,7 @@ class French2EnglishSettings(object):
     max_seq_length = 750
     batch_size = 64
     model = "transformer"
+    hyperparameters = "experiments/transformer/basic-hyperparameters.json"
 
 
 def generate_predictions(input_file_path: str, pred_file_path: str):
@@ -64,7 +65,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     predictions = _generate_predictions(
         model, dl, encoder_input, encoder_target, settings.batch_size
     )
-    base.write_text(predictions, "allo.txt")
+    base.write_text(predictions, pred_file_path)
 
 
 def _generate_predictions(
