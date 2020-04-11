@@ -70,10 +70,15 @@ MODELS = {
 }
 
 
-def _print_hyperparameters(hyperparameters):
+def _hyperparameters_string(hyperparameters):
+    # Make sure every key is in order to load the
+    # good model with the md5.
+    keys = list(hyperparameters.keys())
+    keys.sort()
+
     string = "{"
-    for key, value in hyperparameters.items():
-        string += f"\n\t{key}: {value}"
+    for key in keys:
+        string += f"\n\t{key}: {hyperparameters[key]}"
     string += "\n}"
 
     return string
@@ -86,13 +91,11 @@ def find(args, input_vocab_size, target_vocab_size):
         )
 
         # Usefull to not override the same model with different hyperparameters.
-        hyperparameters = OrderedDict(hyperparameters)
-        model_id = hashlib.md5(str.encode(str(hyperparameters))).hexdigest()
+        hyperparameters = _hyperparameters_string(hyperparameters)
+        model_id = hashlib.md5(str.encode(hyperparameters)).hexdigest()
         model.title += "-" + str(model_id)
 
-        logger.info(
-            f"Model {model.title} with hyperparameters: {_print_hyperparameters(hyperparameters)}"
-        )
+        logger.info(f"Model {model.title} with hyperparameters: {hyperparameters}")
         return model
     except KeyError as e:
         logger.error(
