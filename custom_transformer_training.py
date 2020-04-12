@@ -295,7 +295,9 @@ def main():
     combined = args.bpe_combined
     if args.monosrc != "":
         combined = True  # Combined vocabulary must be used for monolingual data!
-        print("Using combined BPE vocabulary since monolingual data is used!")
+        tf.get_logger().info(
+            "Using combined BPE vocabulary since monolingual data is used!"
+        )
     src = args.src
     tgt = args.tgt
     valsrc = args.valsrc
@@ -360,7 +362,10 @@ def main():
     if args.monosrc != "":
         tmp_monosrc = "monosrc.tmp"
         tmp_monotgt = "monotgt.tmp"
-        prepare_bpe_files(args.monosrc, args.monosrc)
+        if not args.bpe:
+            tf.get_logger().error("Monolingual data can only be used with BPE!")
+            exit()
+        prepare_bpe_files(args.monosrc, None)
         concat_files(
             src, args.monosrc + ".bpe", tmp_monosrc, lines1=None, lines2=args.monolen
         )
