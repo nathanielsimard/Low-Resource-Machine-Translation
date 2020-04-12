@@ -89,6 +89,11 @@ def parse_args():
         help="Source training aligned file.",
         default="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
     )
+    parser.add_argument(
+        "--pretrained",
+        help="Whether to use pretrained weights or not",
+        action="store_true",
+    )
     args = parser.parse_args()
     logger = logging.initialize(
         experiment_name=args.model, debug=args.debug, std=args.std

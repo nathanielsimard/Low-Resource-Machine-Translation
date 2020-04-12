@@ -185,11 +185,11 @@ class Pretraining(base.Training):
 def test(sentence, model, encoder):
     """To test the quality of our embeddings."""
     mask_index = tf.where(sentence == encoder.mask_token_index)[:, 1].numpy()
-    print(mask_index)
+    logger.debug(mask_index)
     outputs = model(sentence)
-    print(outputs)
+    logger.debug(outputs)
     sentence = tf.argmax(outputs, axis=-1)
-    print(sentence)
+    logger.debug(sentence)
     pred = encoder.decode([sentence[0][mask_index[0]].numpy()])
 
-    print("Predicted token to replace <mask>:", pred)
+    logger.info("Predicted token to replace <mask>:", pred)

@@ -59,14 +59,32 @@ def default_training(args, loss_fn):
     """Train the model."""
     text_encoder_type = _text_encoder_type(args.text_encoder)
 
-    train_dl = dataloader.AlignedDataloader(
-        file_name_input=args.src_train,
-        file_name_target=args.target_train,
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        max_seq_length=args.max_seq_length,
-        cache_dir=_cache_dir(args),
-    )
+    if args.pretrained:
+        pretrained_dl = dataloader.UnalignedDataloader(
+            file_name="data/splitted_english_data/sorted_clean_train.en",
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            text_encoder_type=text_encoder_type,
+            vocab_size=args.vocab_size,
+            encoder_input=pretrained_dl.encoder,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+    else:
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
     valid_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_valid,
         file_name_target=args.target_valid,

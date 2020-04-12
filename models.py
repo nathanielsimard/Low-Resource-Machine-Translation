@@ -1,6 +1,7 @@
 import hashlib
 import json
 from typing import Any, Dict
+import copy
 
 from src import logging
 from src.model import gru_attention, lstm, lstm_luong_attention, masked_lm, transformer
@@ -52,11 +53,31 @@ def create_lstm_luong_attention(args, input_vocab_size, target_vocab_size):
 
 def create_demi_bert(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
-        "vocab_size": input_vocab_size,
-        "max_pe": input_vocab_size,
+        "vocab_size": input_vocab_size + 1,
+        "max_pe": input_vocab_size + 1,
         **read_json_file(args.hyperparameters),
     }
     return masked_lm.DemiBERT(**hyperparameters), hyperparameters
+
+
+def create_transformer_pretrained(args, input_vocab_size, target_vocab_size):
+    demi_bert_args = copy.deepcopy(args)
+    demi_bert_args.model = "demi-bert"
+    demi_bert_args.hyperparameters = "experiments/demi-bert/basic-hyperparameters.json"
+    demi_bert = find(demi_bert_args, input_vocab_size, target_vocab_size)
+    demi_bert.load("2")
+    args.model = "transformer"
+    transformer = find(args, input_vocab_size, target_vocab_size)
+    transformer.encoder = demi_bert.encoder
+    transformer.title += "-pretrained"
+    hyperparameters = {
+        "input_vocab_size": input_vocab_size + 1,
+        "target_vocab_size": target_vocab_size + 1,
+        "pe_input": input_vocab_size + 1,
+        "pe_target": target_vocab_size + 1,
+        **read_json_file(args.hyperparameters),
+    }
+    return transformer, hyperparameters
 
 
 MODELS = {
@@ -65,6 +86,7 @@ MODELS = {
     gru_attention.NAME: create_gru_attention,
     lstm_luong_attention.NAME: create_lstm_luong_attention,
     masked_lm.NAME: create_demi_bert,
+    "transformer-pretrained": create_transformer_pretrained,
 }
 
 
