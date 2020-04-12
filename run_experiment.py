@@ -22,16 +22,16 @@ def punctuation_training(args, loss_fn):
     text_encoder_type = _text_encoder_type(args.text_encoder)
 
     train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_english_data/sorted_clean_train.en",
-        file_name_target="data/splitted_english_data/sorted_target_train.en",
+        file_name_input=args.src_train,
+        file_name_target=args.target_train,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
         cache_dir=_cache_dir(args),
     )
     valid_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_english_data/sorted_clean_valid.en",
-        file_name_target="data/splitted_english_data/sorted_target_valid.en",
+        file_name_input=args.src_valid,
+        file_name_target=args.target_valid,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         encoder_input=train_dl.encoder_input,
@@ -43,9 +43,7 @@ def punctuation_training(args, loss_fn):
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
     optim = _create_optimizer(model.embedding_size, args)
-    training = Training(
-        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU]
-    )
+    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
     training.run(
         loss_fn,
         optim,
