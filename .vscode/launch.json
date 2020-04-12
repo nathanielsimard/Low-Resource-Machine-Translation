@@ -11,13 +11,43 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--src=data/splitted_data/valid/val_token10000.fr",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--monosrc=data/token_unaligned/unaligned.fr",
+                "--src_vocab=data/splitted_data/train/vocab10000.en",
+                "--tgt_vocab=data/splitted_data/train/vocab10000.fr",
+                "--bpe",
+                "translate"
+                "train"
+            ]*/
+            //Back-Translation Model
+            /*
+            "args": [
+                "--src=data/splitted_data/train/train_token10000.fr",
+                "--valsrc=data/splitted_data/valid/val_token10000.fr",
+                "--tgt=data/splitted_data/train/train_token10000.en",
+                "--valtgt=data/splitted_data/valid/val_token10000.en",
+                "--bpe",
+                "train"
+            ]*/
+            //Spot-check for translation.
+            /*"args": [
+                "--src=data/splitted_data/valid/val_token10000.fr",
+                "--bpe",
+                "translate"
+            ]*/
+            //Back-Translation Run
             "args": [
                 "--src=data/splitted_data/train/train_token10000.en",
                 "--valsrc=data/splitted_data/valid/val_token10000.en",
                 "--tgt=data/splitted_data/train/train_token10000.fr",
                 "--valtgt=data/splitted_data/valid/val_token10000.fr",
-                //"--src_vocab=data/splitted_data/train/vocab10000.en",
-                //"--tgt_vocab=data/splitted_data/train/vocab10000.fr",
+                "--btsrc=bt.en.tmp",
+                "--bttgt=unaligned_fr.tmp",
                 "--bpe",
                 "train"
             ]

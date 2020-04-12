@@ -257,6 +257,9 @@ def main():
         type=str,
         default="",
     )
+    parser.add_argument("--btsrc", help="Back-translation source file")
+    parser.add_argument("--bttgt", help="Back-translation target file")
+
     parser.add_argument(
         "--monolen", help="Number of monolingual samples to consider.", default=20000
     )
@@ -271,6 +274,9 @@ def main():
         "--validate_now",
         help="Skips training and validate at current checkpoint",
         action="store_true",
+    )
+    parser.add_argument(
+        "--output", help="Filename for translated output.", default="output.txt"
     )
 
     # parser.add_argument(
@@ -298,27 +304,57 @@ def main():
     tgt_vocab = "tgt_vocab.txt"
     vocab_size = args.vocab_size
 
+    # if args.run == "translate":
+    #    tgt = None
+
     if args.bpe:
         # Prepare Byte-Pair Encore model + Byte-Pair Encoded Files.
-        prepare_bpe_models(src, tgt, combined=combined)
-        prepare_bpe_files(src, tgt, combined=combined)
-        prepare_bpe_files(valsrc, valtgt, combined=combined)
-
-        src += ".bpe"
-        tgt += ".bpe"
-        valsrc += ".bpe"
         vocab_size = args.bpe_vocab_size
+        if args.run == "train":
+            prepare_bpe_models(src, tgt, combined=combined, vocab_size=vocab_size)
+            prepare_bpe_files(valsrc, valtgt, combined=combined)
+            valsrc += ".bpe"
+        prepare_bpe_files(src, tgt, combined=combined)
+        src += ".bpe"
+        if tgt is not None:
+            tgt += ".bpe"
+
         # valtgt += ".bpe" We compare againt the real version of the validation file.
 
     # Rebuilds the vocabulary from scratch using only the input data.
-    if not combined:
-        build_vocabulary(src, src_vocab, vocab_size)
-        build_vocabulary(tgt, tgt_vocab, vocab_size)
-    else:
-        # Combined vocabulary!
-        concat_files(src, tgt, "all.tmp")
-        build_vocabulary("all.tmp", src_vocab, vocab_size)
-        build_vocabulary("all.tmp", tgt_vocab, vocab_size)
+    if args.run == "train":
+        if not combined:
+            build_vocabulary(src, src_vocab, vocab_size)
+            build_vocabulary(tgt, tgt_vocab, vocab_size)
+        else:
+            # Combined vocabulary!
+            concat_files(src, tgt, "all.tmp")
+            build_vocabulary("all.tmp", src_vocab, vocab_size)
+            build_vocabulary("all.tmp", tgt_vocab, vocab_size)
+
+    # Add back-tranlated data if requested.
+    if args.btsrc is not None:
+        btsrc = args.btsrc
+        bttgt = args.bttgt
+        if bttgt is None:
+            tf.get_logger().error("Back-translation target must be supplied")
+            exit()
+        if args.bpe:
+            prepare_bpe_files(btsrc, bttgt, combined=combined)
+            btsrc += ".bpe"
+            bttgt += ".bpe"
+        else:
+            tf.get_logger.info(
+                "Warning: Back-translation was not tested without BPE. There could be bugs!"
+            )
+        tmp_btsrc = "btsrc.tmp"
+        tmp_bttgt = "bttgt.tmp"
+        concat_files(btsrc, src, tmp_btsrc)
+        concat_files(bttgt, tgt, tmp_bttgt)
+        shuffle_file(tmp_btsrc)
+        shuffle_file(tmp_bttgt)
+        src = tmp_btsrc
+        tgt = tmp_bttgt
 
     # Add additionnal monolingual data if requested.
     if args.monosrc != "":
@@ -352,11 +388,10 @@ def main():
         )
         checkpoint.restore(checkpoint_manager.latest_checkpoint)
 
-    print(
-        f"Training on {src}, {tgt}\nValidating on {valsrc}, {valtgt}.\nVocab = {src_vocab}, {tgt_vocab}\n BPE={args.bpe}"
-    )
-
     if args.run == "train":
+        tf.get_logger().info(
+            f"Training on {src}, {tgt}\nValidating on {valsrc}, {valtgt}.\nVocab = {src_vocab}, {tgt_vocab}\n BPE={args.bpe}"
+        )
         train(
             src,
             tgt,
@@ -367,7 +402,11 @@ def main():
             bpe=args.bpe,
         )
     elif args.run == "translate":
-        translate(args.src)
+        tf.get_logger().info(f"Translating {src} file to {args.output}")
+        translate(src, output_file=args.output)
+        if args.bpe:
+            output_file_name = decode_bpe_file(args.output)
+        tf.get_logger().info(f"BPE decoded {args.output} file to {output_file_name}")
 
 
 if __name__ == "__main__":

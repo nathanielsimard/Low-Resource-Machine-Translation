@@ -120,12 +120,13 @@ def prepare_bpe_files(source_file, target_file, combined=False, prefix="default"
         for line in source_lines:
             of.write(" ".join(sp_source.EncodeAsPieces(line)) + "\n")
     # Target:
-    with open(target_file) as f:
-        target_lines = f.readlines()
-        target_lines = [x.strip() for x in target_lines]
-    with open(f"{target_file}.bpe", "w") as of:
-        for line in target_lines:
-            of.write(" ".join(sp_target.EncodeAsPieces(line)) + "\n")
+    if target_file is not None:
+        with open(target_file) as f:
+            target_lines = f.readlines()
+            target_lines = [x.strip() for x in target_lines]
+        with open(f"{target_file}.bpe", "w") as of:
+            for line in target_lines:
+                of.write(" ".join(sp_target.EncodeAsPieces(line)) + "\n")
 
 
 def decode_bpe_file(filename, target=True, combined=False, prefix="default"):
