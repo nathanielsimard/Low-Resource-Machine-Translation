@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Best epoch: 18
+# Train Bleu: ?
+# Valid Bleu: 7.12 
+
 python run_experiment.py \
 --model transformer-pretrained \
 --text_encoder subword \
