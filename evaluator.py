@@ -37,7 +37,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     TMP_OUTPUTS = "outputs.tmp"
     translate(model, bpe_src, output_file=TMP_OUTPUTS)
     bpe_decoded_file = decode_bpe_file(TMP_OUTPUTS, combined=True)
-    os.rename(bpe_decoded_file, pred_file_path)
+    os.copy(bpe_decoded_file, pred_file_path)
     # Cleanup. Some exception is thrown if cleanup is not done manually for some reason.
     del checkpoint_manager, model, checkpoint, optimizer, learning_rate
     return
