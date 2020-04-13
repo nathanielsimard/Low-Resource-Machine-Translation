@@ -1,7 +1,7 @@
 #In order to prepare a model for back-translation. 
 #Using only BPE. Monolingual data was not tokenized properly and
 #should not be used until this is fixed.
-python custom_transformer_training.py \
+python opennmt_transformer.py \
  --src data/splitted_data/train/train_token10000.fr \
  --valsrc data/splitted_data/valid/val_token10000.fr \
  --tgt data/splitted_data/train/train_token10000.en \
@@ -11,7 +11,7 @@ python custom_transformer_training.py \
 shuf data/token_unaligned/unaligned.fr > unaligned_fr_suffled.tmp
 head unaligned_fr_suffled.tmp -n 20000 > unaligned_fr.tmp
 
-python custom_transformer_training.py \
+python opennmt_transformer.py \
  --src unaligned_fr.tmp \
  --bpe translate
  
@@ -19,7 +19,7 @@ python custom_transformer_training.py \
 mv output.txt.decoded bt.en.tmp
 
 #Train with BT and BPE
-python custom_transformer_training.py \
+python opennmt_transformer.py \
  --src data/splitted_data/train/train_token10000.en \
  --valsrc data/splitted_data/valid/val_token10000.en \
  --tgt data/splitted_data/train/train_token10000.fr \
