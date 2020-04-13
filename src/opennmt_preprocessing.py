@@ -30,6 +30,8 @@ def build_vocabulary(input_file: str, output_file: str, size: int):
     # Build of vocabulary of the "size" most used words in the dataset.
     # Needs to contain those three special word for OpenNMT
     # https://opennmt.net/OpenNMT-tf/vocabulary.html
+    if int(size) > len(df):
+        size = None
     vocabulary = ["<blank>", "<s>", "</s>"] + df.sort_values(by=0, ascending=False)[0][
         0:size
     ].index.to_list()
