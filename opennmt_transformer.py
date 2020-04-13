@@ -58,6 +58,7 @@ def train(
     validate_every=2000,
     validate_now=False,
     bpe=False,
+    bpe_combined=False,
 ):
     """Runs the training loop.
   Args:
@@ -130,7 +131,9 @@ def train(
                 )
                 translate(model, validation_source_file, output_file=output_file_name)
                 if bpe:
-                    output_file_name = decode_bpe_file(output_file_name)
+                    output_file_name = decode_bpe_file(
+                        output_file_name, combined=bpe_combined
+                    )
                 tf.get_logger().info(
                     f"Computing BLEU between from {validation_target_file} to {output_file_name}"
                 )
@@ -422,6 +425,7 @@ def main():
             validation_target_file=valtgt,
             validate_now=args.validate_now,
             bpe=args.bpe,
+            bpe_combined=combined,
         )
     elif args.run == "translate":
         tf.get_logger().info(f"Translating {src} file to {args.output}")
