@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 import sentencepiece as spm
 from os import path
+import os
 
 
 def build_vocabulary(input_file: str, output_file: str, size: int):
@@ -91,6 +92,8 @@ def shuffle_file(filename, inplace=True, seed=1234):
 
 
 def get_bpe_prefix(prefix="default", combined=False, model_dir="checkpoint"):
+    if not os.path.exists(model_dir):
+        os.mkdir(model_dir)
     if not combined:
         return (f"{model_dir}/{prefix}_src_bpe", f"{model_dir}/{prefix}_tgt_bpe")
     else:
