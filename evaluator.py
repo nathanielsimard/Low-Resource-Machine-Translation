@@ -26,7 +26,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
         init_checkpoint_manager_and_load_latest_checkpoint,
     )
     from src.opennmt_preprocessing import prepare_bpe_files, decode_bpe_file
-    import os
+    import shutil
 
     bpe_src, _ = prepare_bpe_files(input_file_path, None, combined=True)
 
@@ -37,7 +37,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     TMP_OUTPUTS = "outputs.tmp"
     translate(model, bpe_src, output_file=TMP_OUTPUTS)
     bpe_decoded_file = decode_bpe_file(TMP_OUTPUTS, combined=True)
-    os.copy(bpe_decoded_file, pred_file_path)
+    shutil.copy(bpe_decoded_file, pred_file_path)
     # Cleanup. Some exception is thrown if cleanup is not done manually for some reason.
     del checkpoint_manager, model, checkpoint, optimizer, learning_rate
     return
