@@ -18,6 +18,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     Returns: None
 
     """
+    combined = True  # Winning model has combined vocabulary
     from opennmt_transformer import (
         init_model,
         translate,
@@ -28,7 +29,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     from src.opennmt_preprocessing import prepare_bpe_files, decode_bpe_file
     import shutil
 
-    bpe_src, _ = prepare_bpe_files(input_file_path, None, combined=True)
+    bpe_src, _ = prepare_bpe_files(input_file_path, None, combined=combined)
 
     model, checkpoint, optimizer, learning_rate = init_model()
     checkpoint_manager = init_checkpoint_manager_and_load_latest_checkpoint(checkpoint)
@@ -36,7 +37,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     init_data_config(model, src_vocab, tgt_vocab)
     TMP_OUTPUTS = "outputs.tmp"
     translate(model, bpe_src, output_file=TMP_OUTPUTS)
-    bpe_decoded_file = decode_bpe_file(TMP_OUTPUTS, combined=True)
+    bpe_decoded_file = decode_bpe_file(TMP_OUTPUTS, combined=combined)
     shutil.copy(bpe_decoded_file, pred_file_path)
     # Cleanup. Some exception is thrown if cleanup is not done manually for some reason.
     del checkpoint_manager, model, checkpoint, optimizer, learning_rate
