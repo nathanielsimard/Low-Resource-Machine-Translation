@@ -35,7 +35,8 @@
                 "train"
             ]*/
             //Spot-check for translation.
-            /*"args": [
+            /*
+            "args": [
                 "--src=data/splitted_data/valid/val_token10000.fr",
                 "--bpe",
                 "translate"
@@ -52,7 +53,7 @@
                 "train"
             ]*/
             //Back-Translation + Copied monolingual Run
-            "args": [
+            /*"args": [
                 "--src=data/splitted_data/train/train_token10000.en",
                 "--valsrc=data/splitted_data/valid/val_token10000.en",
                 "--tgt=data/splitted_data/train/train_token10000.fr",
@@ -62,6 +63,11 @@
                 "--bttgt=unaligned_fr.tmp",
                 "--bpe",
                 "train"
+            ]*/
+            //Evaluator script testing.
+            "args": [
+                "--target-file-path=data/splitted_data/valid/val_token10000.fr",
+                "--input-file-path=data/splitted_data/valid/val_token10000.en"
             ]
         }
     ]

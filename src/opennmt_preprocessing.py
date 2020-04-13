@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 import sentencepiece as spm
+from os import path
 
 
 def build_vocabulary(input_file: str, output_file: str, size: int):
@@ -40,14 +41,15 @@ def build_vocabulary(input_file: str, output_file: str, size: int):
 def prepare_bpe_models(
     source_file, target_file, prefix="default", combined=False, vocab_size=4000
 ):
+    src_prefix, tgt_prefix = get_bpe_prefix(combined=combined)
     if not combined:
         # prepare source language BPE
         spm.SentencePieceTrainer.Train(
-            f"--input={source_file} --model_prefix={prefix}_src_bpe --vocab_size={vocab_size} --model_type=bpe"
+            f"--input={source_file} --model_prefix={src_prefix} --vocab_size={vocab_size} --model_type=bpe"
         )
         # prepare target language BPE
         spm.SentencePieceTrainer.Train(
-            f"--input={target_file} --model_prefix={prefix}_tgt_bpe --vocab_size={vocab_size} --model_type=bpe"
+            f"--input={target_file} --model_prefix={tgt_prefix} --vocab_size={vocab_size} --model_type=bpe"
         )
     else:
         # Concatenate both source files and target files
@@ -55,7 +57,7 @@ def prepare_bpe_models(
         concat_files(source_file, target_file, TMPFILE)
         # prepare combined language BPE
         spm.SentencePieceTrainer.Train(
-            f"--input={TMPFILE} --model_prefix={prefix}_combined_bpe --vocab_size={vocab_size} --model_type=bpe"
+            f"--input={TMPFILE} --model_prefix={src_prefix} --vocab_size={vocab_size} --model_type=bpe"
         )
 
 
@@ -86,11 +88,14 @@ def shuffle_file(filename, inplace=True, seed=1234):
         outfile.write("\n".join(lines))
 
 
-def get_bpe_prefix(prefix="default", combined=False):
+def get_bpe_prefix(prefix="default", combined=False, model_dir="checkpoint"):
     if not combined:
-        return (f"{prefix}_src_bpe", f"{prefix}_tgt_bpe")
+        return (f"{model_dir}/{prefix}_src_bpe", f"{model_dir}/{prefix}_tgt_bpe")
     else:
-        return (f"{prefix}_combined_bpe", f"{prefix}_combined_bpe")
+        return (
+            f"{model_dir}/{prefix}_combined_bpe",
+            f"{model_dir}/{prefix}_combined_bpe",
+        )
 
 
 def get_bpe_vocab_files(combined=False, prefix="default"):
@@ -105,11 +110,17 @@ def get_bpe_model_files(combined=False, prefix="default"):
 
 def prepare_bpe_files(source_file, target_file, combined=False, prefix="default"):
     src_model, tgt_model = get_bpe_model_files(combined=combined, prefix=prefix)
+    if not path.exists(src_model):
+        print(
+            f"Unable to find BPE model file {src_model}. Have you forgot to copy it along the checkpoint?"
+        )
+    if not path.exists(tgt_model) and target_file is not None:
+        print(
+            f"Unable to find BPE model file {tgt_model}. Have you forgot to copy it along the checkpoint?"
+        )
 
     sp_source = spm.SentencePieceProcessor()
     sp_source.Load(src_model)
-    sp_target = spm.SentencePieceProcessor()
-    sp_target.Load(tgt_model)
 
     # Will generate .bpe files.
     # Source:
@@ -119,14 +130,19 @@ def prepare_bpe_files(source_file, target_file, combined=False, prefix="default"
     with open(f"{source_file}.bpe", "w") as of:
         for line in source_lines:
             of.write(" ".join(sp_source.EncodeAsPieces(line)) + "\n")
+    source_file += ".bpe"
     # Target:
     if target_file is not None:
+        sp_target = spm.SentencePieceProcessor()
+        sp_target.Load(tgt_model)
         with open(target_file) as f:
             target_lines = f.readlines()
             target_lines = [x.strip() for x in target_lines]
         with open(f"{target_file}.bpe", "w") as of:
             for line in target_lines:
                 of.write(" ".join(sp_target.EncodeAsPieces(line)) + "\n")
+        target_file += ".bpe"
+    return source_file, target_file
 
 
 def decode_bpe_file(filename, target=True, combined=False, prefix="default"):

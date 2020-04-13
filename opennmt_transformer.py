@@ -1,4 +1,4 @@
-# From:
+# Based on code from:
 # https://github.com/OpenNMT/OpenNMT-tf/blob/master/examples/library/custom_transformer_training.py
 """This example demonstrates how to train a Transformer model with a custom
 training loop in about 200 lines of code.
@@ -18,7 +18,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import opennmt as onmt
 from tmp_helpers.metrics import compute_bleu
-from build_vocabulary import (
+from src.opennmt_preprocessing import (
     prepare_bpe_models,
     prepare_bpe_files,
     decode_bpe_file,
@@ -30,44 +30,21 @@ from build_vocabulary import (
 
 tf.get_logger().setLevel(logging.INFO)
 
-# tfa.options.TF_ADDONS_PY_OPS=True
 
-# Define the model. For the purpose of this example, the model components
-# (encoder, decoder, etc.) will be called separately.
-model = onmt.models.SequenceToSequence(
-    source_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
-    target_inputter=onmt.inputters.WordEmbedder(embedding_size=512),
-    encoder=onmt.encoders.SelfAttentionEncoder(
-        num_layers=6,
-        num_units=512,
-        num_heads=8,
-        ffn_inner_dim=2048,
-        dropout=0.1,
-        attention_dropout=0.1,
-        ffn_dropout=0.1,
-    ),
-    decoder=onmt.decoders.SelfAttentionDecoder(
-        num_layers=6,
-        num_units=512,
-        num_heads=8,
-        ffn_inner_dim=2048,
-        dropout=0.1,
-        attention_dropout=0.1,
-        ffn_dropout=0.1,
-    ),
-)
-
-model = onmt.models.TransformerBase()
-
-# Define the learning rate schedule and the optimizer.
-learning_rate = onmt.schedules.NoamDecay(scale=2.0, model_dim=512, warmup_steps=8000)
-optimizer = tfa.optimizers.LazyAdam(learning_rate)
-
-# Track the model and optimizer weights.
-checkpoint = tf.train.Checkpoint(model=model, optimizer=optimizer)
+def init_model():
+    model = onmt.models.TransformerBase()
+    learning_rate = onmt.schedules.NoamDecay(
+        scale=2.0, model_dim=512, warmup_steps=8000
+    )
+    optimizer = tfa.optimizers.LazyAdam(learning_rate)
+    checkpoint = tf.train.Checkpoint(model=model, optimizer=optimizer)
+    return model, checkpoint, optimizer, learning_rate
 
 
 def train(
+    model,
+    optimizer,
+    learning_rate,
     source_file,
     target_file,
     checkpoint_manager,
@@ -151,7 +128,7 @@ def train(
                 tf.get_logger().info(
                     f"Saving validation predictions from {validation_source_file} to {output_file_name}"
                 )
-                translate(validation_source_file, output_file=output_file_name)
+                translate(model, validation_source_file, output_file=output_file_name)
                 if bpe:
                     output_file_name = decode_bpe_file(output_file_name)
                 tf.get_logger().info(
@@ -178,7 +155,11 @@ def train(
             break
 
 
-def translate(source_file, batch_size=32, beam_size=1, output_file=None):
+# def translate(source_file, batch_size=32, beam_size=1, output_file=None):
+#    return translate_with_model(model, source_file, batch_size, beam_size, output_file)
+
+
+def translate(model, source_file, batch_size=32, beam_size=1, output_file=None):
     """Runs translation.
   Args:
     source_file: The source file.
@@ -239,7 +220,36 @@ def translate(source_file, batch_size=32, beam_size=1, output_file=None):
         f.close()
 
 
+def init_checkpoint_manager_and_load_latest_checkpoint(
+    checkpoint, model_dir="checkpoint"
+):
+    checkpoint_manager = tf.train.CheckpointManager(
+        checkpoint, model_dir, max_to_keep=5
+    )
+    if checkpoint_manager.latest_checkpoint is not None:
+        tf.get_logger().info(
+            "Restoring parameters from %s", checkpoint_manager.latest_checkpoint
+        )
+        checkpoint.restore(checkpoint_manager.latest_checkpoint)
+    return checkpoint_manager
+
+
+def get_vocab_file_names(model_dir="checkpoint"):
+    src_vocab = f"{model_dir}/src_vocab.txt"
+    tgt_vocab = f"{model_dir}/tgt_vocab.txt"
+    return src_vocab, tgt_vocab
+
+
+def init_data_config(model, src_vocab, tgt_vocab):
+    data_config = {
+        "source_vocabulary": src_vocab,
+        "target_vocabulary": tgt_vocab,
+    }
+    model.initialize(data_config)
+
+
 def main():
+    model, checkpoint, optimizer, learning_rate = init_model()
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -302,8 +312,7 @@ def main():
     tgt = args.tgt
     valsrc = args.valsrc
     valtgt = args.valtgt
-    src_vocab = "src_vocab.txt"
-    tgt_vocab = "tgt_vocab.txt"
+    src_vocab, tgt_vocab = get_vocab_file_names(args.model_dir)
     vocab_size = args.vocab_size
 
     # if args.run == "translate":
@@ -365,7 +374,7 @@ def main():
         if not args.bpe:
             tf.get_logger().error("Monolingual data can only be used with BPE!")
             exit()
-        prepare_bpe_files(args.monosrc, None)
+        prepare_bpe_files(args.monosrc, None, combined=combined)
         concat_files(
             src, args.monosrc + ".bpe", tmp_monosrc, lines1=None, lines2=args.monolen
         )
@@ -377,27 +386,35 @@ def main():
         src = tmp_monosrc
         tgt = tmp_monotgt
 
-    data_config = {
-        "source_vocabulary": src_vocab,
-        "target_vocabulary": tgt_vocab,
-    }
+    init_data_config(model, src_vocab, tgt_vocab)
+    # data_config = {
+    #    "source_vocabulary": src_vocab,
+    #    "target_vocabulary": tgt_vocab,
+    # }
+    #
+    # model.initialize(data_config)
 
-    model.initialize(data_config)
-
-    checkpoint_manager = tf.train.CheckpointManager(
-        checkpoint, args.model_dir, max_to_keep=5
+    checkpoint_manager = init_checkpoint_manager_and_load_latest_checkpoint(
+        checkpoint, args.model_dir
     )
-    if checkpoint_manager.latest_checkpoint is not None:
-        tf.get_logger().info(
-            "Restoring parameters from %s", checkpoint_manager.latest_checkpoint
-        )
-        checkpoint.restore(checkpoint_manager.latest_checkpoint)
+
+    # checkpoint_manager = tf.train.CheckpointManager(
+    #    checkpoint, args.model_dir, max_to_keep=5
+    # )
+    # if checkpoint_manager.latest_checkpoint is not None:
+    #    tf.get_logger().info(
+    #        "Restoring parameters from %s", checkpoint_manager.latest_checkpoint
+    #    )
+    #    checkpoint.restore(checkpoint_manager.latest_checkpoint)
 
     if args.run == "train":
         tf.get_logger().info(
             f"Training on {src}, {tgt}\nValidating on {valsrc}, {valtgt}.\nVocab = {src_vocab}, {tgt_vocab}\n BPE={args.bpe}"
         )
         train(
+            model,
+            optimizer,
+            learning_rate,
             src,
             tgt,
             checkpoint_manager,
@@ -408,7 +425,7 @@ def main():
         )
     elif args.run == "translate":
         tf.get_logger().info(f"Translating {src} file to {args.output}")
-        translate(src, output_file=args.output)
+        translate(model, src, output_file=args.output)
         if args.bpe:
             output_file_name = decode_bpe_file(args.output)
         tf.get_logger().info(f"BPE decoded {args.output} file to {output_file_name}")

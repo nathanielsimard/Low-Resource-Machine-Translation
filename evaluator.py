@@ -18,7 +18,29 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     Returns: None
 
     """
-    pass
+    from opennmt_transformer import (
+        init_model,
+        translate,
+        get_vocab_file_names,
+        init_data_config,
+        init_checkpoint_manager_and_load_latest_checkpoint,
+    )
+    from src.opennmt_preprocessing import prepare_bpe_files, decode_bpe_file
+    import os
+
+    bpe_src, _ = prepare_bpe_files(input_file_path, None, combined=True)
+
+    model, checkpoint, optimizer, learning_rate = init_model()
+    checkpoint_manager = init_checkpoint_manager_and_load_latest_checkpoint(checkpoint)
+    src_vocab, tgt_vocab = get_vocab_file_names()
+    init_data_config(model, src_vocab, tgt_vocab)
+    TMP_OUTPUTS = "outputs.tmp"
+    translate(model, bpe_src, output_file=TMP_OUTPUTS)
+    bpe_decoded_file = decode_bpe_file(TMP_OUTPUTS, combined=True)
+    os.rename(bpe_decoded_file, pred_file_path)
+    # Cleanup. Some exception is thrown if cleanup is not done manually for some reason.
+    del checkpoint_manager, model, checkpoint, optimizer, learning_rate
+    return
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str, print_all_scores: bool):
