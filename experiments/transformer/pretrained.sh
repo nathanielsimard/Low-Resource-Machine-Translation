@@ -3,8 +3,8 @@
 # With the whole pretrained encoder
 # Best epoch: 18
 # Train Bleu: ?
-# Valid Bleu: 7.12
-# Test Bleu: 7.28 
+# Valid Bleu: 7.12(old)
+# Test Bleu: 9.58 
 
 # With just the embedding layer
 
