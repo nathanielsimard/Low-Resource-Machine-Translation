@@ -32,6 +32,11 @@ def parse_args():
     parser.add_argument(
         "--debug", help="To allow debugging in the logs", action="store_true"
     )
+    parser.add_argument(
+        "--hyperparameters",
+        help="Path to hyperparameters",
+        default="experiments/demi-bert/basic-hyperparameters.json",
+    )
 
     args = parser.parse_args()
 

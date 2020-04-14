@@ -1,7 +1,7 @@
 {
     "num_layers": 6,
-    "embedding_size": 256,
+    "d_model": 256,
     "num_heads": 4,
     "dff": 512,
-    "dropout": 0.1
+    "rate": 0.1
 }
