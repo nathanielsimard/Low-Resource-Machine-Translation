@@ -24,10 +24,10 @@ class Encoder(tf.keras.Model):
             self.lstm_size, return_sequences=True, return_state=True
         )
 
-    def call(self, x, hidden):
+    def call(self, x, hidden, training):
         """Call the foward past."""
         x = self.embedding(x)
-        output, state_h, state_c = self.lstm(x, initial_state=hidden)
+        output, state_h, state_c = self.lstm(x, initial_state=hidden, training=training)
         return output, state_h, state_c
 
     def initialize_hidden_state(self, batch_size):
@@ -97,7 +97,7 @@ class Decoder(tf.keras.Model):
         self.wc = tf.keras.layers.Dense(rnn_size, activation="tanh")
         self.ws = tf.keras.layers.Dense(vocab_size)
 
-    def call(self, x, hidden, enc_output):
+    def call(self, x, hidden, enc_output, training):
         """Call the foward past.
 
         Note that the call must be for one caracter/word at a time.
@@ -106,7 +106,7 @@ class Decoder(tf.keras.Model):
         x = self.embedding(x)
 
         # passing the concatenated vector to the lstm
-        output, state_h, state_c = self.lstm(x, initial_state=hidden)
+        output, state_h, state_c = self.lstm(x, initial_state=hidden, training=training)
 
         # enc_output shape == (batch_size, seq_lenght, hidden_size)
         context_vector, alignment = self.attention(output, enc_output)
@@ -155,7 +155,7 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
 
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_state_h, decoder_state_c, _ = self.decoder(
-                decoder_input, (decoder_state_h, decoder_state_c), encoder_output
+                decoder_input, (decoder_state_h, decoder_state_c), encoder_output, training
             )
 
             # The predictions are concatenated on the time axis
@@ -178,9 +178,11 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
         )
 
         encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
-        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden, False)
-        decoder_hidden = encoder_hidden
+        encoder_output, encoder_h, encoder_c = self.encoder(x, encoder_hidden, False)
+        decoder_output = encoder_output
 
+        decoder_h = encoder_h
+        decoder_c = encoder_c
         # The first words of each sentence in the batch is the start of sample token.
         words = (
             tf.zeros([batch_size, 1], dtype=tf.int64)
@@ -193,8 +195,8 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
 
         while not (has_finish_predicting or reach_max_seq_lenght):
             # Call the decoder and update the decoder hidden state
-            decoder_output, decoder_hidden, _ = self.decoder(
-                last_words, decoder_hidden, encoder_output, False
+            decoder_output, decoder_h, decoder_c, alignment = self.decoder(
+                last_words, (decoder_h, decoder_c), encoder_output, False
             )
             last_words = tf.expand_dims(decoder_output, 1)
             last_words = tf.math.argmax(last_words, axis=2)
