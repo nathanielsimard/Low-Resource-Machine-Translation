@@ -1,14 +1,9 @@
 #!/bin/bash
 
-# Bleu Score after 38 epochs:
-#   - Train 32.5439
-#   - Valid 5.3417
-#   - Test 5.2406
-
 python run_experiment.py \
     --model transformer \
-    --text_encoder subword \
-    --vocab_size 8192 \
+    --text_encoder word-no-filter \
+    --vocab_size 30000 \
     --epochs 50 \
     --lr None \
     --batch_size 64 \
@@ -17,5 +12,5 @@ python run_experiment.py \
     --target_train data/splitted_data/train/train_token10000.fr \
     --src_valid data/splitted_data/valid/val_token10000.en \
     --target_valid data/splitted_data/valid/val_token10000.fr \
-    --hyperparameters experiments/transformer/small-hyperparameters.json \
+    --hyperparameters experiments/transformer/medium-hyperparameters.json \
     --no_cache
