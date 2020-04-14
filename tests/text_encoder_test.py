@@ -3,12 +3,8 @@ import abc
 import unittest
 
 from src import logging, preprocessing
-from src.text_encoder import (
-    SubWordTextEncoder,
-    TextEncoder,
-    WordNoFilterTextEncoder,
-    WordTextEncoder,
-)
+from src.text_encoder import (ByteTextEncoder, SubWordTextEncoder, TextEncoder,
+                              WordNoFilterTextEncoder, WordTextEncoder)
 
 logger = logging.create_logger(__name__)
 
@@ -117,3 +113,16 @@ class WordNoFilterTextEncoderTest(TextEncoderTest, unittest.TestCase):
 
     def load_encoder(self, file_name) -> TextEncoder:
         return WordNoFilterTextEncoder.load_from_file(file_name)
+
+
+class ByteTextEncoderTest(TextEncoderTest, unittest.TestCase):
+    def create_encoder(self) -> TextEncoder:
+        return ByteTextEncoder(A_VOCAB_SIZE, CORPUS)
+
+    def load_encoder(self, file_name) -> TextEncoder:
+        return ByteTextEncoder.load_from_file(file_name)
+
+    def test_vocab_size(self):
+        encoder = ByteTextEncoder(A_VOCAB_SIZE, CORPUS)
+        # 4 is the subword
+        self.assertEqual(A_VOCAB_SIZE + 3, encoder.vocab_size)

@@ -18,6 +18,7 @@ class TextEncoderType(enum.Enum):
     SUBWORD = "subword"
     WORD = "word"
     WORD_NO_FILTER = "word-no-filter"
+    BYTE = "byte"
 
 
 class TextEncoder(abc.ABC):
@@ -190,6 +191,60 @@ class SubWordTextEncoder(TextEncoder):
     def type(cls):
         """Type of the text encoder."""
         return TextEncoderType.SUBWORD
+
+    @property
+    def vocab_size(self):
+        """The vocabulary size handled by the encoder."""
+        return self._encoder.vocab_size
+
+    @property
+    def start_of_sample_index(self) -> int:
+        """The index representing the start of sample token."""
+        return self._encoder.encode(preprocessing.START_OF_SAMPLE_TOKEN)[0]
+
+    @property
+    def end_of_sample_index(self) -> int:
+        """The index representing the end of sample token."""
+        return self._encoder.encode(preprocessing.END_OF_SAMPLE_TOKEN)[0]
+
+    @property
+    def mask_token_index(self) -> int:
+        """The index representing the mask token."""
+        return self._encoder.encode(preprocessing.MASK_TOKEN)[0]
+
+    def vocabulary(self) -> List[str]:
+        """Return all the word tokens in the vocabulary."""
+        return self._encoder._subwords
+
+class ByteTextEncoder(TextEncoder):
+    """Text Encoder where most popular subwords become tokens."""
+
+    def __init__(self, vocab_size: int, corpus: List[str]):
+        """Create the encoder using the tensorflow dataset corpus utilities."""
+        self._encoder = tfds.features.text.SubwordTextEncoder(
+            vocab_list=[
+                preprocessing.OUT_OF_SAMPLE_TOKEN,
+                preprocessing.START_OF_SAMPLE_TOKEN,
+                preprocessing.END_OF_SAMPLE_TOKEN,
+                preprocessing.MASK_TOKEN,
+            ]
+        )
+        self.cls = ByteTextEncoder
+
+    def encode(self, text: str) -> List[int]:
+        """Encode a text into numbers."""
+        return self._encoder.encode(text)
+
+    def decode(self, sequences: List[int]) -> str:
+        """Decode numbers into text."""
+        # Handle 0 index as 1 for <out>
+        sequences = [1 if i == 0 else i for i in sequences]
+        return self._encoder.decode(sequences)
+
+    @classmethod
+    def type(cls):
+        """Type of the text encoder."""
+        return TextEncoderType.BYTE
 
     @property
     def vocab_size(self):
