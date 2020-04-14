@@ -245,14 +245,32 @@ def test(args, loss_fn):
     """Test the model."""
     text_encoder_type = _text_encoder_type(args.text_encoder)
     # Used to load the train text encoders.
-    train_dl = dataloader.AlignedDataloader(
-        file_name_input=args.src_train,
-        file_name_target=args.target_train,
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        max_seq_length=args.max_seq_length,
-        cache_dir=_cache_dir(args),
-    )
+    if args.pretrained:
+        pretrained_dl = dataloader.UnalignedDataloader(
+            file_name="data/splitted_english_data/sorted_clean_train.en",
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            text_encoder_type=text_encoder_type,
+            vocab_size=args.vocab_size,
+            encoder_input=pretrained_dl.encoder,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+    else:
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
     test_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/test/test_token10000.en",
         file_name_target="data/splitted_data/test/test_token10000.fr",
