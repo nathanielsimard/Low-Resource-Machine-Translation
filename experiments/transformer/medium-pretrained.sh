@@ -11,9 +11,7 @@
 python run_experiment.py \
     --model transformer \
     --text_encoder subword \
-    --task test \
-    --checkpoint 18 \
-    --vocab_size 15000 \
+    --vocab_size 8192 \
     --epochs 50 \
     --batch_size 32 \
     --max_seq_length 750 \
@@ -23,5 +21,5 @@ python run_experiment.py \
     --target_valid data/splitted_data/valid/val_token10000.fr \
     --std \
     --lr None \
-    --hyperparameters experiments/demi-bert/basic-hyperparameters.json \
+    --hyperparameters experiments/demi-bert/medium-hyperparameters.json \
     --pretrained
