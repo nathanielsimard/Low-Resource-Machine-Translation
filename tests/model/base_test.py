@@ -13,7 +13,7 @@ class CleanSentences(unittest.TestCase):
         inputs = [
             f"{START_OF_SAMPLE_TOKEN} It starts like that {END_OF_SAMPLE_TOKEN} this must be cleared",
             f"{START_OF_SAMPLE_TOKEN} Another sentence {END_OF_SAMPLE_TOKEN} another garbage",
-            f"{START_OF_SAMPLE_TOKEN} Another amazing sentence {END_OF_SAMPLE_TOKEN}another garbage, but this time without space.",
+            f"{START_OF_SAMPLE_TOKEN} Another amazing sentence {END_OF_SAMPLE_TOKEN}another garbage.",
         ]
         actual = clean_sentences(inputs)
         self.assertEqual("It starts like that", actual[0])
