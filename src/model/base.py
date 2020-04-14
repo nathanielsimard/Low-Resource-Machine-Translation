@@ -95,10 +95,10 @@ def clean_sentences(sentences: List[str]) -> List[str]:
 def _clean_tokens(sentence: str) -> List[str]:
     cleaned_sentence: List[str] = []
     for word in sentence.split():
-        if END_OF_SAMPLE_TOKEN == word:
+        if END_OF_SAMPLE_TOKEN in word:
             return cleaned_sentence
 
-        if START_OF_SAMPLE_TOKEN == word:
+        if START_OF_SAMPLE_TOKEN in word:
             continue
 
         cleaned_sentence.append(word)
