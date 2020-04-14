@@ -1,11 +1,15 @@
 from typing import Tuple
 
+import numpy as np
 import tensorflow as tf
 
+from src import logging
 from src.model import base
 from src.text_encoder import TextEncoder
 
 NAME = "lstm_luong_attention"
+
+logger = logging.create_logger(__name__)
 
 
 class Encoder(tf.keras.Model):
@@ -168,7 +172,50 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
         self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
     ) -> tf.Tensor:
         """Translate a sentence from input."""
-        pass
+        batch_size = x.shape[0]
+        max_seq_length = tf.reduce_max(
+            base.translation_max_seq_lenght(x, encoder_inputs)
+        )
+
+        encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
+        encoder_output, encoder_hidden = self.encoder(x, encoder_hidden, False)
+        decoder_hidden = encoder_hidden
+
+        # The first words of each sentence in the batch is the start of sample token.
+        words = (
+            tf.zeros([batch_size, 1], dtype=tf.int64)
+            + encoder_targets.start_of_sample_index
+        )
+        last_words = words
+
+        has_finish_predicting = False
+        reach_max_seq_lenght = False
+
+        while not (has_finish_predicting or reach_max_seq_lenght):
+            # Call the decoder and update the decoder hidden state
+            decoder_output, decoder_hidden, _ = self.decoder(
+                last_words, decoder_hidden, encoder_output, False
+            )
+            last_words = tf.expand_dims(decoder_output, 1)
+            last_words = tf.math.argmax(last_words, axis=2)
+
+            logger.debug(f"New word {last_words}.")
+
+            # Append the newly predicted words into words.
+            words = tf.concat([words, last_words], 1)
+
+            # Compute the end condition of the while loop.
+            end_of_sample = (
+                np.zeros([batch_size, 1], dtype=np.int64)
+                + encoder_targets.end_of_sample_index
+            )
+            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= max_seq_length
+
+            logger.debug(f"Has finish predicting {has_finish_predicting}.")
+            logger.debug(f"Has reach max sequence length {reach_max_seq_lenght}.")
+
+        return words
 
     @property
     def embedding_size(self):
