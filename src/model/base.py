@@ -8,6 +8,7 @@ from src.preprocessing import END_OF_SAMPLE_TOKEN, START_OF_SAMPLE_TOKEN
 from src.text_encoder import TextEncoder
 
 MODEL_BASE_DIR = "models"
+EN_TO_FR_FACTOR = 1.25
 
 
 class Model(tf.keras.Model):
@@ -38,6 +39,11 @@ class Model(tf.keras.Model):
         file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
         super().load_weights(file_name)
 
+    @abc.abstractproperty
+    def embedding_size(self):
+        """Size of the embedding layer."""
+        pass
+
     def preprocessing(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Can apply some preprocessing specific to the model."""
         return dataset
@@ -56,18 +62,20 @@ class MachineTranslationModel(Model, abc.ABC):
         sentences = outputs
 
         if logit:
-            sentences = np.argmax(sentences.numpy(), axis=2)
+            sentences = tf.argmax(sentences, axis=-1)
 
-        sentences = [encoder.decode(sentence) for sentence in sentences]
+        sentences = [encoder.decode(sentence) for sentence in sentences.numpy()]
 
-        return _clean_tokens(sentences)
+        return clean_sentences(sentences)
 
     @abc.abstractmethod
-    def translate(self, x: tf.Tensor, encoder: TextEncoder) -> tf.Tensor:
+    def translate(
+        self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
+    ) -> tf.Tensor:
         """Translate a sentence from input.
 
         Example::
-            >>> translated = model.translate(x, target_encoder)
+            >>> translated = model.translate(x, encoder_inputs, encoder_targets)
             >>> predictions = model.predictions(translated, target_encoder, logit=False)
 
         Returns the indexes corresponding to each vocabulary word.
@@ -75,13 +83,34 @@ class MachineTranslationModel(Model, abc.ABC):
         pass
 
 
-def _clean_tokens(sentences):
+def clean_sentences(sentences: List[str]) -> List[str]:
+    """Clean sentences from start en end token."""
     result = []
     for sentence in sentences:
-        new_sentence = []
-        for word in sentence.split():
-            if not (START_OF_SAMPLE_TOKEN in word or END_OF_SAMPLE_TOKEN in word):
-                new_sentence.append(word)
-        result.append(" ".join(new_sentence))
+        result.append(" ".join(_clean_tokens(sentence)))
 
     return result
+
+
+def _clean_tokens(sentence: str) -> List[str]:
+    cleaned_sentence: List[str] = []
+    for word in sentence.split():
+        if END_OF_SAMPLE_TOKEN in word:
+            return cleaned_sentence
+
+        if START_OF_SAMPLE_TOKEN in word:
+            continue
+
+        cleaned_sentence.append(word)
+
+    return cleaned_sentence
+
+
+def translation_max_seq_lenght(
+    inputs: tf.Tensor, encoder: TextEncoder, factor=EN_TO_FR_FACTOR
+):
+    """Calculate the max index for each sentence in the input tensor."""
+    bool_tensor = inputs.numpy() == encoder.end_of_sample_index
+    max_index_tensor = np.ceil(np.argmax(bool_tensor, axis=-1) * factor)
+
+    return tf.convert_to_tensor(max_index_tensor, dtype=tf.int32,)

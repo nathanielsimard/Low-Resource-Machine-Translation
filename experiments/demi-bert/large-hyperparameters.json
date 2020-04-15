@@ -1,0 +1,7 @@
+{
+    "num_layers": 8,
+    "d_model": 512,
+    "num_heads": 8,
+    "dff": 1024,
+    "rate": 0.1
+}

@@ -19,14 +19,18 @@ class MachineTranslationModelTest(abc.ABC):
         self.model = self.create_model()
 
     def test_translate(self):
-        sentences = np.random.randint(0, VOCAB_SIZE, size=(BATCH_SIZE, SEQ_LENGHT))
+        sentences = tf.convert_to_tensor(
+            np.random.randint(0, VOCAB_SIZE, size=(BATCH_SIZE, SEQ_LENGHT))
+        )
 
-        translated = self.model.translate(sentences, self.encoder)
+        translated = self.model.translate(sentences, self.encoder, self.encoder)
 
         self.assertIsNotNone(translated)  # type: ignore
 
     def test_foward(self):
-        sentences = np.random.randint(0, VOCAB_SIZE, size=(BATCH_SIZE, SEQ_LENGHT))
+        sentences = tf.convert_to_tensor(
+            np.random.randint(0, VOCAB_SIZE, size=(BATCH_SIZE, SEQ_LENGHT))
+        )
 
         def gen():
             for i in range(BATCH_SIZE):
