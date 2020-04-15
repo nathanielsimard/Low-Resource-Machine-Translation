@@ -93,6 +93,10 @@ def default_training(args, loss_fn):
         max_seq_length=args.max_seq_length,
         cache_dir=_cache_dir(args),
     )
+    logger.debug(valid_dl.encoder_target.vocab_size)
+    logger.debug(valid_dl.encoder_input.vocab_size)
+    logger.debug(train_dl.encoder_target.vocab_size)
+    logger.debug(train_dl.encoder_input.vocab_size)
     model = models.find(
         args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
     )
