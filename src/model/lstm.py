@@ -54,10 +54,10 @@ class Decoder(base.Model):
         """
         super().__init__(f"{NAME}-Decoder")
         self.embed = layers.Embedding(vocab_size, 256)
-        self.lstm1 = layers.LSTM(256, return_sequences=True, return_state=True)
-        self.dense1 = layers.TimeDistributed(layers.Dense(1024, activation="relu"))
+        self.lstm1 = layers.LSTM(512, return_sequences=True, return_state=True)
+        self.dense1 = layers.TimeDistributed(layers.Dense(512, activation="relu"))
 
-        self.lstm2 = layers.LSTM(1024, return_sequences=True, return_state=True)
+        self.lstm2 = layers.LSTM(512, return_sequences=True, return_state=True)
         self.dense2 = layers.TimeDistributed(
             layers.Dense(vocab_size, activation="softmax")
         )
