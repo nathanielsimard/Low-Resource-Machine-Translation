@@ -29,7 +29,9 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     from src.opennmt_preprocessing import prepare_bpe_files, decode_bpe_file
     import shutil
     import tempfile
+    import os
 
+    input_file_path = os.path.expanduser(input_file_path)
     bpe_src, _ = prepare_bpe_files(input_file_path, None, combined=combined)
 
     model, checkpoint, optimizer, learning_rate = init_model()
