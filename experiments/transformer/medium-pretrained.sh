@@ -9,7 +9,7 @@
 # With just the embedding layer
 
 python run_experiment.py \
-    --model transformer \
+    --model transformer-pretrained \
     --text_encoder subword \
     --vocab_size 8192 \
     --epochs 50 \
@@ -22,4 +22,5 @@ python run_experiment.py \
     --std \
     --lr None \
     --hyperparameters experiments/demi-bert/medium-hyperparameters.json \
-    --pretrained
+    --pretrained \
+    --no_cache

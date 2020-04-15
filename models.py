@@ -68,7 +68,7 @@ def create_transformer_pretrained(args, input_vocab_size, target_vocab_size):
     demi_bert.load("2")
     args.model = "transformer"
     transformer = find(args, input_vocab_size, target_vocab_size)
-    transformer.encoder.embedding = demi_bert.encoder.embedding
+    transformer.encoder = demi_bert.encoder
     transformer.title += "-pretrained"
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
