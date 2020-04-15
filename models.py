@@ -63,21 +63,21 @@ def create_demi_bert(args, input_vocab_size, target_vocab_size):
 def create_transformer_pretrained(args, input_vocab_size, target_vocab_size):
     demi_bert_args = copy.deepcopy(args)
     demi_bert_args.model = "demi-bert"
-    demi_bert_args.hyperparameters = "experiments/demi-bert/basic-hyperparameters.json"
+    demi_bert_args.hyperparameters = "experiments/demi-bert/medium-hyperparameters.json"
     demi_bert = find(demi_bert_args, input_vocab_size, target_vocab_size)
     demi_bert.load("2")
-    args.model = "transformer"
-    transformer = find(args, input_vocab_size, target_vocab_size)
-    transformer.encoder.embedding = demi_bert.encoder.embedding
-    transformer.title += "-pretrained"
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
-        "target_vocab_size": target_vocab_size + 1,
+        "target_vocab_size": target_vocab_size,
         "pe_input": input_vocab_size + 1,
-        "pe_target": target_vocab_size + 1,
+        "pe_target": target_vocab_size,
         **read_json_file(args.hyperparameters),
     }
-    return transformer, hyperparameters
+    args.model = "transformer"
+    transformer_ = transformer.Transformer(**hyperparameters)
+    transformer_.encoder = demi_bert.encoder
+    transformer_.title += "-pretrained"
+    return transformer_, hyperparameters
 
 
 MODELS = {
