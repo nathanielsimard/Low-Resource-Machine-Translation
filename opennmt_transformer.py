@@ -242,7 +242,7 @@ def translate(
         print(f"Writing predictions to {output_file}")
     for source in dataset:
         if show_progress:
-            print(".", end="")
+            print(".", end="", flush=True)
         batch_tokens, batch_length = predict(source)
         for tokens, length in zip(batch_tokens.numpy(), batch_length.numpy()):
             sentence = b" ".join(tokens[0][: length[0]])
