@@ -28,6 +28,7 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     )
     from src.opennmt_preprocessing import prepare_bpe_files, decode_bpe_file
     import shutil
+    import tempfile
 
     bpe_src, _ = prepare_bpe_files(input_file_path, None, combined=combined)
 
@@ -35,9 +36,16 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     checkpoint_manager = init_checkpoint_manager_and_load_latest_checkpoint(checkpoint)
     src_vocab, tgt_vocab = get_vocab_file_names()
     init_data_config(model, src_vocab, tgt_vocab)
-    TMP_OUTPUTS = "outputs.tmp"
-    translate(model, bpe_src, output_file=TMP_OUTPUTS)
+    with tempfile.NamedTemporaryFile() as f:
+        TMP_OUTPUTS = f.name
+
+    print(f"Writing non BPE-decoded outputs to {TMP_OUTPUTS}")
+    translate(model, bpe_src, output_file=TMP_OUTPUTS, show_progress=True)
+    print(f"Decoding {TMP_OUTPUTS}")
     bpe_decoded_file = decode_bpe_file(TMP_OUTPUTS, combined=combined)
+    print(
+        f"Copying decoded file {bpe_decoded_file} to the final expected path {pred_file_path}"
+    )
     shutil.copy(bpe_decoded_file, pred_file_path)
     # Cleanup. Some exception is thrown if cleanup is not done manually for some reason.
     del checkpoint_manager, model, checkpoint, optimizer, learning_rate

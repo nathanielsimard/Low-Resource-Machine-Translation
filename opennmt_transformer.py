@@ -11,7 +11,7 @@ Producing a SOTA model is NOT a goal: this usually requires extra steps such as
 training a bigger model, using a larger batch size via multi GPU training and/or
 gradient accumulation, etc.
 """
-
+import tempfile
 import argparse
 import logging
 import tensorflow as tf
@@ -26,12 +26,22 @@ from src.opennmt_preprocessing import (
     build_vocabulary,
     concat_files,
     shuffle_file,
+    get_vocab_file_names,
 )
 
 tf.get_logger().setLevel(logging.INFO)
 
 
 def init_model():
+    """Initialise the OpenNMT transformer model.
+
+    Returns:
+    onmt.models.Model -- the OpenNMT model.
+    tf.train.Checkpoint -- TensorFlow checkpoint for the model.
+    tf.keras.optimizers.Optimizer -- Optimized for the model.
+    tf.keras.optimizers.schedules.LearningRateSchedule -- Learning
+                                        rate schedule for the model
+    """
     model = onmt.models.TransformerBase()
     learning_rate = onmt.schedules.NoamDecay(
         scale=2.0, model_dim=512, warmup_steps=8000
@@ -42,12 +52,12 @@ def init_model():
 
 
 def train(
-    model,
-    optimizer,
-    learning_rate,
-    source_file,
-    target_file,
-    checkpoint_manager,
+    model: onmt.models.Model,
+    optimizer: tf.keras.optimizers.Optimizer,
+    learning_rate: tf.keras.optimizers.schedules.LearningRateSchedule,
+    source_file: str,
+    target_file: str,
+    checkpoint_manager: tf.train.CheckpointManager,
     maximum_length=100,
     shuffle_buffer_size=-1,  # Uniform shuffle.
     train_steps=100000,
@@ -60,17 +70,32 @@ def train(
     bpe=False,
     bpe_combined=False,
 ):
-    """Runs the training loop.
-  Args:
-    source_file: The source training file.
-    target_file: The target training file.
-    checkpoint_manager: The checkpoint manager.
-    maximum_length: Filter sequences longer than this.
-    shuffle_buffer_size: How many examples to load for shuffling.
-    train_steps: Train for this many iterations.
-    save_every: Save a checkpoint every this many iterations.
-    report_every: Report training progress every this many iterations.
-  """
+    """Train a OpenNMT model.
+
+    Arguments:
+        model {onmt.models.Model} -- Model to train.
+        optimizer {tf.keras.optimizers.Optimizer} -- Optimizer to use.
+        learning_rate {tf.keras.optimizers.schedules.LearningRateSchedule} --
+                        Learning rate schedule to use.
+        source_file {str} -- Aligned source language file.
+        target_file {str} -- Aligned target language file.
+        checkpoint_manager {tf.train.CheckpointManager} -- Checkpoint manager.
+
+    Keyword Arguments:
+        maximum_length {int} -- [description] (default: {100})
+        shuffle_buffer_size {int} -- [description] (default: {-1})
+        save_every {int} -- [description] (default: {1000})
+        report_every {int} -- [description] (default: {100})
+        validation_source_file {[type]} -- [description] (default: {None})
+        validation_target_file {[type]} -- [description] (default: {None})
+        validate_every {int} -- [description] (default: {2000})
+        validate_now {bool} -- [description] (default: {False})
+        bpe {bool} -- [description] (default: {False})
+        bpe_combined {bool} -- [description] (default: {False})
+
+    Returns:
+        [type] -- [description]
+    """
 
     # Create the training dataset.
     dataset = model.examples_inputter.make_training_dataset(
@@ -158,11 +183,14 @@ def train(
             break
 
 
-# def translate(source_file, batch_size=32, beam_size=1, output_file=None):
-#    return translate_with_model(model, source_file, batch_size, beam_size, output_file)
-
-
-def translate(model, source_file, batch_size=32, beam_size=1, output_file=None):
+def translate(
+    model,
+    source_file,
+    batch_size=32,
+    beam_size=1,
+    output_file=None,
+    show_progress=False,
+):
     """Runs translation.
   Args:
     source_file: The source file.
@@ -210,8 +238,11 @@ def translate(model, source_file, batch_size=32, beam_size=1, output_file=None):
     f = None
     if output_file is not None:
         f = open(output_file, "w")
-
+    if show_progress and output_file is not None:
+        print(f"Writing predictions to {output_file}")
     for source in dataset:
+        if show_progress:
+            print(".", end="")
         batch_tokens, batch_length = predict(source)
         for tokens, length in zip(batch_tokens.numpy(), batch_length.numpy()):
             sentence = b" ".join(tokens[0][: length[0]])
@@ -225,7 +256,19 @@ def translate(model, source_file, batch_size=32, beam_size=1, output_file=None):
 
 def init_checkpoint_manager_and_load_latest_checkpoint(
     checkpoint, model_dir="checkpoint"
-):
+) -> tf.train.CheckpointManager:
+    """Initialise the checkpoint manager, and load the latest checkpoint.
+
+    Arguments:
+        checkpoint {TensorFlow Checkpoint} -- TensorFlow checkpoint.
+
+    Keyword Arguments:
+        model_dir {str} -- folder where to read/store the
+                           checkpoints (default: {"checkpoint"})
+
+    Returns:
+        [tf.train.CheckpointManager] -- The checkpoint manager.
+    """
     checkpoint_manager = tf.train.CheckpointManager(
         checkpoint, model_dir, max_to_keep=5
     )
@@ -235,12 +278,6 @@ def init_checkpoint_manager_and_load_latest_checkpoint(
         )
         checkpoint.restore(checkpoint_manager.latest_checkpoint)
     return checkpoint_manager
-
-
-def get_vocab_file_names(model_dir="checkpoint"):
-    src_vocab = f"{model_dir}/src_vocab.txt"
-    tgt_vocab = f"{model_dir}/tgt_vocab.txt"
-    return src_vocab, tgt_vocab
 
 
 def init_data_config(model, src_vocab, tgt_vocab):
@@ -264,6 +301,7 @@ def main():
     parser.add_argument("--bpe", help="Enables Byte-Pair Encoding", action="store_true")
     parser.add_argument("--vocab_size", help="Vocabulary Size", default=16000)
     parser.add_argument("--bpe_vocab_size", help="BPE Vocabulary Size", default=4000)
+    parser.add_argument("--seed", help="Random seed for the experiment", default=1234)
     parser.add_argument(
         "--monosrc",
         help="Monolingual data source (Target language).",
@@ -305,6 +343,9 @@ def main():
     )
     args = parser.parse_args()
 
+    # Random seed.
+    tf.random.set_seed(args.seed)
+
     combined = args.bpe_combined
     if args.monosrc != "":
         combined = True  # Combined vocabulary must be used for monolingual data!
@@ -326,13 +367,11 @@ def main():
         vocab_size = args.bpe_vocab_size
         if args.run == "train":
             prepare_bpe_models(src, tgt, combined=combined, vocab_size=vocab_size)
-            prepare_bpe_files(valsrc, valtgt, combined=combined)
-            valsrc += ".bpe"
-        prepare_bpe_files(src, tgt, combined=combined)
-        src += ".bpe"
-        if tgt is not None:
-            tgt += ".bpe"
-
+            valsrc, valtgt = prepare_bpe_files(valsrc, valtgt, combined=combined)
+        src, tgt = prepare_bpe_files(src, tgt, combined=combined)
+        # src += ".bpe"
+        # if tgt is not None:
+        #    tgt += ".bpe"
         # valtgt += ".bpe" We compare againt the real version of the validation file.
 
     # Rebuilds the vocabulary from scratch using only the input data.
@@ -354,9 +393,9 @@ def main():
             tf.get_logger().error("Back-translation target must be supplied")
             exit()
         if args.bpe:
-            prepare_bpe_files(btsrc, bttgt, combined=combined)
-            btsrc += ".bpe"
-            bttgt += ".bpe"
+            btsrc, bttgt = prepare_bpe_files(btsrc, bttgt, combined=combined)
+            # btsrc += ".bpe"
+            # bttgt += ".bpe"
         else:
             tf.get_logger.info(
                 "Warning: Back-translation was not tested without BPE. There could be bugs!"
@@ -365,8 +404,8 @@ def main():
         tmp_bttgt = "bttgt.tmp"
         concat_files(btsrc, src, tmp_btsrc)
         concat_files(bttgt, tgt, tmp_bttgt)
-        shuffle_file(tmp_btsrc)
-        shuffle_file(tmp_bttgt)
+        shuffle_file(tmp_btsrc, seed=args.seed)
+        shuffle_file(tmp_bttgt, seed=args.seed)
         src = tmp_btsrc
         tgt = tmp_bttgt
 
@@ -384,8 +423,8 @@ def main():
         concat_files(
             tgt, args.monosrc + ".bpe", tmp_monotgt, lines1=None, lines2=args.monolen
         )
-        shuffle_file(tmp_monosrc, seed=1234, inplace=True)
-        shuffle_file(tmp_monotgt, seed=1234, inplace=True)
+        shuffle_file(tmp_monosrc, seed=args.seed, inplace=True)
+        shuffle_file(tmp_monotgt, seed=args.seed, inplace=True)
         src = tmp_monosrc
         tgt = tmp_monotgt
 
@@ -428,11 +467,18 @@ def main():
             bpe_combined=combined,
         )
     elif args.run == "translate":
-        tf.get_logger().info(f"Translating {src} file to {args.output}")
-        translate(model, src, output_file=args.output)
+        temp = tempfile.NamedTemporaryFile()
+        tf.get_logger().info(f"Translating {src} file to {temp}")
+        with tempfile.NamedTemporaryFile() as f:
+            temp = f.name
+        translate(model, src, output_file=temp)
         if args.bpe:
-            output_file_name = decode_bpe_file(args.output)
-        tf.get_logger().info(f"BPE decoded {args.output} file to {output_file_name}")
+            output_file_name = decode_bpe_file(temp)
+        else:
+            import shutil
+
+            shutil.copyfile(temp, output_file_name)
+        tf.get_logger().info(f"BPE decoded {temp} file to {output_file_name}")
 
 
 if __name__ == "__main__":
