@@ -18,6 +18,8 @@ source /project/cq-training-1/project2/teams/team10/env/bin/activate
 
 python run_experiment.py \
     --model lstm_luong_attention \
+    --task test \
+    --checkpoint 14 \ 
     --text_encoder word-no-filter \
     --vocab_size 30000 \
     --epochs 30 \
