@@ -1,11 +1,15 @@
 from typing import Tuple
 
+import numpy as np
 import tensorflow as tf
 
+from src import logging
 from src.model import base
 from src.text_encoder import TextEncoder
 
 NAME = "lstm_luong_attention"
+
+logger = logging.create_logger(__name__)
 
 
 class Encoder(tf.keras.Model):
@@ -20,10 +24,10 @@ class Encoder(tf.keras.Model):
             self.lstm_size, return_sequences=True, return_state=True
         )
 
-    def call(self, x, hidden):
+    def call(self, x, hidden, training):
         """Call the foward past."""
         x = self.embedding(x)
-        output, state_h, state_c = self.lstm(x, initial_state=hidden)
+        output, state_h, state_c = self.lstm(x, initial_state=hidden, training=training)
         return output, state_h, state_c
 
     def initialize_hidden_state(self, batch_size):
@@ -93,7 +97,7 @@ class Decoder(tf.keras.Model):
         self.wc = tf.keras.layers.Dense(rnn_size, activation="tanh")
         self.ws = tf.keras.layers.Dense(vocab_size)
 
-    def call(self, x, hidden, enc_output):
+    def call(self, x, hidden, enc_output, training):
         """Call the foward past.
 
         Note that the call must be for one caracter/word at a time.
@@ -102,7 +106,7 @@ class Decoder(tf.keras.Model):
         x = self.embedding(x)
 
         # passing the concatenated vector to the lstm
-        output, state_h, state_c = self.lstm(x, initial_state=hidden)
+        output, state_h, state_c = self.lstm(x, initial_state=hidden, training=training)
 
         # enc_output shape == (batch_size, seq_lenght, hidden_size)
         context_vector, alignment = self.attention(output, enc_output)
@@ -151,7 +155,7 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
 
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_state_h, decoder_state_c, _ = self.decoder(
-                decoder_input, (decoder_state_h, decoder_state_c), encoder_output
+                decoder_input, (decoder_state_h, decoder_state_c), encoder_output, training
             )
 
             # The predictions are concatenated on the time axis
@@ -168,7 +172,52 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
         self, x: tf.Tensor, encoder_inputs: TextEncoder, encoder_targets: TextEncoder
     ) -> tf.Tensor:
         """Translate a sentence from input."""
-        pass
+        batch_size = x.shape[0]
+        max_seq_length = tf.reduce_max(
+            base.translation_max_seq_lenght(x, encoder_inputs)
+        )
+
+        encoder_hidden = self.encoder.initialize_hidden_state(batch_size)
+        encoder_output, encoder_h, encoder_c = self.encoder(x, encoder_hidden, False)
+        decoder_output = encoder_output
+
+        decoder_h = encoder_h
+        decoder_c = encoder_c
+        # The first words of each sentence in the batch is the start of sample token.
+        words = (
+            tf.zeros([batch_size, 1], dtype=tf.int64)
+            + encoder_targets.start_of_sample_index
+        )
+        last_words = words
+
+        has_finish_predicting = False
+        reach_max_seq_lenght = False
+
+        while not (has_finish_predicting or reach_max_seq_lenght):
+            # Call the decoder and update the decoder hidden state
+            decoder_output, decoder_h, decoder_c, alignment = self.decoder(
+                last_words, (decoder_h, decoder_c), encoder_output, False
+            )
+            last_words = tf.expand_dims(decoder_output, 1)
+            last_words = tf.math.argmax(last_words, axis=2)
+
+            logger.debug(f"New word {last_words}.")
+
+            # Append the newly predicted words into words.
+            words = tf.concat([words, last_words], 1)
+
+            # Compute the end condition of the while loop.
+            end_of_sample = (
+                np.zeros([batch_size, 1], dtype=np.int64)
+                + encoder_targets.end_of_sample_index
+            )
+            has_finish_predicting = np.array_equal(last_words.numpy(), end_of_sample)
+            reach_max_seq_lenght = words.shape[1] >= max_seq_length
+
+            logger.debug(f"Has finish predicting {has_finish_predicting}.")
+            logger.debug(f"Has reach max sequence length {reach_max_seq_lenght}.")
+
+        return words
 
     @property
     def embedding_size(self):
