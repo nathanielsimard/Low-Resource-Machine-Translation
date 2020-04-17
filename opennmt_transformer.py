@@ -157,14 +157,14 @@ def main():
     valsrc = args.valsrc
     valtgt = args.valtgt
     src_vocab, tgt_vocab = get_vocab_file_names(args.model_dir)
-    vocab_size = args.vocab_size
+    vocab_size = int(args.vocab_size)
 
     # if args.run == "translate":
     #    tgt = None
 
     if args.bpe:
         # Prepare Byte-Pair Encore model + Byte-Pair Encoded Files.
-        vocab_size = args.bpe_vocab_size
+        vocab_size = int(args.bpe_vocab_size)
         if args.run == "train":
             prepare_bpe_models(src, tgt, combined=combined, vocab_size=vocab_size)
             valsrc, valtgt = prepare_bpe_files(valsrc, valtgt, combined=combined)

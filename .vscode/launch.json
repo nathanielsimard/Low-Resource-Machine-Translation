@@ -11,17 +11,42 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
+            //Barebone 20000 vocab run.:
             /*"args": [
                 "--src=data/splitted_data/train/train_token10000.en",
-                "--src=data/splitted_data/valid/val_token10000.fr",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--vocab_size=20000",
+                "train"
+            ]*/
+            //BPE-Only Run:
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--bpe",
+                "train"
+            ]*/
+            //BPE-Only + Combined:
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--bpe",
+                "--bpe_combined",
+                "train"
+            ]*/
+            //Monolingual augmented run.
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
                 "--valsrc=data/splitted_data/valid/val_token10000.en",
                 "--tgt=data/splitted_data/train/train_token10000.fr",
                 "--valtgt=data/splitted_data/valid/val_token10000.fr",
                 "--monosrc=data/token_unaligned/unaligned.fr",
-                "--src_vocab=data/splitted_data/train/vocab10000.en",
-                "--tgt_vocab=data/splitted_data/train/vocab10000.fr",
                 "--bpe",
-                "translate"
                 "train"
             ]*/
             //Back-Translation Model
@@ -64,11 +89,24 @@
                 "--bpe",
                 "train"
             ]*/
-            //Evaluator script testing.
+            //Back-Translation + Copied monolingual Run, Vocab=6000
             "args": [
-                "--target-file-path=data/splitted_data/valid/val_token10000.fr",
-                "--input-file-path=data/splitted_data/valid/val_token10000.en"
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--monosrc=data/token_unaligned/unaligned.fr",
+                "--btsrc=data/onmt_backtranslation/bt.en",
+                "--bttgt=data/onmt_backtranslation/bt.fr",
+                "--bpe_vocab_size=6000",
+                "--bpe",
+                "train"
             ]
+            //Evaluator script testing.
+            /*"args": [
+                "--target-file-path=data/splitted_data/test/test_token10000.fr",
+                "--input-file-path=data/splitted_data/test/test_token10000.en"
+            ]*/
         }
     ]
 }
