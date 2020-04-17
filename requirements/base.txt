@@ -5,10 +5,3 @@ tqdm>=4.42
 matplotlib
 sacrebleu==1.4.3
 spacy
-OpenNMT-tf==2.8.1 
-pyyaml 
-rouge 
-pandas
-sentencepiece 
-numpy==1.16.0 #Fix for TA setup.
-tensorflow-addons==0.9.0

@@ -13,6 +13,8 @@ jobs:
           architecture: "x64"
       - name: Install Dependencies
         run: pip install -r requirements/dev.txt
+      - name: Install ONMT Dependencies
+        run: pip install -r requirements/onmt.txt
       - name: Lint
         run: ./scripts/lint.sh
       - name: Tests
