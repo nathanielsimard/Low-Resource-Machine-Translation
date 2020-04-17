@@ -21,11 +21,11 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
     combined = True  # Winning model has combined vocabulary
     from opennmt_transformer import (
         init_model,
-        translate,
         get_vocab_file_names,
         init_data_config,
         init_checkpoint_manager_and_load_latest_checkpoint,
     )
+    from src.opennmt import translate
     from src.opennmt_preprocessing import prepare_bpe_files, decode_bpe_file
     import shutil
     import tempfile
