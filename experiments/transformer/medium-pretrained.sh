@@ -28,5 +28,5 @@ python run_experiment.py \
     --std \
     --lr None \
     --hyperparameters experiments/demi-bert/medium-hyperparameters.json \
-    --pretrained \
+    --pretrained data/splitted_english_data/sorted_clean_train.en \
     --no_cache 

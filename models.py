@@ -63,9 +63,8 @@ def create_demi_bert(args, input_vocab_size, target_vocab_size):
 def create_transformer_pretrained(args, input_vocab_size, target_vocab_size):
     demi_bert_args = copy.deepcopy(args)
     demi_bert_args.model = "demi-bert"
-    demi_bert_args.hyperparameters = "experiments/demi-bert/small-hyperparameters.json"
     demi_bert = find(demi_bert_args, input_vocab_size, target_vocab_size)
-    demi_bert.load("2")
+    demi_bert.load("5")
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
         "target_vocab_size": target_vocab_size,
