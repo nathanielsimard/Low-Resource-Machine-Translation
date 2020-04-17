@@ -5,6 +5,7 @@ cd
 virtualenv $ENV_NAME
 source $ENV_NAME/bin/activate
 cd -
+module load python  
 pip install -r requirements/onmt.txt
 
 
