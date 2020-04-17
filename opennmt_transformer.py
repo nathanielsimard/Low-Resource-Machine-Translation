@@ -80,7 +80,14 @@ def init_checkpoint_manager_and_load_latest_checkpoint(
     return checkpoint_manager
 
 
-def init_data_config(model, src_vocab, tgt_vocab):
+def init_data_config(model: onmt.models.Model, src_vocab: str, tgt_vocab: str):
+    """Initialise the OpenNMT data loader for the model.
+
+    Arguments:
+        model {onmt.models.Model} -- Model
+        src_vocab {str} -- Source vocabulary file name.
+        tgt_vocab {str} -- Target vocabulary file name.
+    """
     data_config = {
         "source_vocabulary": src_vocab,
         "target_vocabulary": tgt_vocab,
@@ -89,6 +96,9 @@ def init_data_config(model, src_vocab, tgt_vocab):
 
 
 def main():
+    """Trains the OpenNMT Transformer or translate with it, according
+    to command line arguments"""
+
     model, checkpoint, optimizer, learning_rate = init_model()
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -130,12 +140,6 @@ def main():
         "--output", help="Filename for translated output.", default="output.txt"
     )
 
-    # parser.add_argument(
-    #    "--src_vocab", required=True, help="Path to the source vocabulary."
-    # )
-    # parser.add_argument(
-    #    "--tgt_vocab", required=True, help="Path to the target vocabulary."
-    # )
     parser.add_argument(
         "--model_dir",
         default="checkpoint",
@@ -143,7 +147,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # Random seed.
+    # Tensorflow random seed.
     tf.random.set_seed(args.seed)
 
     combined = args.bpe_combined
@@ -159,20 +163,13 @@ def main():
     src_vocab, tgt_vocab = get_vocab_file_names(args.model_dir)
     vocab_size = int(args.vocab_size)
 
-    # if args.run == "translate":
-    #    tgt = None
-
     if args.bpe:
         # Prepare Byte-Pair Encore model + Byte-Pair Encoded Files.
         vocab_size = int(args.bpe_vocab_size)
         if args.run == "train":
             prepare_bpe_models(src, tgt, combined=combined, vocab_size=vocab_size)
-            valsrc, valtgt = prepare_bpe_files(valsrc, valtgt, combined=combined)
+            _, valtgt = prepare_bpe_files(valsrc, valtgt, combined=combined)
         src, tgt = prepare_bpe_files(src, tgt, combined=combined)
-        # src += ".bpe"
-        # if tgt is not None:
-        #    tgt += ".bpe"
-        # valtgt += ".bpe" We compare againt the real version of the validation file.
 
     # Rebuilds the vocabulary from scratch using only the input data.
     if args.run == "train":
@@ -194,8 +191,6 @@ def main():
             exit()
         if args.bpe:
             btsrc, bttgt = prepare_bpe_files(btsrc, bttgt, combined=combined)
-            # btsrc += ".bpe"
-            # bttgt += ".bpe"
         else:
             tf.get_logger.info(
                 "Warning: Back-translation was not tested without BPE. There could be bugs!"
@@ -229,25 +224,10 @@ def main():
         tgt = tmp_monotgt
 
     init_data_config(model, src_vocab, tgt_vocab)
-    # data_config = {
-    #    "source_vocabulary": src_vocab,
-    #    "target_vocabulary": tgt_vocab,
-    # }
-    #
-    # model.initialize(data_config)
 
     checkpoint_manager = init_checkpoint_manager_and_load_latest_checkpoint(
         checkpoint, args.model_dir
     )
-
-    # checkpoint_manager = tf.train.CheckpointManager(
-    #    checkpoint, args.model_dir, max_to_keep=5
-    # )
-    # if checkpoint_manager.latest_checkpoint is not None:
-    #    tf.get_logger().info(
-    #        "Restoring parameters from %s", checkpoint_manager.latest_checkpoint
-    #    )
-    #    checkpoint.restore(checkpoint_manager.latest_checkpoint)
 
     if args.run == "train":
         tf.get_logger().info(
