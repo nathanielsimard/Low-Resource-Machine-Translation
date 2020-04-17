@@ -4,6 +4,7 @@ export TF_ADDONS_PY_OPS=1  #
 cd
 virtualenv $ENV_NAME
 source $ENV_NAME/bin/activate
+cd -
 pip install requirements/onmt.txt
 
 
