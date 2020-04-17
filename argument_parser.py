@@ -91,8 +91,9 @@ def parse_args():
     )
     parser.add_argument(
         "--pretrained",
-        help="Whether to use pretrained weights or not",
-        action="store_true",
+        help="Path to the unaligned dataset used for pretraining",
+        type=str,
+        default=None,
     )
     args = parser.parse_args()
     logger = logging.initialize(

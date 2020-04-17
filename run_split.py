@@ -4,7 +4,7 @@ import argparse
 
 random.seed(1111)
 
-DATA_OUTPUT_DIRECTORY = "/home/olivier/Documents/local_git/Low-Resource-Machine-Translation/data/splitted_english_data/"
+DATA_OUTPUT_DIRECTORY = "/home/olivier/Documents/local_git/Low-Resource-Machine-Translation/data/splitted_french_data/"
 
 if not os.path.exists(DATA_OUTPUT_DIRECTORY):
     os.makedirs(DATA_OUTPUT_DIRECTORY)
@@ -60,9 +60,9 @@ def main():
 
     output_prefix = args.output_prefix
 
-    write_text_from_tokens(train, DATA_OUTPUT_DIRECTORY + output_prefix + "_train.en")
-    write_text_from_tokens(valid, DATA_OUTPUT_DIRECTORY + output_prefix + "_valid.en")
-    write_text_from_tokens(test, DATA_OUTPUT_DIRECTORY + output_prefix + "_test.en")
+    write_text_from_tokens(train, DATA_OUTPUT_DIRECTORY + output_prefix + "_train.fr")
+    write_text_from_tokens(valid, DATA_OUTPUT_DIRECTORY + output_prefix + "_valid.fr")
+    write_text_from_tokens(test, DATA_OUTPUT_DIRECTORY + output_prefix + "_test.fr")
 
 
 if __name__ == "__main__":
