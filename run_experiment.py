@@ -22,44 +22,6 @@ def punctuation_training(args, loss_fn):
     text_encoder_type = _text_encoder_type(args.text_encoder)
 
     train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_english_data/sorted_clean_train.en",
-        file_name_target="data/splitted_english_data/sorted_target_train.en",
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        max_seq_length=args.max_seq_length,
-        cache_dir=_cache_dir(args),
-    )
-    valid_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_english_data/sorted_clean_valid.en",
-        file_name_target="data/splitted_english_data/sorted_target_valid.en",
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        encoder_input=train_dl.encoder_input,
-        encoder_target=train_dl.encoder_target,
-        max_seq_length=args.max_seq_length,
-        cache_dir=_cache_dir(args),
-    )
-    model = models.find(
-        args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
-    )
-    optim = _create_optimizer(model.embedding_size, args)
-    training = Training(
-        model, train_dl, valid_dl, [base.Metrics.ABSOLUTE_ACC, base.Metrics.BLEU]
-    )
-    training.run(
-        loss_fn,
-        optim,
-        batch_size=args.batch_size,
-        num_epoch=args.epochs,
-        checkpoint=args.checkpoint,
-    )
-
-
-def default_training(args, loss_fn):
-    """Train the model."""
-    text_encoder_type = _text_encoder_type(args.text_encoder)
-
-    train_dl = dataloader.AlignedDataloader(
         file_name_input=args.src_train,
         file_name_target=args.target_train,
         vocab_size=args.vocab_size,
@@ -91,19 +53,77 @@ def default_training(args, loss_fn):
     )
 
 
+def default_training(args, loss_fn):
+    """Train the model."""
+    text_encoder_type = _text_encoder_type(args.text_encoder)
+
+    if args.pretrained:
+        pretrained_dl = dataloader.UnalignedDataloader(
+            file_name="data/splitted_english_data/sorted_clean_train.en",
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            text_encoder_type=text_encoder_type,
+            vocab_size=args.vocab_size,
+            encoder_input=pretrained_dl.encoder,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+    else:
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+    valid_dl = dataloader.AlignedDataloader(
+        file_name_input=args.src_valid,
+        file_name_target=args.target_valid,
+        vocab_size=args.vocab_size,
+        text_encoder_type=text_encoder_type,
+        encoder_input=train_dl.encoder_input,
+        encoder_target=train_dl.encoder_target,
+        max_seq_length=args.max_seq_length,
+        cache_dir=_cache_dir(args),
+    )
+    logger.debug(valid_dl.encoder_target.vocab_size)
+    logger.debug(valid_dl.encoder_input.vocab_size)
+    logger.debug(train_dl.encoder_target.vocab_size)
+    logger.debug(train_dl.encoder_input.vocab_size)
+    model = models.find(
+        args, train_dl.encoder_input.vocab_size, train_dl.encoder_target.vocab_size
+    )
+    optim = _create_optimizer(model.embedding_size, args)
+    training = Training(model, train_dl, valid_dl, [base.Metrics.BLEU])
+    training.run(
+        loss_fn,
+        optim,
+        batch_size=args.batch_size,
+        num_epoch=args.epochs,
+        checkpoint=args.checkpoint,
+    )
+
+
 def pretraining(args, loss_fn):
     """Pretraining the model."""
     text_encoder_type = _text_encoder_type(args.text_encoder)
 
     train_dl = dataloader.UnalignedDataloader(
-        file_name="data/splitted_english_data/sorted_clean_train.en",
+        file_name=args.src_train,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         max_seq_length=args.max_seq_length,
         cache_dir=_cache_dir(args),
     )
     valid_dl = dataloader.UnalignedDataloader(
-        file_name="data/splitted_english_data/sorted_clean_valid.en",
+        file_name=args.src_valid,
         vocab_size=args.vocab_size,
         text_encoder_type=text_encoder_type,
         encoder=train_dl.encoder,
@@ -229,14 +249,32 @@ def test(args, loss_fn):
     """Test the model."""
     text_encoder_type = _text_encoder_type(args.text_encoder)
     # Used to load the train text encoders.
-    train_dl = dataloader.AlignedDataloader(
-        file_name_input="data/splitted_data/train/train_token10000.en",
-        file_name_target="data/splitted_data/train/train_token10000.fr",
-        vocab_size=args.vocab_size,
-        text_encoder_type=text_encoder_type,
-        max_seq_length=args.max_seq_length,
-        cache_dir=_cache_dir(args),
-    )
+    if args.pretrained:
+        pretrained_dl = dataloader.UnalignedDataloader(
+            file_name="data/splitted_english_data/sorted_clean_train.en",
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            text_encoder_type=text_encoder_type,
+            vocab_size=args.vocab_size,
+            encoder_input=pretrained_dl.encoder,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
+    else:
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=args.src_train,
+            file_name_target=args.target_train,
+            vocab_size=args.vocab_size,
+            text_encoder_type=text_encoder_type,
+            max_seq_length=args.max_seq_length,
+            cache_dir=_cache_dir(args),
+        )
     test_dl = dataloader.AlignedDataloader(
         file_name_input="data/splitted_data/test/test_token10000.en",
         file_name_target="data/splitted_data/test/test_token10000.fr",

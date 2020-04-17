@@ -32,6 +32,12 @@ def parse_args():
         "--no_cache", help="Disable caching for text encoders.", action="store_true",
     )
     parser.add_argument(
+        "--hyperparameters",
+        help="Path to the hyperparameters json config file",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
         "--random_seed",
         help="Will overide the default seed and use a random one",
         action="store_true",
@@ -82,6 +88,11 @@ def parse_args():
         "--target_valid",
         help="Source training aligned file.",
         default="data/splitted_data/sorted_nopunctuation_lowercase_val_token.fr",
+    )
+    parser.add_argument(
+        "--pretrained",
+        help="Whether to use pretrained weights or not",
+        action="store_true",
     )
     args = parser.parse_args()
     logger = logging.initialize(
