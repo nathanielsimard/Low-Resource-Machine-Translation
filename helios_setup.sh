@@ -19,5 +19,7 @@ pip install rouge
 pip install pandas
 pip install sacrebleu==1.4.4
 pip install sentencepiece 
+pip install numpy==1.16.0 #Fix for TA setup.
+
 
 
