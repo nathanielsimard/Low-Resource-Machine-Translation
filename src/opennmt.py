@@ -1,24 +1,30 @@
 import opennmt as onmt
 import tensorflow as tf
+import tensorflow_addons as tfa
 from tmp_helpers.metrics import compute_bleu
 from src.opennmt_preprocessing import decode_bpe_file
+from typing import Union
 
 
 def translate(
-    model,
-    source_file,
+    model: onmt.models.Model,
+    source_file: str,
     batch_size=32,
     beam_size=1,
-    output_file=None,
+    output_file=Union[None, str],
     show_progress=False,
 ):
-    """Runs translation.
-  Args:
-    source_file: The source file.
-    batch_size: The batch size to use.
-    beam_size: The beam size to use. Set to 1 for greedy search.
-  """
+    """Run translation.
 
+    Arguments:
+        model {onmt.models.Model} : OpenNMT Model to perform translation with.
+        source_file {str} : Filename to translate.
+        batch_size {int} : Batch size (default: {32})
+        beam_size {int} : Size of the beam for beam searh. 1 is greedy search (default: {1})
+        output_file {str} -- Output file name. If set to None, output to console. (default: {None})
+        show_progress {bool} : Output dots at each batch. (default: {False})
+
+    """
     # Create the inference dataset.
     dataset = model.examples_inputter.make_inference_dataset(source_file, batch_size)
 
@@ -71,7 +77,7 @@ def translate(
                 f.write(sentence.decode("utf-8") + "\n")
             else:
                 print(sentence.decode("utf-8"))
-    if output_file is not None:
+    if f is not None:
         f.close()
 
 
@@ -120,7 +126,6 @@ def train(
     Returns:
         [type] -- [description]
     """
-
     # Create the training dataset.
     dataset = model.examples_inputter.make_training_dataset(
         source_file,

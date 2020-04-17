@@ -168,7 +168,7 @@ def main():
         vocab_size = int(args.bpe_vocab_size)
         if args.run == "train":
             prepare_bpe_models(src, tgt, combined=combined, vocab_size=vocab_size)
-            _, valtgt = prepare_bpe_files(valsrc, valtgt, combined=combined)
+            valsrc, _ = prepare_bpe_files(valsrc, valtgt, combined=combined)
         src, tgt = prepare_bpe_files(src, tgt, combined=combined)
 
     # Rebuilds the vocabulary from scratch using only the input data.
