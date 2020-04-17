@@ -9,6 +9,5 @@ OpenNMT-tf==2.8.1
 pyyaml 
 rouge 
 pandas
-sacrebleu==1.4.4
 sentencepiece 
 numpy==1.16.0 #Fix for TA setup.
