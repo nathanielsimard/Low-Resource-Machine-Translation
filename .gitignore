@@ -135,3 +135,10 @@ dmypy.json
 models
 results
 logging
+checkpoint
+checkpoint.*
+predictions.*
+*.tmp
+*.vocab
+*.model
+ckpt*

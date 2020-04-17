@@ -1,0 +1,112 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            //Barebone 20000 vocab run.:
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--vocab_size=20000",
+                "train"
+            ]*/
+            //BPE-Only Run:
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--bpe",
+                "train"
+            ]*/
+            //BPE-Only + Combined:
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--bpe",
+                "--bpe_combined",
+                "train"
+            ]*/
+            //Monolingual augmented run.
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--monosrc=data/token_unaligned/unaligned.fr",
+                "--bpe",
+                "train"
+            ]*/
+            //Back-Translation Model
+            /*
+            "args": [
+                "--src=data/splitted_data/train/train_token10000.fr",
+                "--valsrc=data/splitted_data/valid/val_token10000.fr",
+                "--tgt=data/splitted_data/train/train_token10000.en",
+                "--valtgt=data/splitted_data/valid/val_token10000.en",
+                "--bpe",
+                "train"
+            ]*/
+            //Spot-check for translation.
+            /*
+            "args": [
+                "--src=data/splitted_data/valid/val_token10000.fr",
+                "--bpe",
+                "translate"
+            ]*/
+            //Back-Translation Run
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--btsrc=bt.en.tmp",
+                "--bttgt=unaligned_fr.tmp",
+                "--bpe",
+                "train"
+            ]*/
+            //Back-Translation + Copied monolingual Run
+            /*"args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--monosrc=data/token_unaligned/unaligned.fr",
+                "--btsrc=bt.en.tmp",
+                "--bttgt=unaligned_fr.tmp",
+                "--bpe",
+                "train"
+            ]*/
+            //Back-Translation + Copied monolingual Run, Vocab=6000
+            "args": [
+                "--src=data/splitted_data/train/train_token10000.en",
+                "--valsrc=data/splitted_data/valid/val_token10000.en",
+                "--tgt=data/splitted_data/train/train_token10000.fr",
+                "--valtgt=data/splitted_data/valid/val_token10000.fr",
+                "--monosrc=data/token_unaligned/unaligned.fr",
+                "--btsrc=data/onmt_backtranslation/bt.en",
+                "--bttgt=data/onmt_backtranslation/bt.fr",
+                "--bpe_vocab_size=6000",
+                "--bpe",
+                "train"
+            ]
+            //Evaluator script testing.
+            /*"args": [
+                "--target-file-path=data/splitted_data/test/test_token10000.fr",
+                "--input-file-path=data/splitted_data/test/test_token10000.en"
+            ]*/
+        }
+    ]
+}
