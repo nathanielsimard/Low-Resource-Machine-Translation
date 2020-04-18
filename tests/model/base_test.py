@@ -9,7 +9,7 @@ from src.text_encoder import TextEncoderType
 
 
 class CleanSentences(unittest.TestCase):
-    def test_clean_sentences(self):
+    def test_clean_sentences_start_end_token(self):
         inputs = [
             f"{START_OF_SAMPLE_TOKEN} It starts like that {END_OF_SAMPLE_TOKEN} this must be cleared",
             f"{START_OF_SAMPLE_TOKEN} Another sentence {END_OF_SAMPLE_TOKEN} another garbage",
@@ -19,6 +19,19 @@ class CleanSentences(unittest.TestCase):
         self.assertEqual("It starts like that", actual[0])
         self.assertEqual("Another sentence", actual[1])
         self.assertEqual("Another amazing sentence", actual[2])
+
+    def test_clean_sentence_early_dashed(self):
+        inputs = [
+            f" - Another",
+            f"- Another",
+            f" -Another",
+            f" -- Another",
+        ]
+        actual = clean_sentences(inputs)
+        self.assertEqual("Another", actual[0])
+        self.assertEqual("Another", actual[1])
+        self.assertEqual("Another", actual[2])
+        self.assertEqual("Another", actual[3])
 
 
 class MaxSeqLenght(unittest.TestCase):

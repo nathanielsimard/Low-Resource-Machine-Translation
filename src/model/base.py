@@ -87,9 +87,28 @@ def clean_sentences(sentences: List[str]) -> List[str]:
     """Clean sentences from start en end token."""
     result = []
     for sentence in sentences:
-        result.append(" ".join(_clean_tokens(sentence)))
+        cleaned_sentence = " ".join(_clean_tokens(sentence))
+        cleaned_sentence = _remove_early_dash(cleaned_sentence)
+        result.append(cleaned_sentence)
 
     return result
+
+
+def _remove_early_dash(sentence: str, num_char=4) -> str:
+    """Check the first characters to remove unnecessary dashes."""
+    if "-" in sentence[0:num_char]:
+        sentence = sentence.replace("-", "", sentence.count("-", 0, num_char))
+        sentence = _remove_first_empty_char(sentence)
+
+    return sentence
+
+
+def _remove_first_empty_char(sentence: str) -> str:
+    while True:
+        if len(sentence) > 0 and sentence[0] == " ":
+            sentence = sentence[1:]
+        else:
+            return sentence
 
 
 def _clean_tokens(sentence: str) -> List[str]:
