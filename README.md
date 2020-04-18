@@ -10,6 +10,13 @@ python evaluator.py --input-file-path {input-file-path} --target-file-path {targ
 
 For more information, see `python evaluator.py --help`.
 
+Note that the dependencies are in `requirements.txt`.
+They can be install with `pip`.
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Experiments 
 
 All experiments can be reproduced with the scripts in the folders `experiments`.
