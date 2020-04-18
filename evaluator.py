@@ -27,7 +27,7 @@ class BackTranslationPretrainedDemiBertTransformer(object):
     text_encoder = TextEncoderType.SUBWORD
     vocab_size = 8192
     src_train = "data/src_backtranslation.en"
-    target_train = "data/src_backtranslation.fr"
+    target_train = "data/target_backtranslation.fr"
     checkpoint = 12
     max_seq_length = 750
     pretrained = "data/splitted_english_data/sorted_clean_train.en"
