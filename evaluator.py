@@ -20,7 +20,20 @@ class French2EnglishSettings(object):
     max_seq_length = 750
     batch_size = 64
     model = "transformer"
-    hyperparameters = "experiments/transformer/basic-hyperparameters.json"
+    hyperparameters = "experiments/transformer/small-hyperparameters.json"
+
+
+class BackTranslationPretrainedDemiBertTransformer(object):
+    text_encoder = TextEncoderType.SUBWORD
+    vocab_size = 8192
+    src_train = "data/src_backtranslation.en"
+    target_train = "data/src_backtranslation.fr"
+    checkpoint = 12
+    max_seq_length = 750
+    pretrained = "data/splitted_english_data/sorted_clean_train.en"
+    batch_size = 64
+    model = "transformer-pretrained"
+    hyperparameters = "experiments/transformer/medium-hyperparameters.json"
 
 
 def generate_predictions(input_file_path: str, pred_file_path: str):
@@ -39,15 +52,8 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
 
     """
     logger.info(f"Generate predictions with input {input_file_path} {pred_file_path}")
-    settings = French2EnglishSettings()
-    train_dl = dataloader.AlignedDataloader(
-        file_name_input=settings.src_train,
-        file_name_target=settings.target_train,
-        vocab_size=settings.vocab_size,
-        text_encoder_type=settings.text_encoder,
-    )
-    encoder_input = train_dl.encoder_input
-    encoder_target = train_dl.encoder_target
+    settings = BackTranslationPretrainedDemiBertTransformer()
+    encoder_input, encoder_target = _load_encoders(settings)
 
     # Load the model.
     model = models.find(settings, encoder_input.vocab_size, encoder_target.vocab_size)
@@ -66,6 +72,36 @@ def generate_predictions(input_file_path: str, pred_file_path: str):
         model, dl, encoder_input, encoder_target, settings.batch_size
     )
     base.write_text(predictions, pred_file_path)
+
+
+def _load_encoders(settings):
+    if settings.pretrained is not None:
+        pretrained_dl = dataloader.UnalignedDataloader(
+            file_name=settings.pretrained,
+            vocab_size=settings.vocab_size,
+            text_encoder_type=settings.text_encoder,
+            max_seq_length=settings.max_seq_length,
+            cache_dir=None,
+        )
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=settings.src_train,
+            file_name_target=settings.target_train,
+            text_encoder_type=settings.text_encoder,
+            vocab_size=settings.vocab_size,
+            encoder_input=pretrained_dl.encoder,
+            max_seq_length=settings.max_seq_length,
+            cache_dir=None,
+        )
+    else:
+        train_dl = dataloader.AlignedDataloader(
+            file_name_input=settings.src_train,
+            file_name_target=settings.target_train,
+            text_encoder_type=settings.text_encoder,
+            vocab_size=settings.vocab_size,
+            max_seq_length=settings.max_seq_length,
+            cache_dir=None,
+        )
+    return train_dl.encoder_input, train_dl.encoder_target
 
 
 def _generate_predictions(

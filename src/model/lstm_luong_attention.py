@@ -155,7 +155,10 @@ class LSTM_ATTENTION(base.MachineTranslationModel):
 
             # Call the decoder and update the decoder hidden state
             decoder_output, decoder_state_h, decoder_state_c, _ = self.decoder(
-                decoder_input, (decoder_state_h, decoder_state_c), encoder_output, training
+                decoder_input,
+                (decoder_state_h, decoder_state_c),
+                encoder_output,
+                training,
             )
 
             # The predictions are concatenated on the time axis
