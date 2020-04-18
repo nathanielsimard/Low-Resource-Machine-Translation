@@ -22,10 +22,10 @@ class CleanSentences(unittest.TestCase):
 
     def test_clean_sentence_early_dashed(self):
         inputs = [
-            f" - Another",
-            f"- Another",
-            f" -Another",
-            f" -- Another",
+            " - Another",
+            "- Another",
+            " -Another",
+            " -- Another",
         ]
         actual = clean_sentences(inputs)
         self.assertEqual("Another", actual[0])
