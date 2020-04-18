@@ -88,16 +88,21 @@ def clean_sentences(sentences: List[str]) -> List[str]:
     result = []
     for sentence in sentences:
         cleaned_sentence = " ".join(_clean_tokens(sentence))
-        cleaned_sentence = _remove_early_dash(cleaned_sentence)
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char="-")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char='"')
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char="«")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char="•")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char=":")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char=",")
         result.append(cleaned_sentence)
 
     return result
 
 
-def _remove_early_dash(sentence: str, num_char=4) -> str:
-    """Check the first characters to remove unnecessary dashes."""
-    if "-" in sentence[0:num_char]:
-        sentence = sentence.replace("-", "", sentence.count("-", 0, num_char))
+def _remove_early_characters(sentence: str, num_char=3, char="-") -> str:
+    """Check the first characters to remove unnecessary punctuation and characters."""
+    if char in sentence[0:num_char]:
+        sentence = sentence.replace(char, "", sentence.count(char, 0, num_char))
         sentence = _remove_first_empty_char(sentence)
 
     return sentence
