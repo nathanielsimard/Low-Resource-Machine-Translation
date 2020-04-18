@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # With the whole pretrained encoder vocab size 8192
-# Best epoch 
+# Best epoch 12
 # Train bleu : 
-# Valid bleu : 
-# Test bleu : 
+# Valid bleu : 13.035
+# Test bleu : 12.57
 
 python run_experiment.py \
     --model transformer-pretrained \
@@ -21,4 +21,6 @@ python run_experiment.py \
     --lr None \
     --hyperparameters experiments/demi-bert/medium-hyperparameters.json \
     --pretrained data/splitted_english_data/sorted_clean_train.en \
-    --no_cache 
+    --no_cache \
+    --task test \
+    --checkpoint 12
