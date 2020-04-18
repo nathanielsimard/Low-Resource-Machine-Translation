@@ -87,9 +87,33 @@ def clean_sentences(sentences: List[str]) -> List[str]:
     """Clean sentences from start en end token."""
     result = []
     for sentence in sentences:
-        result.append(" ".join(_clean_tokens(sentence)))
+        cleaned_sentence = " ".join(_clean_tokens(sentence))
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char="-")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char='"')
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char="«")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char="•")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char=":")
+        cleaned_sentence = _remove_early_characters(cleaned_sentence, char=",")
+        result.append(cleaned_sentence)
 
     return result
+
+
+def _remove_early_characters(sentence: str, num_char=3, char="-") -> str:
+    """Check the first characters to remove unnecessary punctuation and characters."""
+    if char in sentence[0:num_char]:
+        sentence = sentence.replace(char, "", sentence.count(char, 0, num_char))
+        sentence = _remove_first_empty_char(sentence)
+
+    return sentence
+
+
+def _remove_first_empty_char(sentence: str) -> str:
+    while True:
+        if len(sentence) > 0 and sentence[0] == " ":
+            sentence = sentence[1:]
+        else:
+            return sentence
 
 
 def _clean_tokens(sentence: str) -> List[str]:
