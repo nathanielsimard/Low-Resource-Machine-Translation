@@ -4,4 +4,5 @@ pandas
 tqdm>=4.42
 matplotlib
 sacrebleu==1.4.3
+numpy==1.16.0
 spacy

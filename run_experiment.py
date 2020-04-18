@@ -57,9 +57,9 @@ def default_training(args, loss_fn):
     """Train the model."""
     text_encoder_type = _text_encoder_type(args.text_encoder)
 
-    if args.pretrained:
+    if args.pretrained is not None:
         pretrained_dl = dataloader.UnalignedDataloader(
-            file_name="data/splitted_english_data/sorted_clean_train.en",
+            file_name=args.pretrained,
             vocab_size=args.vocab_size,
             text_encoder_type=text_encoder_type,
             max_seq_length=args.max_seq_length,
@@ -249,9 +249,9 @@ def test(args, loss_fn):
     """Test the model."""
     text_encoder_type = _text_encoder_type(args.text_encoder)
     # Used to load the train text encoders.
-    if args.pretrained:
+    if args.pretrained is not None:
         pretrained_dl = dataloader.UnalignedDataloader(
-            file_name="data/splitted_english_data/sorted_clean_train.en",
+            file_name=args.pretrained,
             vocab_size=args.vocab_size,
             text_encoder_type=text_encoder_type,
             max_seq_length=args.max_seq_length,
