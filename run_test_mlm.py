@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument(
         "--hyperparameters",
         help="Path to hyperparameters",
-        default="experiments/demi-bert/basic-hyperparameters.json",
+        default="experiments/demi-bert/medium-hyperparameters.json",
     )
 
     args = parser.parse_args()
@@ -62,9 +62,7 @@ def predict(args):
 
     # Create the message to translate.
     message = preprocessing.add_start_end_token([args.message])[0]
-    print(message)
     x = tf.convert_to_tensor([encoder.encode(message)])
-    print(x)
     pretraining.test(x, model, encoder)
 
 
