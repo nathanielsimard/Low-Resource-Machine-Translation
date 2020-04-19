@@ -4,7 +4,7 @@ from typing import Any, Dict
 import copy
 
 from src import logging
-from src.model import gru_attention, lstm, lstm_luong_attention, masked_lm, transformer
+from src.model import gru_attention, lstm_luong_attention, masked_lm, transformer
 
 logger = logging.create_logger(__name__)
 
@@ -13,14 +13,6 @@ def read_json_file(file_name: str) -> Dict[str, Any]:
     with open(file_name) as file:
         return json.load(file)
 
-
-def create_lstm(args, input_vocab_size, target_vocab_size):
-    hyperparameters = {
-        "input_vocab_size": input_vocab_size + 1,
-        "output_vocab_size": target_vocab_size + 1,
-        **read_json_file(args.hyperparameters),
-    }
-    return lstm.Lstm(**hyperparameters), hyperparameters
 
 
 def create_transformer(args, input_vocab_size, target_vocab_size):
@@ -80,7 +72,6 @@ def create_transformer_pretrained(args, input_vocab_size, target_vocab_size):
 
 
 MODELS = {
-    lstm.NAME: create_lstm,
     transformer.NAME: create_transformer,
     gru_attention.NAME: create_gru_attention,
     lstm_luong_attention.NAME: create_lstm_luong_attention,
