@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Bleu Score after 11 epochs:
+#   - Train 4.494
+#   - Valid 3.510
+#   - Test 3.539
+
 python run_experiment.py \
     --model transformer \
     --text_encoder word-no-filter \
