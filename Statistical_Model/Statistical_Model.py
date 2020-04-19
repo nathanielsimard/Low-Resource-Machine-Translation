@@ -1,24 +1,19 @@
 import collections
-import itertools
 import math
-import operator
-import re
-import subprocess
 
 import numpy as np
 from nltk import ngrams
 
-from utility import (compute_bleu, read_file, read_file_np, read_file_np_lower,
-                     write_text)
+from utility import read_file_np_lower, write_text
 
-TRAIN_EN_PATH = 'data/splitted_data/train/train_token10000.en'
-TRAIN_FR_PATH = 'data/splitted_data/train/train_token10000.fr'
-VAL_EN_PATH = 'data/splitted_data/valid/val_token10000.en'
-VAL_FR_PATH = 'data/splitted_data/valid/val_token10000.fr'
-TEST_EN_PATH = 'data/splitted_data/test/test_token10000.en'
-TEST_FR_PATH = 'data/splitted_data/test/test_token10000.fr'
-UNALIGNED_EN_PATH = 'data/unaligned.en'
-UNALIGNED_FR_PATH = 'data/unaligned.fr'
+TRAIN_EN_PATH = "data/splitted_data/train/train_token10000.en"
+TRAIN_FR_PATH = "data/splitted_data/train/train_token10000.fr"
+VAL_EN_PATH = "data/splitted_data/valid/val_token10000.en"
+VAL_FR_PATH = "data/splitted_data/valid/val_token10000.fr"
+TEST_EN_PATH = "data/splitted_data/test/test_token10000.en"
+TEST_FR_PATH = "data/splitted_data/test/test_token10000.fr"
+UNALIGNED_EN_PATH = "data/unaligned.en"
+UNALIGNED_FR_PATH = "data/unaligned.fr"
 
 
 class Dictionnary_monolingual:
@@ -29,13 +24,15 @@ class Dictionnary_monolingual:
         self.dict_word_number, self.dict_number_word = self._get_word_to_number()
 
     def _get_counter(self):
-        return collections.Counter([word for sentence in self.sentences for word in sentence])
+        return collections.Counter(
+            [word for sentence in self.sentences for word in sentence]
+        )
 
     def _get_word_to_number(self):
         dict_word_number = {}
         dict_number_word = {}
-        dict_word_number['<NULL>'] = 0
-        dict_number_word[0] = '<NULL>'
+        dict_word_number["<NULL>"] = 0
+        dict_number_word[0] = "<NULL>"
         i = 1
 
         for word in self.counter:
@@ -70,23 +67,27 @@ class Unaligned_dictionnary:
         self.number_words = sum(self.counter.values())
 
     def _get_counter(self):
-        return collections.Counter([word for sentence in self.sentences for word in sentence])
+        return collections.Counter(
+            [word for sentence in self.sentences for word in sentence]
+        )
 
     def _get_bigram_counter(self):
         bigram_words = []
         for sentence in self.sentences:
-            sentence = ['<start>'] + sentence
+            sentence = ["<start>"] + sentence
             bigram = ngrams(sentence, 2)
             for bi in bigram:
-                bigram_words.append(' '.join(bi))
+                bigram_words.append(" ".join(bi))
         return collections.Counter(bigram_words)
 
     def get_proba(self, prev, actual, l):
-        if prev == '<start>':
-            return l * (self.counter[actual] / self.number_words) + (1 - l) * self.bigram_counter[prev + ' ' + actual] / len(self.sentences)
-        if not prev in self.counter:
+        if prev == "<start>":
+            get_p = self.bigram_counter[prev + " " + actual] / len(self.sentences)
+            return l * (self.counter[actual] / self.number_words) + (1 - l) * get_p
+        if prev not in self.counter:
+            get_p = self.bigram_counter[prev + " " + actual] / self.counter[prev]
             return l * (self.counter[actual] / self.number_words)
-        return l * (self.counter[actual] / self.number_words) + (1 - l) * self.bigram_counter[prev + ' ' + actual] / self.counter[prev]
+        return l * (self.counter[actual] / self.number_words) + (1 - l) * get_p
 
 
 class Proba_wordEN_knowing_wordFR:
@@ -113,8 +114,7 @@ class Proba_wordEN_knowing_wordFR:
             for (word_en, word_fr) in zip(sentence_en, sentence_fr):
                 new_table[word_en][word_fr] += 1
 
-        self.correspondance_table = new_table / \
-            new_table.sum(axis=1, keepdims=True)
+        self.correspondance_table = new_table / new_table.sum(axis=1, keepdims=True)
 
 
 class Corpus_alignment_en:
@@ -124,7 +124,9 @@ class Corpus_alignment_en:
         self.corpus_seq = self._get_corpus_seq()
 
     def _get_corpus_seq(self):
-        return [self.dictionnary_en.words_to_sequence(sentence) for sentence in self.corpus]
+        return [
+            self.dictionnary_en.words_to_sequence(sentence) for sentence in self.corpus
+        ]
 
     def get_seq_len(self):
         return [len(seq) for seq in self.corpus_seq]
@@ -138,15 +140,16 @@ class Corpus_alignment_fr:
         self.translation = translation
 
     def _get_corpus_seq(self):
-        return [self.dictionnary_fr.words_to_sequence(sentence) for sentence in self.corpus]
+        return [
+            self.dictionnary_fr.words_to_sequence(sentence) for sentence in self.corpus
+        ]
 
     def _gen_alignments(self, sentences_en, sentences_fr):
         # TODO: Ajouter <NULL>
         new_sentences_fr = []
 
         for (sentence_en, sentence_fr) in zip(sentences_en, sentences_fr):
-            new_sentences_fr.append(
-                self._get_best_alignment(sentence_en, sentence_fr))
+            new_sentences_fr.append(self._get_best_alignment(sentence_en, sentence_fr))
 
         return new_sentences_fr
 
@@ -159,53 +162,52 @@ class Corpus_alignment_fr:
         j_fr = np.arange(len(sentence_fr))
 
         while not (np.sum(completed) == len_en):
-            max_proba = - math.inf
-            best_alignment = {'fr': None, 'en': None}
+            max_proba = -math.inf
+            best_alignment = {"fr": None, "en": None}
 
             if len(j_fr) == 0:
                 break
 
             for i in i_en:
                 for j in j_fr:
-                    score = self.translation.get_prob_wordEN_knowing_wordFR(sentence_en[i],
-                                                                            sentence_fr[j])
+                    score = self.translation.get_prob_wordEN_knowing_wordFR(
+                        sentence_en[i], sentence_fr[j]
+                    )
                     if score > max_proba:
                         max_proba = score
-                        best_alignment['en'] = i
-                        best_alignment['fr'] = j
+                        best_alignment["en"] = i
+                        best_alignment["fr"] = j
 
-            new_sentence_fr[best_alignment['en']
-                            ] = sentence_fr[best_alignment['fr']]
-            i_en = np.delete(i_en, np.where(i_en == best_alignment['en']))
-            j_fr = np.delete(j_fr, np.where(j_fr == best_alignment['fr']))
-            completed[best_alignment['en']] = 1
+            new_sentence_fr[best_alignment["en"]] = sentence_fr[best_alignment["fr"]]
+            i_en = np.delete(i_en, np.where(i_en == best_alignment["en"]))
+            j_fr = np.delete(j_fr, np.where(j_fr == best_alignment["fr"]))
+            completed[best_alignment["en"]] = 1
 
         return new_sentence_fr.astype(int)
 
 
-def translate(translation_table, corpus_en, m=0.95, l=0.9):
+def translate(translation_table, corpus_en, m=0.95, ls=0.9):
     translate_sentences = []
     for sentence in corpus_en:
         new_sentence = []
         for i in range(len(sentence)):
             word_en = sentence[i]
-            if not word_en in train_dict_en.dict_word_number:
+            if word_en not in train_dict_en.dict_word_number:
                 new_sentence.append(word_en)
                 continue
             seq_en = train_dict_en.dict_word_number[word_en]
-            possible_seq_fr = translation_table[seq_en].argsort()[
-                ::-1][:20]
-            best_score = - math.inf
+            possible_seq_fr = translation_table[seq_en].argsort()[::-1][:20]
+            best_score = -math.inf
             best_word_fr = None
 
             for seq_fr in possible_seq_fr:
                 word_fr = train_dict_fr.dict_number_word[seq_fr]
                 if i == 0:
-                    pr_seq_fr = unaligned_dict_fr.get_proba(
-                        '<start>', word_fr, l)
+                    pr_seq_fr = unaligned_dict_fr.get_proba("<start>", word_fr, ls)
                 else:
                     pr_seq_fr = unaligned_dict_fr.get_proba(
-                        new_sentence[i - 1], word_fr, l)
+                        new_sentence[i - 1], word_fr, ls
+                    )
                 score = translation_table[seq_en][seq_fr] + m * pr_seq_fr
                 if score > best_score:
                     best_score = score
@@ -218,7 +220,7 @@ def translate(translation_table, corpus_en, m=0.95, l=0.9):
 
 
 def remove_null(tr):
-    return [[word for word in sentence if not word == '<NULL>'] for sentence in tr]
+    return [[word for word in sentence if not word == "<NULL>"] for sentence in tr]
 
 
 corpus_en = read_file_np_lower(TRAIN_EN_PATH)
@@ -238,27 +240,25 @@ unaligned_dict_fr = Unaligned_dictionnary(unaligned_fr)
 
 translation = Proba_wordEN_knowing_wordFR(train_dict_en, train_dict_fr)
 train_seq_en = Corpus_alignment_en(corpus_en, train_dict_en)
-train_seq_fr = Corpus_alignment_fr(
-    corpus_fr, train_dict_fr, translation)
+train_seq_fr = Corpus_alignment_fr(corpus_fr, train_dict_fr, translation)
 
 # Training
 for i in range(10):
-    print('epoch: ', i + 1)
+    print("epoch: ", i + 1)
 
     new_corpus_fr = train_seq_fr._gen_alignments(
-        train_seq_en.corpus_seq, train_seq_fr.corpus_seq)
+        train_seq_en.corpus_seq, train_seq_fr.corpus_seq
+    )
     translation.update_proba_table(train_seq_en.corpus_seq, new_corpus_fr)
 
 # Prediction Train
-translation_result_train = translate(
-    translation.correspondance_table, corpus_en)
-write_text(remove_null(translation_result_train), 'translation_result.fr')
+translation_result_train = translate(translation.correspondance_table, corpus_en)
+write_text(remove_null(translation_result_train), "translation_result.fr")
 
 # Prediction Valid
-translation_result_valid = translate(
-    translation.correspondance_table, valid_en)
-write_text(remove_null(translation_result_valid), 'translation_result.fr')
+translation_result_valid = translate(translation.correspondance_table, valid_en)
+write_text(remove_null(translation_result_valid), "translation_result.fr")
 
 # Prediction Test
 translation_result_test = translate(translation.correspondance_table, test_en)
-write_text(remove_null(translation_result_test), 'translation_result.fr')
+write_text(remove_null(translation_result_test), "translation_result.fr")
