@@ -96,9 +96,7 @@ def parse_args():
         default=None,
     )
     args = parser.parse_args()
-    logger = logging.initialize(
-        experiment=args.model, debug=args.debug, std=args.std
-    )
+    logger = logging.initialize(experiment=args.model, debug=args.debug, std=args.std)
 
     return args, logger
 
