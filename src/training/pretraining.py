@@ -192,4 +192,4 @@ def test(sentence, model, encoder):
     logger.debug(sentence)
     pred = encoder.decode([sentence[0][mask_index[0]].numpy()])
 
-    print("Predicted token to replace <mask>:", pred)
+    logger.info(f"Predicted token to replace <mask>:{pred}")

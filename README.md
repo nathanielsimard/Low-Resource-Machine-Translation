@@ -35,3 +35,8 @@ Artifacts are stored in different locations :
 
 ### Generate Graphs Example
 ```python generate_graphs.py --history_path='results/lstm_luong_attention/2020-04-01 21:58:21/history-17' output_path='results/lstm_luong_attention/2020-04-01 21:58:21/graphs' ```
+
+### Replacing a mask token in a sentence
+Testing a masked language model can be done using the run_test_mlm.py script.
+Example: ```python run_test_mlm.py --checkpoint 2 --message "father help <mask>me pick apples" ``` 
+Predicted token: `ed`

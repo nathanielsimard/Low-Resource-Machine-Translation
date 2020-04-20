@@ -51,7 +51,7 @@ def predict(args):
         file_name="data/splitted_english_data/sorted_clean_train.en",
         cache_dir=".cache/data/splitted_english_data/sorted_clean_train.en",
         text_encoder_type=TextEncoderType("subword"),
-        vocab_size=15000,
+        vocab_size=8192,
     )
     encoder = train_dl.encoder
     print("Creating model...")
