@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument(
         "--hyperparameters",
         help="Path to hyperparameters",
-        default="experiments/demi-bert/basic-hyperparameters.json",
+        default="experiments/demi-bert/medium-hyperparameters.json",
     )
 
     args = parser.parse_args()
@@ -51,7 +51,7 @@ def predict(args):
         file_name="data/splitted_english_data/sorted_clean_train.en",
         cache_dir=".cache/data/splitted_english_data/sorted_clean_train.en",
         text_encoder_type=TextEncoderType("subword"),
-        vocab_size=15000,
+        vocab_size=8192,
     )
     encoder = train_dl.encoder
     print("Creating model...")
@@ -62,9 +62,7 @@ def predict(args):
 
     # Create the message to translate.
     message = preprocessing.add_start_end_token([args.message])[0]
-    print(message)
     x = tf.convert_to_tensor([encoder.encode(message)])
-    print(x)
     pretraining.test(x, model, encoder)
 
 
