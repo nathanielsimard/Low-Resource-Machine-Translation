@@ -4,7 +4,7 @@ import subprocess
 
 def read_file(file_name: str):
     out = []
-    with open(file_name, 'r') as stream:
+    with open(file_name, "r") as stream:
         for line in stream:
             tokens = line.strip().split()
             out.append(tokens)
@@ -13,26 +13,26 @@ def read_file(file_name: str):
 
 def read_file_np_lower(file_name):
     tokens = read_file(file_name)
-    tokens = [' '.join(sentence).strip() for sentence in tokens]
+    tokens = [" ".join(sentence).strip() for sentence in tokens]
     return [re.findall(r"[\w']+", text.lower()) for text in tokens]
 
 
 def read_file_np(file_name):
     tokens = read_file(file_name)
-    tokens = [' '.join(sentence).strip() for sentence in tokens]
+    tokens = [" ".join(sentence).strip() for sentence in tokens]
     return [re.findall(r"[\w']+", text) for text in tokens]
 
 
 def write_text(tokens, output_file):
-    with open(output_file, 'w+') as out_stream:
+    with open(output_file, "w+") as out_stream:
         for token in tokens:
-            out_stream.write(' '.join(token) + '\n')
+            out_stream.write(" ".join(token) + "\n")
 
 
 def write_text_skip_line(tokens, output_file):
-    with open(output_file, 'w+') as out_stream:
+    with open(output_file, "w+") as out_stream:
         for token in tokens:
-            out_stream.write(' '.join(token) + '\n\n')
+            out_stream.write(" ".join(token) + "\n\n")
 
 
 def compute_bleu(pred_file_path: str, target_file_path: str):

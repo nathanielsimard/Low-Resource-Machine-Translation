@@ -14,7 +14,6 @@ def read_json_file(file_name: str) -> Dict[str, Any]:
         return json.load(file)
 
 
-
 def create_transformer(args, input_vocab_size, target_vocab_size):
     hyperparameters = {
         "input_vocab_size": input_vocab_size + 1,
